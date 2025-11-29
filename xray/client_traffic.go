@@ -5,6 +5,7 @@ package xray
 type ClientTraffic struct {
 	Id         int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
 	InboundId  int    `json:"inboundId" form:"inboundId"`
+	ServerId   int    `json:"serverId" form:"serverId" gorm:"index"` // Foreign key to Server (for multi-server support)
 	Enable     bool   `json:"enable" form:"enable"`
 	Email      string `json:"email" form:"email" gorm:"unique"`
 	UUID       string `json:"uuid" form:"uuid" gorm:"-"`

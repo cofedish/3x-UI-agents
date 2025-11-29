@@ -34,6 +34,7 @@ type User struct {
 type Inbound struct {
 	Id                   int                  `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`                                                    // Unique identifier
 	UserId               int                  `json:"-"`                                                                                               // Associated user ID
+	ServerId             int                  `json:"serverId" form:"serverId" gorm:"index"`                                                           // Foreign key to Server (for multi-server support)
 	Up                   int64                `json:"up" form:"up"`                                                                                    // Upload traffic in bytes
 	Down                 int64                `json:"down" form:"down"`                                                                                // Download traffic in bytes
 	Total                int64                `json:"total" form:"total"`                                                                              // Total traffic limit in bytes
@@ -57,16 +58,18 @@ type Inbound struct {
 
 // OutboundTraffics tracks traffic statistics for Xray outbound connections.
 type OutboundTraffics struct {
-	Id    int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
-	Tag   string `json:"tag" form:"tag" gorm:"unique"`
-	Up    int64  `json:"up" form:"up" gorm:"default:0"`
-	Down  int64  `json:"down" form:"down" gorm:"default:0"`
-	Total int64  `json:"total" form:"total" gorm:"default:0"`
+	Id       int    `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`
+	ServerId int    `json:"serverId" form:"serverId" gorm:"index"` // Foreign key to Server (for multi-server support)
+	Tag      string `json:"tag" form:"tag" gorm:"unique"`
+	Up       int64  `json:"up" form:"up" gorm:"default:0"`
+	Down     int64  `json:"down" form:"down" gorm:"default:0"`
+	Total    int64  `json:"total" form:"total" gorm:"default:0"`
 }
 
 // InboundClientIps stores IP addresses associated with inbound clients for access control.
 type InboundClientIps struct {
 	Id          int    `json:"id" gorm:"primaryKey;autoIncrement"`
+	ServerId    int    `json:"serverId" form:"serverId" gorm:"index"`        // Foreign key to Server (for multi-server support)
 	ClientEmail string `json:"clientEmail" form:"clientEmail" gorm:"unique"`
 	Ips         string `json:"ips" form:"ips"`
 }
@@ -118,4 +121,63 @@ type Client struct {
 	Reset      int    `json:"reset" form:"reset"`           // Reset period in days
 	CreatedAt  int64  `json:"created_at,omitempty"`         // Creation timestamp
 	UpdatedAt  int64  `json:"updated_at,omitempty"`         // Last update timestamp
+}
+
+// Server represents a managed VPN server in multi-server architecture.
+// In single-server mode, there is only one server with ID=1 (local).
+type Server struct {
+	Id       int    `json:"id" gorm:"primaryKey;autoIncrement"`
+	Name     string `json:"name" gorm:"unique;not null"`           // Unique server name (e.g., "US-East-1")
+	Endpoint string `json:"endpoint" gorm:"not null"`              // Agent endpoint (e.g., "https://vpn1.example.com:2054")
+	Region   string `json:"region"`                                // Geographic region (e.g., "us-east")
+	Tags     string `json:"tags"`                                  // JSON array of tags (e.g., ["production", "us"])
+
+	// Authentication
+	AuthType string `json:"authType" gorm:"not null"` // "mtls", "jwt", or "local"
+	AuthData string `json:"authData"`                 // Encrypted secret or certificate reference (encrypted)
+
+	// Status
+	Status    string `json:"status" gorm:"default:'pending';index"` // "pending", "online", "offline", "error"
+	LastSeen  int64  `json:"lastSeen"`                               // Unix timestamp of last successful health check
+	LastError string `json:"lastError"`                              // Last error message (if status is "error")
+
+	// Metadata
+	Version     string `json:"version"`     // Agent version
+	XrayVersion string `json:"xrayVersion"` // Xray version on the server
+	OsInfo      string `json:"osInfo"`      // JSON: {"os": "linux", "arch": "amd64", "kernel": "5.15"}
+
+	// Settings
+	Enabled bool   `json:"enabled" gorm:"default:true;index"` // Whether this server is enabled
+	Notes   string `json:"notes"`                             // Admin notes
+
+	// Timestamps
+	CreatedAt int64 `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt int64 `json:"updatedAt" gorm:"autoUpdateTime"`
+}
+
+// ServerTask represents an operation executed on a managed server.
+// Used for audit logging and async job tracking.
+type ServerTask struct {
+	Id       int    `json:"id" gorm:"primaryKey;autoIncrement"`
+	ServerId int    `json:"serverId" gorm:"not null;index"` // Foreign key to Server
+	Server   Server `json:"server" gorm:"foreignKey:ServerId"`
+
+	Operation string `json:"operation" gorm:"not null"` // Operation type (e.g., "add_inbound", "restart_xray")
+	Status    string `json:"status" gorm:"not null;index;default:'pending'"` // "pending", "running", "completed", "failed"
+
+	// Request/Response
+	RequestData  string `json:"requestData"`  // JSON of input parameters
+	ResponseData string `json:"responseData"` // JSON of operation result
+	ErrorMessage string `json:"errorMessage"` // Error details if failed
+
+	// Execution
+	StartedAt   int64 `json:"startedAt"`   // Unix timestamp when task started
+	CompletedAt int64 `json:"completedAt"` // Unix timestamp when task completed
+	RetryCount  int   `json:"retryCount" gorm:"default:0"` // Number of retry attempts
+
+	// Audit
+	UserId int `json:"userId"` // Admin user who triggered this operation
+
+	// Timestamps
+	CreatedAt int64 `json:"createdAt" gorm:"autoCreateTime"`
 }

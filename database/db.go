@@ -38,6 +38,8 @@ func initModels() error {
 		&model.InboundClientIps{},
 		&xray.ClientTraffic{},
 		&model.HistoryOfSeeders{},
+		&model.Server{},
+		&model.ServerTask{},
 	}
 	for _, model := range models {
 		if err := db.AutoMigrate(model); err != nil {
@@ -112,6 +114,121 @@ func runSeeders(isUsersEmpty bool) error {
 	return nil
 }
 
+// runMultiserverMigration adds multi-server support to the database schema.
+// Creates default local server and adds server_id foreign keys to existing tables.
+func runMultiserverMigration() error {
+	var seedersHistory []string
+	db.Model(&model.HistoryOfSeeders{}).Pluck("seeder_name", &seedersHistory)
+
+	if slices.Contains(seedersHistory, "MultiServerMigration") {
+		return nil
+	}
+
+	log.Println("Running multi-server migration...")
+
+	// 1. Create default local server if servers table is empty
+	var serverCount int64
+	db.Model(&model.Server{}).Count(&serverCount)
+
+	if serverCount == 0 {
+		defaultServer := &model.Server{
+			Id:       1,
+			Name:     "Default Local Server",
+			Endpoint: "local://",
+			Region:   "",
+			Tags:     "[]",
+			AuthType: "local",
+			AuthData: "",
+			Status:   "online",
+			Enabled:  true,
+			Notes:    "Auto-created during multi-server migration. This represents the local Xray instance.",
+		}
+
+		if err := db.Create(defaultServer).Error; err != nil {
+			log.Printf("Error creating default local server: %v", err)
+			return err
+		}
+
+		log.Println("Created default local server (ID=1)")
+	}
+
+	// 2. Add server_id columns to existing tables if they don't exist
+	// SQLite doesn't support IF NOT EXISTS for ALTER TABLE, so we check manually
+	type ColumnInfo struct {
+		Name string
+	}
+
+	tablesToMigrate := []struct {
+		tableName  string
+		columnName string
+	}{
+		{"inbounds", "server_id"},
+		{"client_traffics", "server_id"},
+		{"outbound_traffics", "server_id"},
+		{"inbound_client_ips", "server_id"},
+	}
+
+	for _, table := range tablesToMigrate {
+		var columns []ColumnInfo
+		db.Raw("PRAGMA table_info(" + table.tableName + ")").Scan(&columns)
+
+		hasColumn := false
+		for _, col := range columns {
+			if col.Name == table.columnName {
+				hasColumn = true
+				break
+			}
+		}
+
+		if !hasColumn {
+			// Add column
+			alterSQL := "ALTER TABLE " + table.tableName + " ADD COLUMN server_id INTEGER"
+			if err := db.Exec(alterSQL).Error; err != nil {
+				log.Printf("Error adding server_id to %s: %v", table.tableName, err)
+				return err
+			}
+			log.Printf("Added server_id column to %s", table.tableName)
+		}
+
+		// 3. Set default server_id = 1 for existing records
+		updateSQL := "UPDATE " + table.tableName + " SET server_id = 1 WHERE server_id IS NULL"
+		if err := db.Exec(updateSQL).Error; err != nil {
+			log.Printf("Error setting default server_id in %s: %v", table.tableName, err)
+			return err
+		}
+		log.Printf("Set default server_id=1 for existing records in %s", table.tableName)
+	}
+
+	// 4. Create indexes
+	indexes := []string{
+		"CREATE INDEX IF NOT EXISTS idx_inbounds_server ON inbounds(server_id)",
+		"CREATE INDEX IF NOT EXISTS idx_client_traffics_server ON client_traffics(server_id)",
+		"CREATE INDEX IF NOT EXISTS idx_outbound_traffics_server ON outbound_traffics(server_id)",
+		"CREATE INDEX IF NOT EXISTS idx_inbound_client_ips_server ON inbound_client_ips(server_id)",
+	}
+
+	for _, indexSQL := range indexes {
+		if err := db.Exec(indexSQL).Error; err != nil {
+			log.Printf("Error creating index: %v", err)
+			return err
+		}
+	}
+
+	log.Println("Created indexes for server_id columns")
+
+	// 5. Record migration in seeder history
+	migrationSeeder := &model.HistoryOfSeeders{
+		SeederName: "MultiServerMigration",
+	}
+	if err := db.Create(migrationSeeder).Error; err != nil {
+		log.Printf("Error recording multi-server migration: %v", err)
+		return err
+	}
+
+	log.Println("Multi-server migration completed successfully")
+	return nil
+}
+
 // isTableEmpty returns true if the named table contains zero rows.
 func isTableEmpty(tableName string) (bool, error) {
 	var count int64
@@ -155,7 +272,12 @@ func InitDB(dbPath string) error {
 	if err := initUser(); err != nil {
 		return err
 	}
-	return runSeeders(isUsersEmpty)
+
+	if err := runSeeders(isUsersEmpty); err != nil {
+		return err
+	}
+
+	return runMultiserverMigration()
 }
 
 // CloseDB closes the database connection if it exists.
