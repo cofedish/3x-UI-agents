@@ -187,8 +187,13 @@ func (s *ServerManagementService) GetConnector(serverId int) (ServerConnector, e
 		return NewLocalConnector(serverId), nil
 	}
 
-	// Remote connector (to be implemented)
-	return nil, fmt.Errorf("remote connectors not yet implemented")
+	// Remote connector (mTLS or JWT)
+	connector, err := NewRemoteConnector(server)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create remote connector: %w", err)
+	}
+
+	return connector, nil
 }
 
 // GetDefaultServerId returns the server ID to use when none is specified.
