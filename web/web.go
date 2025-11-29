@@ -319,6 +319,9 @@ func (s *Server) startTask() {
 	// Run once a month, midnight, first of month
 	s.cron.AddJob("@monthly", job.NewPeriodicTrafficResetJob("monthly"))
 
+	// Multi-server health monitoring - check server health every 30 seconds
+	s.cron.AddJob("@every 30s", job.NewServerHealthJob())
+
 	// LDAP sync scheduling
 	if ldapEnabled, _ := s.settingService.GetLdapEnable(); ldapEnabled {
 		runtime, err := s.settingService.GetLdapSyncCron()
