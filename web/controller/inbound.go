@@ -16,11 +16,14 @@ import (
 type InboundController struct {
 	inboundService service.InboundService
 	xrayService    service.XrayService
+	serverMgmt     *service.ServerManagementService
 }
 
 // NewInboundController creates a new InboundController and sets up its routes.
 func NewInboundController(g *gin.RouterGroup) *InboundController {
-	a := &InboundController{}
+	a := &InboundController{
+		serverMgmt: &service.ServerManagementService{},
+	}
 	a.initRouter(g)
 	return a
 }
@@ -52,10 +55,41 @@ func (a *InboundController) initRouter(g *gin.RouterGroup) {
 	g.POST("/:id/delClientByEmail/:email", a.delInboundClientByEmail)
 }
 
+// getServerIdFromRequest extracts server_id from query parameter, defaults to 1 for backward compatibility.
+func (a *InboundController) getServerIdFromRequest(c *gin.Context) int {
+	serverIdStr := c.DefaultQuery("server_id", "1")
+	serverId, err := strconv.Atoi(serverIdStr)
+	if err != nil || serverId < 1 {
+		return 1
+	}
+	return serverId
+}
+
 // getInbounds retrieves the list of inbounds for the logged-in user.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *InboundController) getInbounds(c *gin.Context) {
-	user := session.GetLoginUser(c)
-	inbounds, err := a.inboundService.GetInbounds(user.Id)
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		user := session.GetLoginUser(c)
+		inbounds, err := a.inboundService.GetInbounds(user.Id)
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
+			return
+		}
+		jsonObj(c, inbounds, nil)
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	inbounds, err := connector.ListInbounds(c.Request.Context())
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
@@ -64,13 +98,35 @@ func (a *InboundController) getInbounds(c *gin.Context) {
 }
 
 // getInbound retrieves a specific inbound by its ID.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *InboundController) getInbound(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "get"), err)
 		return
 	}
-	inbound, err := a.inboundService.GetInbound(id)
+
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		inbound, err := a.inboundService.GetInbound(id)
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
+			return
+		}
+		jsonObj(c, inbound, nil)
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	inbound, err := connector.GetInbound(c.Request.Context(), id)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
@@ -101,6 +157,7 @@ func (a *InboundController) getClientTrafficsById(c *gin.Context) {
 }
 
 // addInbound creates a new inbound configuration.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *InboundController) addInbound(c *gin.Context) {
 	inbound := &model.Inbound{}
 	err := c.ShouldBind(inbound)
@@ -108,44 +165,90 @@ func (a *InboundController) addInbound(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundCreateSuccess"), err)
 		return
 	}
+
 	user := session.GetLoginUser(c)
 	inbound.UserId = user.Id
+
+	serverId := a.getServerIdFromRequest(c)
+	inbound.ServerId = serverId
+
 	if inbound.Listen == "" || inbound.Listen == "0.0.0.0" || inbound.Listen == "::" || inbound.Listen == "::0" {
 		inbound.Tag = fmt.Sprintf("inbound-%v", inbound.Port)
 	} else {
 		inbound.Tag = fmt.Sprintf("inbound-%v:%v", inbound.Listen, inbound.Port)
 	}
 
-	inbound, needRestart, err := a.inboundService.AddInbound(inbound)
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		inbound, needRestart, err := a.inboundService.AddInbound(inbound)
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+			return
+		}
+		jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundCreateSuccess"), inbound, nil)
+		if needRestart {
+			a.xrayService.SetToNeedRestart()
+		}
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	err = connector.AddInbound(c.Request.Context(), inbound)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
 	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundCreateSuccess"), inbound, nil)
-	if needRestart {
-		a.xrayService.SetToNeedRestart()
-	}
 }
 
 // delInbound deletes an inbound configuration by its ID.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *InboundController) delInbound(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundDeleteSuccess"), err)
 		return
 	}
-	needRestart, err := a.inboundService.DelInbound(id)
+
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		needRestart, err := a.inboundService.DelInbound(id)
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+			return
+		}
+		jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundDeleteSuccess"), id, nil)
+		if needRestart {
+			a.xrayService.SetToNeedRestart()
+		}
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	err = connector.DeleteInbound(c.Request.Context(), id)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
 	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundDeleteSuccess"), id, nil)
-	if needRestart {
-		a.xrayService.SetToNeedRestart()
-	}
 }
 
 // updateInbound updates an existing inbound configuration.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *InboundController) updateInbound(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -160,15 +263,37 @@ func (a *InboundController) updateInbound(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundUpdateSuccess"), err)
 		return
 	}
-	inbound, needRestart, err := a.inboundService.UpdateInbound(inbound)
+
+	serverId := a.getServerIdFromRequest(c)
+	inbound.ServerId = serverId
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		inbound, needRestart, err := a.inboundService.UpdateInbound(inbound)
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+			return
+		}
+		jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundUpdateSuccess"), inbound, nil)
+		if needRestart {
+			a.xrayService.SetToNeedRestart()
+		}
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	err = connector.UpdateInbound(c.Request.Context(), inbound)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
 	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundUpdateSuccess"), inbound, nil)
-	if needRestart {
-		a.xrayService.SetToNeedRestart()
-	}
 }
 
 // getClientIps retrieves the IP addresses associated with a client by email.
@@ -197,6 +322,7 @@ func (a *InboundController) clearClientIps(c *gin.Context) {
 }
 
 // addInboundClient adds a new client to an existing inbound.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *InboundController) addInboundClient(c *gin.Context) {
 	data := &model.Inbound{}
 	err := c.ShouldBind(data)
@@ -205,18 +331,46 @@ func (a *InboundController) addInboundClient(c *gin.Context) {
 		return
 	}
 
-	needRestart, err := a.inboundService.AddInboundClient(data)
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		needRestart, err := a.inboundService.AddInboundClient(data)
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+			return
+		}
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientAddSuccess"), nil)
+		if needRestart {
+			a.xrayService.SetToNeedRestart()
+		}
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	// Extract client from inbound settings
+	if len(data.ClientStats) == 0 {
+		jsonMsg(c, "No client data provided", nil)
+		return
+	}
+	client := &data.ClientStats[0]
+
+	err = connector.AddClient(c.Request.Context(), data.Id, client)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
 	jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientAddSuccess"), nil)
-	if needRestart {
-		a.xrayService.SetToNeedRestart()
-	}
 }
 
 // delInboundClient deletes a client from an inbound by inbound ID and client ID.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *InboundController) delInboundClient(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -225,18 +379,39 @@ func (a *InboundController) delInboundClient(c *gin.Context) {
 	}
 	clientId := c.Param("clientId")
 
-	needRestart, err := a.inboundService.DelInboundClient(id, clientId)
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		needRestart, err := a.inboundService.DelInboundClient(id, clientId)
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+			return
+		}
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientDeleteSuccess"), nil)
+		if needRestart {
+			a.xrayService.SetToNeedRestart()
+		}
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	err = connector.DeleteClient(c.Request.Context(), id, clientId)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
 	jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientDeleteSuccess"), nil)
-	if needRestart {
-		a.xrayService.SetToNeedRestart()
-	}
 }
 
 // updateInboundClient updates a client's configuration in an inbound.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *InboundController) updateInboundClient(c *gin.Context) {
 	clientId := c.Param("clientId")
 
@@ -247,15 +422,42 @@ func (a *InboundController) updateInboundClient(c *gin.Context) {
 		return
 	}
 
-	needRestart, err := a.inboundService.UpdateInboundClient(inbound, clientId)
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		needRestart, err := a.inboundService.UpdateInboundClient(inbound, clientId)
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+			return
+		}
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientUpdateSuccess"), nil)
+		if needRestart {
+			a.xrayService.SetToNeedRestart()
+		}
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	// Extract client from inbound settings
+	if len(inbound.ClientStats) == 0 {
+		jsonMsg(c, "No client data provided", nil)
+		return
+	}
+	client := &inbound.ClientStats[0]
+
+	err = connector.UpdateClient(c.Request.Context(), inbound.Id, clientId, client)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
 	jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientUpdateSuccess"), nil)
-	if needRestart {
-		a.xrayService.SetToNeedRestart()
-	}
 }
 
 // resetClientTraffic resets the traffic counter for a specific client in an inbound.
