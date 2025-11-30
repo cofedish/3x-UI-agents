@@ -1,0 +1,461 @@
+{{ template "page/head_start" .}}
+{{ template "page/head_end" .}}
+
+{{ template "page/body_start" .}}
+<a-layout id="app" v-cloak :class="themeSwitcher.currentTheme">
+  <a-sidebar></a-sidebar>
+  <a-layout id="content-layout">
+    <a-layout-header style="padding: 16px; background: var(--color-bg); border-bottom: 1px solid var(--color-border);">
+      <a-row type="flex" align="middle" justify="space-between">
+        <a-col>
+          <h2 style="margin: 0;">
+            <a-icon type="server" />
+            {{ i18n "servers.title" }}
+          </h2>
+        </a-col>
+        <a-col>
+          <a-space>
+            <a-button type="primary" icon="plus" @click="showAddModal">
+              {{ i18n "servers.addServer" }}
+            </a-button>
+            <a-button icon="reload" @click="loadServers">
+              {{ i18n "refresh" }}
+            </a-button>
+          </a-space>
+        </a-col>
+      </a-row>
+    </a-layout-header>
+
+    <a-layout-content>
+      <a-spin :spinning="loading">
+        <a-card>
+          <!-- Filters -->
+          <a-row :gutter="16" class="mb-16">
+            <a-col :sm="24" :md="8">
+              <a-input-search
+                v-model="filters.search"
+                :placeholder="'{{ i18n \"servers.searchPlaceholder\" }}'"
+                @search="applyFilters"
+                allow-clear
+              >
+                <a-icon slot="prefix" type="search" />
+              </a-input-search>
+            </a-col>
+            <a-col :sm="24" :md="8">
+              <a-select
+                v-model="filters.status"
+                :placeholder="'{{ i18n \"servers.filterByStatus\" }}'"
+                style="width: 100%"
+                @change="applyFilters"
+                allow-clear
+              >
+                <a-select-option value="">{{ i18n "all" }}</a-select-option>
+                <a-select-option value="online">{{ i18n "servers.status.online" }}</a-select-option>
+                <a-select-option value="offline">{{ i18n "servers.status.offline" }}</a-select-option>
+                <a-select-option value="pending">{{ i18n "servers.status.pending" }}</a-select-option>
+                <a-select-option value="error">{{ i18n "servers.status.error" }}</a-select-option>
+              </a-select>
+            </a-col>
+            <a-col :sm="24" :md="8">
+              <a-input
+                v-model="filters.tags"
+                :placeholder="'{{ i18n \"servers.filterByTags\" }}'"
+                @pressEnter="applyFilters"
+                allow-clear
+              >
+                <a-icon slot="prefix" type="tags" />
+              </a-input>
+            </a-col>
+          </a-row>
+
+          <!-- Stats -->
+          <a-row :gutter="16" class="mb-16">
+            <a-col :span="6">
+              <a-statistic
+                :title="'{{ i18n \"servers.stats.total\" }}'"
+                :value="stats.total"
+                :value-style="{ color: '#1890ff' }"
+              >
+                <template #prefix><a-icon type="server" /></template>
+              </a-statistic>
+            </a-col>
+            <a-col :span="6">
+              <a-statistic
+                :title="'{{ i18n \"servers.stats.online\" }}'"
+                :value="stats.online"
+                :value-style="{ color: '#52c41a' }"
+              >
+                <template #prefix><a-icon type="check-circle" /></template>
+              </a-statistic>
+            </a-col>
+            <a-col :span="6">
+              <a-statistic
+                :title="'{{ i18n \"servers.stats.offline\" }}'"
+                :value="stats.offline"
+                :value-style="{ color: '#ff4d4f' }"
+              >
+                <template #prefix><a-icon type="close-circle" /></template>
+              </a-statistic>
+            </a-col>
+            <a-col :span="6">
+              <a-statistic
+                :title="'{{ i18n \"servers.stats.errors\" }}'"
+                :value="stats.error"
+                :value-style="{ color: '#faad14' }"
+              >
+                <template #prefix><a-icon type="warning" /></template>
+              </a-statistic>
+            </a-col>
+          </a-row>
+
+          <!-- Table -->
+          <a-table
+            :columns="columns"
+            :data-source="servers"
+            :pagination="pagination"
+            :loading="loading"
+            @change="handleTableChange"
+            row-key="id"
+            :scroll="{ x: true }"
+          >
+            <template #name="text, record">
+              <strong>[[ record.name ]]</strong>
+              <br />
+              <small style="color: #999;">[[ record.endpoint ]]</small>
+            </template>
+
+            <template #status="text, record">
+              <a-badge :status="getStatusBadge(record.status)" :text="getStatusText(record.status)" />
+              <div v-if="record.last_seen" style="font-size: 12px; color: #999;">
+                Last seen: [[ formatTimestamp(record.last_seen) ]]
+              </div>
+            </template>
+
+            <template #auth="text, record">
+              <a-tag :color="getAuthColor(record.authType)">
+                [[ record.authType.toUpperCase() ]]
+              </a-tag>
+            </template>
+
+            <template #version="text, record">
+              <div v-if="record.version">
+                <div>Panel: v[[ record.version ]]</div>
+                <div v-if="record.xrayVersion">Xray: v[[ record.xrayVersion ]]</div>
+              </div>
+              <span v-else style="color: #999;">—</span>
+            </template>
+
+            <template #tags="text, record">
+              <span v-if="record.tags">
+                <a-tag v-for="tag in parseTags(record.tags)" :key="tag" color="blue">
+                  [[ tag ]]
+                </a-tag>
+              </span>
+              <span v-else style="color: #999;">—</span>
+            </template>
+
+            <template #actions="text, record">
+              <a-space>
+                <a-tooltip title="{{ i18n 'servers.testHealth' }}">
+                  <a-button
+                    size="small"
+                    icon="heart"
+                    @click="testHealth(record)"
+                    :loading="healthChecking[record.id]"
+                  ></a-button>
+                </a-tooltip>
+                <a-tooltip title="{{ i18n 'servers.restartXray' }}" v-if="record.id !== 1">
+                  <a-button
+                    size="small"
+                    icon="reload"
+                    @click="restartXray(record)"
+                  ></a-button>
+                </a-tooltip>
+                <a-tooltip title="{{ i18n 'edit' }}">
+                  <a-button
+                    size="small"
+                    icon="edit"
+                    @click="showEditModal(record)"
+                  ></a-button>
+                </a-tooltip>
+                <a-tooltip title="{{ i18n 'delete' }}" v-if="record.id !== 1">
+                  <a-button
+                    size="small"
+                    type="danger"
+                    icon="delete"
+                    @click="showDeleteConfirm(record)"
+                  ></a-button>
+                </a-tooltip>
+              </a-space>
+            </template>
+          </a-table>
+        </a-card>
+
+        <!-- Add/Edit Modal -->
+        <a-modal
+          :title="modalMode === 'add' ? '{{ i18n \"servers.addServer\" }}' : '{{ i18n \"servers.editServer\" }}'"
+          :visible="modalVisible"
+          @ok="handleModalOk"
+          @cancel="handleModalCancel"
+          :confirm-loading="modalLoading"
+          :width="600"
+        >
+          <a-form-model ref="serverForm" :model="currentServer" :rules="rules" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
+            <a-form-model-item label="{{ i18n 'servers.form.name' }}" prop="name">
+              <a-input v-model="currentServer.name" :placeholder="'{{ i18n \"servers.form.namePlaceholder\" }}'" />
+            </a-form-model-item>
+
+            <a-form-model-item label="{{ i18n 'servers.form.endpoint' }}" prop="endpoint">
+              <a-input v-model="currentServer.endpoint" :placeholder="'{{ i18n \"servers.form.endpointPlaceholder\" }}'" />
+              <small style="color: #999;">{{ i18n "servers.form.endpointHint" }}</small>
+            </a-form-model-item>
+
+            <a-form-model-item label="{{ i18n 'servers.form.authType' }}" prop="authType">
+              <a-select v-model="currentServer.authType">
+                <a-select-option value="mtls">mTLS (Recommended)</a-select-option>
+                <a-select-option value="jwt">JWT</a-select-option>
+              </a-select>
+            </a-form-model-item>
+
+            <a-form-model-item label="{{ i18n 'servers.form.authData' }}" prop="authData" v-if="currentServer.authType === 'mtls'">
+              <a-textarea
+                v-model="currentServer.authData"
+                :rows="6"
+                :placeholder="'{{ i18n \"servers.form.authDataPlaceholder\" }}'"
+              />
+              <small style="color: #999;">{{ i18n "servers.form.authDataHint" }}</small>
+            </a-form-model-item>
+
+            <a-form-model-item label="{{ i18n 'servers.form.authData' }}" prop="authData" v-if="currentServer.authType === 'jwt'">
+              <a-input v-model="currentServer.authData" type="password" :placeholder="'{{ i18n \"servers.form.jwtTokenPlaceholder\" }}'" />
+            </a-form-model-item>
+
+            <a-form-model-item label="{{ i18n 'servers.form.tags' }}">
+              <a-select
+                mode="tags"
+                v-model="currentServer.tagsArray"
+                :placeholder="'{{ i18n \"servers.form.tagsPlaceholder\" }}'"
+                style="width: 100%"
+              ></a-select>
+            </a-form-model-item>
+
+            <a-form-model-item label="{{ i18n 'enabled' }}">
+              <a-switch v-model="currentServer.enabled" />
+            </a-form-model-item>
+          </a-form-model>
+        </a-modal>
+      </a-spin>
+    </a-layout-content>
+  </a-layout>
+</a-layout>
+{{ template "page/body_scripts" .}}
+{{ template "component/aThemeSwitch" .}}
+{{ template "component/aSidebar" .}}
+<script>
+new Vue({
+  el: '#app',
+  delimiters: ['[[', ']]'],
+  data() {
+    return {
+      loading: false,
+      servers: [],
+      stats: { total: 0, online: 0, offline: 0, error: 0, pending: 0 },
+      filters: {
+        search: '',
+        status: '',
+        tags: ''
+      },
+      pagination: {
+        current: 1,
+        pageSize: 20,
+        total: 0,
+        showSizeChanger: true,
+        showQuickJumper: true,
+        showTotal: (total) => `Total ${total} servers`
+      },
+      columns: [
+        { title: '{{ i18n "servers.columns.name" }}', dataIndex: 'name', key: 'name', scopedSlots: { customRender: 'name' }, width: 250 },
+        { title: '{{ i18n "servers.columns.status" }}', dataIndex: 'status', key: 'status', scopedSlots: { customRender: 'status' }, width: 150 },
+        { title: '{{ i18n "servers.columns.auth" }}', dataIndex: 'authType', key: 'auth', scopedSlots: { customRender: 'auth' }, width: 100 },
+        { title: '{{ i18n "servers.columns.version" }}', key: 'version', scopedSlots: { customRender: 'version' }, width: 150 },
+        { title: '{{ i18n "servers.columns.tags" }}', dataIndex: 'tags', key: 'tags', scopedSlots: { customRender: 'tags' }},
+        { title: '{{ i18n "operations" }}', key: 'actions', scopedSlots: { customRender: 'actions' }, width: 200, fixed: 'right' }
+      ],
+      modalVisible: false,
+      modalLoading: false,
+      modalMode: 'add',
+      currentServer: this.getEmptyServer(),
+      healthChecking: {},
+      rules: {
+        name: [{ required: true, message: '{{ i18n "servers.form.nameRequired" }}', trigger: 'blur' }],
+        endpoint: [{ required: true, message: '{{ i18n "servers.form.endpointRequired" }}', trigger: 'blur' }],
+        authType: [{ required: true, message: '{{ i18n "servers.form.authTypeRequired" }}', trigger: 'change' }],
+        authData: [{ required: true, message: '{{ i18n "servers.form.authDataRequired" }}', trigger: 'blur' }]
+      }
+    }
+  },
+  created() {
+    this.loadServers();
+    this.loadStats();
+  },
+  methods: {
+    async loadServers() {
+      this.loading = true;
+      try {
+        const params = {
+          page: this.pagination.current,
+          limit: this.pagination.pageSize,
+          ...this.filters
+        };
+        const response = await axios.get('panel/api/servers', { params });
+        if (response && response.success) {
+          this.servers = response.obj.servers || [];
+          this.pagination.total = response.obj.total || 0;
+        }
+      } catch (error) {
+        this.$message.error('{{ i18n "servers.loadError" }}');
+      } finally {
+        this.loading = false;
+      }
+    },
+    async loadStats() {
+      try {
+        const response = await axios.get('panel/api/servers/stats');
+        if (response && response.success) {
+          this.stats = response.obj;
+        }
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
+    },
+    applyFilters() {
+      this.pagination.current = 1;
+      this.loadServers();
+    },
+    handleTableChange(pagination) {
+      this.pagination = pagination;
+      this.loadServers();
+    },
+    showAddModal() {
+      this.modalMode = 'add';
+      this.currentServer = this.getEmptyServer();
+      this.modalVisible = true;
+    },
+    showEditModal(server) {
+      this.modalMode = 'edit';
+      this.currentServer = {
+        ...server,
+        tagsArray: this.parseTags(server.tags)
+      };
+      this.modalVisible = true;
+    },
+    async handleModalOk() {
+      this.$refs.serverForm.validate(async (valid) => {
+        if (!valid) return;
+
+        this.modalLoading = true;
+        try {
+          const payload = {
+            ...this.currentServer,
+            tags: JSON.stringify(this.currentServer.tagsArray || [])
+          };
+          delete payload.tagsArray;
+
+          if (this.modalMode === 'add') {
+            await axios.post('panel/api/servers', payload);
+            this.$message.success('{{ i18n "servers.addSuccess" }}');
+          } else {
+            await axios.put(`panel/api/servers/${this.currentServer.id}`, payload);
+            this.$message.success('{{ i18n "servers.updateSuccess" }}');
+          }
+
+          this.modalVisible = false;
+          this.loadServers();
+          this.loadStats();
+        } catch (error) {
+          this.$message.error(error.message || '{{ i18n "somethingWentWrong" }}');
+        } finally {
+          this.modalLoading = false;
+        }
+      });
+    },
+    handleModalCancel() {
+      this.modalVisible = false;
+    },
+    showDeleteConfirm(server) {
+      this.$confirm({
+        title: '{{ i18n "servers.deleteConfirm" }}',
+        content: `{{ i18n "servers.deleteConfirmContent" }}: ${server.name}?`,
+        okText: '{{ i18n "delete" }}',
+        okType: 'danger',
+        cancelText: '{{ i18n "cancel" }}',
+        onOk: async () => {
+          try {
+            await axios.delete(`panel/api/servers/${server.id}`);
+            this.$message.success('{{ i18n "servers.deleteSuccess" }}');
+            this.loadServers();
+            this.loadStats();
+          } catch (error) {
+            this.$message.error(error.message || '{{ i18n "somethingWentWrong" }}');
+          }
+        }
+      });
+    },
+    async testHealth(server) {
+      this.$set(this.healthChecking, server.id, true);
+      try {
+        const response = await axios.get(`panel/api/servers/${server.id}/health`);
+        if (response && response.success) {
+          this.$message.success(`${server.name}: ${response.obj.status}`);
+          this.loadServers();
+        }
+      } catch (error) {
+        this.$message.error(`${server.name}: Health check failed`);
+      } finally {
+        this.$set(this.healthChecking, server.id, false);
+      }
+    },
+    async restartXray(server) {
+      try {
+        await axios.post(`panel/api/server/restartXrayService?server_id=${server.id}`);
+        this.$message.success(`{{ i18n "servers.restartSuccess" }}: ${server.name}`);
+      } catch (error) {
+        this.$message.error(error.message || '{{ i18n "somethingWentWrong" }}');
+      }
+    },
+    getEmptyServer() {
+      return {
+        name: '',
+        endpoint: '',
+        authType: 'mtls',
+        authData: '',
+        enabled: true,
+        tagsArray: []
+      };
+    },
+    getStatusBadge(status) {
+      const map = { online: 'success', offline: 'error', pending: 'processing', error: 'error' };
+      return map[status] || 'default';
+    },
+    getStatusText(status) {
+      return status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown';
+    },
+    getAuthColor(authType) {
+      return authType === 'mtls' ? 'green' : 'blue';
+    },
+    parseTags(tagsJson) {
+      if (!tagsJson) return [];
+      try {
+        return JSON.parse(tagsJson);
+      } catch {
+        return [];
+      }
+    },
+    formatTimestamp(timestamp) {
+      if (!timestamp) return '—';
+      return moment.unix(timestamp).fromNow();
+    }
+  }
+});
+</script>
+{{ template "page/body_end" .}}

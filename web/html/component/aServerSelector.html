@@ -1,0 +1,173 @@
+{{define "component/serverSelector/content"}}
+<template>
+    <div class="server-selector">
+        <a-select
+            v-model="selectedServerId"
+            @change="onServerChange"
+            :style="{ minWidth: '180px' }"
+            :loading="loading"
+            :placeholder="'{{ i18n \"selectServer\" }}'"
+            show-search
+            option-filter-prop="children"
+            :filter-option="filterOption"
+        >
+            <a-select-option :value="0">
+                <a-icon type="global" />
+                {{ '{{ i18n "allServers" }}' }}
+            </a-select-option>
+            <a-select-option :value="1">
+                <a-icon type="home" />
+                {{ '{{ i18n "localServer" }}' }} (Default)
+            </a-select-option>
+            <a-select-opt-group v-if="remoteServers.length > 0" :label="'{{ i18n \"remoteServers\" }}'">
+                <a-select-option
+                    v-for="server in remoteServers"
+                    :key="server.id"
+                    :value="server.id"
+                >
+                    <a-badge :status="getServerStatusBadge(server.status)" />
+                    [[ server.name ]]
+                    <span v-if="server.tags" style="color: #999; font-size: 12px;">
+                        ([[ server.tags ]])
+                    </span>
+                </a-select-option>
+            </a-select-opt-group>
+        </a-select>
+        <a-tooltip v-if="selectedServerName !== ''" :title="serverTooltip">
+            <a-tag :color="selectedServerColor" style="margin-left: 8px; cursor: help;">
+                <a-icon type="server" />
+                [[ selectedServerName ]]
+            </a-tag>
+        </a-tooltip>
+    </div>
+</template>
+{{end}}
+
+{{define "component/aServerSelector"}}
+<style>
+.server-selector {
+    display: inline-flex;
+    align-items: center;
+}
+</style>
+
+<script>
+const SELECTED_SERVER_KEY = "selectedServerId";
+
+Vue.component('a-server-selector', {
+    data() {
+        return {
+            selectedServerId: 1, // Default: local server
+            servers: [],
+            loading: false,
+        }
+    },
+    computed: {
+        remoteServers() {
+            return this.servers.filter(s => s.id > 1);
+        },
+        selectedServerName() {
+            if (this.selectedServerId === 0) {
+                return '{{ i18n "allServers" }}';
+            }
+            if (this.selectedServerId === 1) {
+                return '{{ i18n "local" }}';
+            }
+            const server = this.servers.find(s => s.id === this.selectedServerId);
+            return server ? server.name : '';
+        },
+        selectedServerColor() {
+            if (this.selectedServerId === 0) return 'blue';
+            if (this.selectedServerId === 1) return 'green';
+            const server = this.servers.find(s => s.id === this.selectedServerId);
+            if (!server) return 'default';
+            return this.getServerStatusColor(server.status);
+        },
+        serverTooltip() {
+            if (this.selectedServerId === 0) {
+                return '{{ i18n "allServersTooltip" }}';
+            }
+            if (this.selectedServerId === 1) {
+                return '{{ i18n "localServerTooltip" }}';
+            }
+            const server = this.servers.find(s => s.id === this.selectedServerId);
+            if (!server) return '';
+            return `${server.name}\n${server.endpoint}\nStatus: ${server.status}`;
+        }
+    },
+    created() {
+        // Load saved selection
+        const saved = localStorage.getItem(SELECTED_SERVER_KEY);
+        if (saved) {
+            this.selectedServerId = parseInt(saved);
+        }
+        this.loadServers();
+    },
+    methods: {
+        async loadServers() {
+            this.loading = true;
+            try {
+                const response = await axios.get('panel/api/servers');
+                if (response && response.success) {
+                    this.servers = response.obj.servers || [];
+                }
+            } catch (error) {
+                console.error('Failed to load servers:', error);
+            } finally {
+                this.loading = false;
+            }
+        },
+        onServerChange(serverId) {
+            localStorage.setItem(SELECTED_SERVER_KEY, serverId);
+            this.selectedServerId = serverId;
+            // Emit event for other components
+            this.$root.$emit('server-changed', serverId);
+            // Reload current page to apply new server context
+            // (simple approach; more sophisticated would be event-driven updates)
+            if (window.location.pathname.includes('/panel/')) {
+                // Only reload if on panel pages, not on settings/xray
+                const currentPath = window.location.pathname;
+                if (currentPath.includes('/inbounds') || currentPath === basePath + 'panel/') {
+                    window.location.reload();
+                }
+            }
+        },
+        filterOption(input, option) {
+            return option.componentOptions.children.some(child => {
+                if (typeof child.text === 'string') {
+                    return child.text.toLowerCase().includes(input.toLowerCase());
+                }
+                return false;
+            });
+        },
+        getServerStatusBadge(status) {
+            const statusMap = {
+                'online': 'success',
+                'offline': 'error',
+                'pending': 'processing',
+                'error': 'error'
+            };
+            return statusMap[status] || 'default';
+        },
+        getServerStatusColor(status) {
+            const colorMap = {
+                'online': 'green',
+                'offline': 'red',
+                'pending': 'orange',
+                'error': 'red'
+            };
+            return colorMap[status] || 'default';
+        },
+        getSelectedServerId() {
+            // Public method for other components to get current server ID
+            return this.selectedServerId === 0 ? null : this.selectedServerId;
+        },
+        getServerIdParam() {
+            // Returns query parameter for API calls
+            return this.selectedServerId === 0 || this.selectedServerId === 1 ? '' : `?server_id=${this.selectedServerId}`;
+        }
+    },
+    template: `{{template "component/serverSelector/content"}}`,
+});
+</script>
+{{end}}
