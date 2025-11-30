@@ -5,6 +5,16 @@
 <a-layout id="app" v-cloak :class="themeSwitcher.currentTheme + ' inbounds-page'">
   <a-sidebar></a-sidebar>
   <a-layout id="content-layout">
+    <a-layout-header style="background: transparent; padding: 16px 24px 0; height: auto;">
+      <a-row type="flex" justify="space-between" align="middle">
+        <a-col>
+          <h2 style="margin: 0;">{{ i18n "pages.inbounds.title" }}</h2>
+        </a-col>
+        <a-col>
+          <a-server-selector ref="serverSelector"></a-server-selector>
+        </a-col>
+      </a-row>
+    </a-layout-header>
     <a-layout-content>
       <a-spin :spinning="loadingStates.spinning" :delay="500" tip='{{ i18n "loading"}}'>
         <transition name="list" appear>
@@ -606,6 +616,7 @@
 <script src="{{ .base_path }}assets/js/model/inbound.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/js/model/dbinbound.js?{{ .cur_ver }}"></script>
 {{template "component/aSidebar" .}}
+{{template "component/aServerSelector" .}}
 {{template "component/aThemeSwitch" .}}
 {{template "component/aCustomStatistic" .}}
 {{template "component/aPersianDatepicker" .}}
@@ -754,9 +765,17 @@
       loading(spinning = true) {
         this.loadingStates.spinning = spinning;
       },
+      getServerIdParam() {
+        // Get server_id from the server selector component
+        if (this.$refs.serverSelector && this.$refs.serverSelector.getServerIdParam) {
+          return this.$refs.serverSelector.getServerIdParam();
+        }
+        return '';
+      },
       async getDBInbounds() {
         this.refreshing = true;
-        const msg = await HttpUtil.get('/panel/api/inbounds/list');
+        const serverIdParam = this.getServerIdParam();
+        const msg = await HttpUtil.get('/panel/api/inbounds/list' + serverIdParam);
         if (!msg.success) {
           this.refreshing = false;
           return;
@@ -771,14 +790,16 @@
         }, 500);
       },
       async getOnlineUsers() {
-        const msg = await HttpUtil.post('/panel/api/inbounds/onlines');
+        const serverIdParam = this.getServerIdParam();
+        const msg = await HttpUtil.post('/panel/api/inbounds/onlines' + serverIdParam);
         if (!msg.success) {
           return;
         }
         this.onlineClients = msg.obj != null ? msg.obj : [];
       },
       async getLastOnlineMap() {
-        const msg = await HttpUtil.post('/panel/api/inbounds/lastOnline');
+        const serverIdParam = this.getServerIdParam();
+        const msg = await HttpUtil.post('/panel/api/inbounds/lastOnline' + serverIdParam);
         if (!msg.success || !msg.obj) return;
         this.lastOnlineMap = msg.obj || {}
       },
@@ -1305,7 +1326,8 @@
         this.loading(false);
       },
       async submit(url, data, modal) {
-        const msg = await HttpUtil.postWithModal(url, data, modal);
+        const serverIdParam = this.getServerIdParam();
+        const msg = await HttpUtil.postWithModal(url + serverIdParam, data, modal);
         if (msg.success) {
           await this.getDBInbounds();
         }
