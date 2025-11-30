@@ -48,6 +48,18 @@ func (a *APIController) initRouter(g *gin.RouterGroup) {
 	server := api.Group("/server")
 	a.serverController = NewServerController(server)
 
+	// Server Management API (multi-server)
+	servers := api.Group("/servers")
+	serverMgmt := NewServerManagementController()
+	servers.GET("", serverMgmt.ListServers)
+	servers.GET("/stats", serverMgmt.GetServerStats)
+	servers.GET("/:id", serverMgmt.GetServer)
+	servers.POST("", serverMgmt.AddServer)
+	servers.PUT("/:id", serverMgmt.UpdateServer)
+	servers.DELETE("/:id", serverMgmt.DeleteServer)
+	servers.GET("/:id/health", serverMgmt.GetServerHealth)
+	servers.GET("/:id/info", serverMgmt.GetServerInfo)
+
 	// Extra routes
 	api.GET("/backuptotgbot", a.BackuptoTgbot)
 }
