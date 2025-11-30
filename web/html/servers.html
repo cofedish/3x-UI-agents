@@ -127,7 +127,7 @@
             <template #status="text, record">
               <a-badge :status="getStatusBadge(record.status)" :text="getStatusText(record.status)" />
               <div v-if="record.last_seen" style="font-size: 12px; color: #999;">
-                Last seen: [[ formatTimestamp(record.last_seen) ]]
+                {{ i18n "lastSeenLabel" }}: [[ formatTimestamp(record.last_seen) ]]
               </div>
             </template>
 
@@ -139,8 +139,8 @@
 
             <template #version="text, record">
               <div v-if="record.version">
-                <div>Panel: v[[ record.version ]]</div>
-                <div v-if="record.xrayVersion">Xray: v[[ record.xrayVersion ]]</div>
+                <div>{{ i18n "panelVersionLabel" }}: v[[ record.version ]]</div>
+                <div v-if="record.xrayVersion">{{ i18n "xrayVersionLabel" }}: v[[ record.xrayVersion ]]</div>
               </div>
               <span v-else style="color: #999;">—</span>
             </template>
@@ -212,8 +212,8 @@
 
             <a-form-model-item label="{{ i18n 'servers.form.authType' }}" prop="authType">
               <a-select v-model="currentServer.authType">
-                <a-select-option value="mtls">mTLS (Recommended)</a-select-option>
-                <a-select-option value="jwt">JWT</a-select-option>
+                <a-select-option value="mtls">{{ i18n "servers.form.authTypeMtls" }}</a-select-option>
+                <a-select-option value="jwt">{{ i18n "servers.form.authTypeJwt" }}</a-select-option>
               </a-select>
             </a-form-model-item>
 
@@ -410,7 +410,7 @@ new Vue({
           this.loadServers();
         }
       } catch (error) {
-        this.$message.error(`${server.name}: Health check failed`);
+        this.$message.error(`${server.name}: {{ i18n "servers.healthCheckFailed" }}`);
       } finally {
         this.$set(this.healthChecking, server.id, false);
       }

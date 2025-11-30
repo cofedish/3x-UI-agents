@@ -17,7 +17,7 @@
             </a-select-option>
             <a-select-option :value="1">
                 <a-icon type="home" />
-                {{ '{{ i18n "localServer" }}' }} (Default)
+                {{ '{{ i18n "localServer" }}' }} ({{ '{{ i18n "defaultLabel" }}' }})
             </a-select-option>
             <a-select-opt-group v-if="remoteServers.length > 0" :label="'{{ i18n \"remoteServers\" }}'">
                 <a-select-option

@@ -767,6 +767,7 @@
 [pages.servers]
 "title" = "Servers Management"
 "addServer" = "Add Server"
+"editServer" = "Edit Server"
 "searchPlaceholder" = "Search by name or endpoint..."
 "filterByStatus" = "Filter by Status"
 "filterByTags" = "Filter by Tags"
@@ -779,6 +780,7 @@
 "deleteConfirm" = "Delete Server"
 "deleteConfirmContent" = "Are you sure you want to delete server"
 "restartSuccess" = "Xray restarted successfully"
+"healthCheckFailed" = "Health check failed"
 
 [pages.servers.columns]
 "name" = "Name & Endpoint"
@@ -799,6 +801,9 @@
 "pending" = "Pending"
 "error" = "Error"
 
+[pages.servers.pagination]
+"totalServers" = "Total {total} servers"
+
 [pages.servers.form]
 "name" = "Server Name"
 "namePlaceholder" = "e.g., VPN-US-1"
@@ -809,6 +814,8 @@
 "endpointRequired" = "Endpoint is required"
 "authType" = "Authentication Type"
 "authTypeRequired" = "Authentication type is required"
+"authTypeMtls" = "mTLS (Recommended)"
+"authTypeJwt" = "JWT"
 "authData" = "Authentication Data"
 "authDataPlaceholder" = "Paste certificate contents here (client cert + key + CA)"
 "jwtTokenPlaceholder" = "JWT token"
@@ -817,6 +824,7 @@
 "tags" = "Tags"
 "tagsPlaceholder" = "Press Enter to add tags (e.g., us-west, production)"
 
+# Multi-server support keys
 "allServers" = "All Servers"
 "localServer" = "Local Server"
 "local" = "Local"
@@ -824,6 +832,31 @@
 "selectServer" = "Select Server"
 "allServersTooltip" = "Aggregate view of all servers"
 "localServerTooltip" = "Local server (default)"
+"defaultLabel" = "Default"
+"statusLabel" = "Status"
+"lastSeenLabel" = "Last seen"
+"panelVersionLabel" = "Panel"
+"xrayVersionLabel" = "Xray"
+"currentServer" = "Current Server"
+"serverChanged" = "Server changed to: {{ .ServerName }}"
+"noServersAvailable" = "No servers available"
+"serverStatusChanged" = "Server status changed"
+"serverNowOnline" = "✅ Server {{ .ServerName }} is now online"
+"serverNowOffline" = "❌ Server {{ .ServerName }} is now offline"
+"autoSelected" = "⚡ Auto-selected"
+"searchServer" = "🔍 Search server..."
+"filterOnline" = "✅ Online only"
+"filterOffline" = "❌ Offline only"
+"prevPage" = "⬅️ Previous"
+"nextPage" = "➡️ Next"
+"page" = "Page {{ .Current }}/{{ .Total }}"
+"totalServers" = "Total servers: {{ .Count }}"
+"onlineServers" = "Online: {{ .Count }}"
+"offlineServers" = "Offline: {{ .Count }}"
+"autoSelectFailed" = "❌ Auto-selection failed: all servers offline"
+"serverNotAvailable" = "❌ Server not available"
+"serverSelected" = "✅ Server selected: {{ .ServerName }}"
+"operationOnServer" = "Operation on server: {{ .ServerName }}"
 "refresh" = "Refresh"
 "all" = "All"
 "operations" = "Operations"
