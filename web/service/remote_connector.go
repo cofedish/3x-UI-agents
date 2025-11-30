@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,6 +24,7 @@ type RemoteConnector struct {
 	serverId   int
 	endpoint   string
 	authType   string
+	jwtToken   string // JWT bearer token (empty for mTLS)
 	httpClient *http.Client
 }
 
@@ -49,13 +51,13 @@ func NewRemoteConnector(server *model.Server) (*RemoteConnector, error) {
 		authType: server.AuthType,
 	}
 
-	// Initialize HTTP client based on auth type
+	// Initialize HTTP client and auth based on auth type
 	var err error
 	switch server.AuthType {
 	case "mtls":
 		connector.httpClient, err = createMTLSClient(server)
 	case "jwt":
-		connector.httpClient, err = createJWTClient(server)
+		connector.httpClient, connector.jwtToken, err = createJWTClient(server)
 	default:
 		return nil, fmt.Errorf("unsupported auth type: %s", server.AuthType)
 	}
@@ -116,13 +118,32 @@ func createMTLSClient(server *model.Server) (*http.Client, error) {
 }
 
 // createJWTClient creates an HTTP client with JWT authentication.
-func createJWTClient(server *model.Server) (*http.Client, error) {
-	// For JWT, we use standard HTTPS with Bearer token
+// Returns the HTTP client and the JWT token to be used in Authorization header.
+func createJWTClient(server *model.Server) (*http.Client, string, error) {
+	// Parse auth data (JSON with JWT token or raw token string)
+	var token string
+	var authData struct {
+		Token string `json:"token"`
+	}
+
+	// Try parsing as JSON first
+	if err := json.Unmarshal([]byte(server.AuthData), &authData); err == nil && authData.Token != "" {
+		token = authData.Token
+	} else {
+		// If not JSON, treat the whole AuthData as the token
+		token = server.AuthData
+	}
+
+	if token == "" {
+		return nil, "", fmt.Errorf("JWT token is required in auth data")
+	}
+
+	// Create standard HTTPS client
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
 
-	return client, nil
+	return client, token, nil
 }
 
 // doRequest performs an HTTP request to the agent API.
@@ -146,9 +167,8 @@ func (c *RemoteConnector) doRequest(ctx context.Context, method, path string, bo
 	req.Header.Set("Content-Type", "application/json")
 
 	// For JWT auth, add Authorization header
-	if c.authType == "jwt" {
-		// TODO: Get JWT token from auth data
-		// req.Header.Set("Authorization", "Bearer "+token)
+	if c.authType == "jwt" && c.jwtToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.jwtToken)
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -481,18 +501,31 @@ func (c *RemoteConnector) BackupDatabase(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("failed to parse backup: %w", err)
 	}
 
-	// Decode base64
-	// TODO: Implement base64 decoding
-	logger.Warning("Backup data decoding not implemented")
+	// Decode base64 data
+	backupData, err := base64.StdEncoding.DecodeString(backupResp.Data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode backup data: %w", err)
+	}
 
-	return nil, fmt.Errorf("not implemented")
+	return backupData, nil
 }
 
 // RestoreDatabase restores database on the agent.
 func (c *RemoteConnector) RestoreDatabase(ctx context.Context, data []byte) error {
-	// Encode to base64
-	// TODO: Implement base64 encoding
-	logger.Warning("Database restore not implemented for remote connector")
+	// Encode database data to base64
+	encodedData := base64.StdEncoding.EncodeToString(data)
 
-	return fmt.Errorf("not implemented")
+	// Prepare request payload
+	payload := map[string]string{
+		"data": encodedData,
+	}
+
+	// Send restore request to agent
+	_, err := c.doRequest(ctx, "POST", "/api/v1/restore", payload)
+	if err != nil {
+		return fmt.Errorf("failed to restore database: %w", err)
+	}
+
+	logger.Info(fmt.Sprintf("Successfully restored database on server %d", c.serverId))
+	return nil
 }

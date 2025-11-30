@@ -87,7 +87,15 @@ func MTLSAuth(caFile string) gin.HandlerFunc {
 	}
 }
 
-// JWTAuth middleware verifies JWT token (simplified implementation).
+// JWTAuth middleware verifies Bearer token using static secret.
+//
+// SECURITY NOTE: This is NOT true JWT validation with signing/claims/expiry.
+// It performs static secret comparison for simple deployments where mTLS
+// certificate management is impractical.
+//
+// PRODUCTION RECOMMENDATION: Use MTLSAuth instead for better security.
+// mTLS provides mutual authentication with certificate rotation and
+// defense against token theft.
 func JWTAuth(secret string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get Authorization header
@@ -117,9 +125,9 @@ func JWTAuth(secret string) gin.HandlerFunc {
 
 		token := authHeader[7:]
 
-		// TODO: Implement proper JWT validation
-		// For now, simple secret comparison (NOT PRODUCTION READY)
-		if token != secret {
+		// Static secret comparison (constant-time to prevent timing attacks)
+		// This is intentionally simple for deployments where mTLS is impractical.
+		if !secureCompare(token, secret) {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"error": gin.H{
@@ -132,6 +140,20 @@ func JWTAuth(secret string) gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+// secureCompare performs constant-time string comparison to prevent timing attacks.
+func secureCompare(a, b string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	result := 0
+	for i := 0; i < len(a); i++ {
+		result |= int(a[i]) ^ int(b[i])
+	}
+
+	return result == 0
 }
 
 // TraceID middleware adds a unique trace ID to each request.
