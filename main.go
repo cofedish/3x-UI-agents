@@ -11,6 +11,7 @@ import (
 	"syscall"
 	_ "unsafe"
 
+	"github.com/mhsanaei/3x-ui/v2/agent"
 	"github.com/mhsanaei/3x-ui/v2/config"
 	"github.com/mhsanaei/3x-ui/v2/database"
 	"github.com/mhsanaei/3x-ui/v2/logger"
@@ -446,7 +447,8 @@ func main() {
 		oldUsage()
 		fmt.Println()
 		fmt.Println("Commands:")
-		fmt.Println("    run            run web panel")
+		fmt.Println("    run            run web panel (controller mode)")
+		fmt.Println("    agent          run as agent (for remote VPN servers)")
 		fmt.Println("    migrate        migrate form other/old x-ui")
 		fmt.Println("    setting        set settings")
 	}
@@ -465,6 +467,11 @@ func main() {
 			return
 		}
 		runWebServer()
+	case "agent":
+		// Run in agent mode (for remote VPN servers)
+		if err := agent.Run(); err != nil {
+			log.Fatalf("Agent failed: %v", err)
+		}
 	case "migrate":
 		migrateDb()
 	case "setting":
