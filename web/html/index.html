@@ -921,10 +921,26 @@
         }
         return '';
       },
+      getSelectedServerId() {
+        // Get actual selected server ID (including 0 for "All Servers")
+        if (this.$refs.serverSelector && this.$refs.serverSelector.selectedServerId !== undefined) {
+          return this.$refs.serverSelector.selectedServerId;
+        }
+        return 1; // Default to local server
+      },
       async getStatus() {
         try {
-          const serverIdParam = this.getServerIdParam();
-          const msg = await HttpUtil.get('/panel/api/server/status' + serverIdParam);
+          const serverId = this.getSelectedServerId();
+
+          // Use aggregated endpoint for "All Servers" view (server_id=0)
+          let endpoint = '/panel/api/server/status';
+          if (serverId === 0) {
+            endpoint = '/panel/api/server/aggregatedStatus';
+          } else {
+            endpoint += this.getServerIdParam();
+          }
+
+          const msg = await HttpUtil.get(endpoint);
           if (msg.success) {
             if (!this.loadingStates.fetched) {
               this.loadingStates.fetched = true;

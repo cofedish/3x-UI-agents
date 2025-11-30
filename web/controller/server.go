@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/mhsanaei/3x-ui/v2/web/global"
@@ -43,6 +44,7 @@ func NewServerController(g *gin.RouterGroup) *ServerController {
 func (a *ServerController) initRouter(g *gin.RouterGroup) {
 
 	g.GET("/status", a.status)
+	g.GET("/aggregatedStatus", a.aggregatedStatus)
 	g.GET("/cpuHistory/:bucket", a.getCpuHistoryBucket)
 	g.GET("/getXrayVersion", a.getXrayVersion)
 	g.GET("/getConfigJson", a.getConfigJson)
@@ -119,6 +121,131 @@ func (a *ServerController) status(c *gin.Context) {
 	}
 
 	jsonObj(c, stats, nil)
+}
+
+// aggregatedStatus returns aggregated status across all servers (local + remote).
+// This endpoint is used when server_id=0 ("All Servers" view in UI).
+func (a *ServerController) aggregatedStatus(c *gin.Context) {
+	type AggregatedStats struct {
+		TotalServers   int     `json:"totalServers"`
+		OnlineServers  int     `json:"onlineServers"`
+		OfflineServers int     `json:"offlineServers"`
+		AvgCpu         float64 `json:"cpu"`           // Average CPU percentage
+		TotalMemory    uint64  `json:"totalMemory"`   // Total memory across all servers
+		UsedMemory     uint64  `json:"usedMemory"`    // Total used memory
+		TotalDisk      uint64  `json:"totalDisk"`     // Total disk space
+		UsedDisk       uint64  `json:"usedDisk"`      // Total used disk
+		TotalUpload    uint64  `json:"totalUp"`       // Total upload traffic
+		TotalDownload  uint64  `json:"totalDown"`     // Total download traffic
+		XrayRunning    int     `json:"xrayRunning"`   // Count of servers with Xray running
+		XrayStopped    int     `json:"xrayStopped"`   // Count of servers with Xray stopped
+		XrayError      int     `json:"xrayError"`     // Count of servers with Xray errors
+	}
+
+	aggregated := &AggregatedStats{}
+
+	// Get all servers
+	servers, err := a.serverMgmt.GetAllServers()
+	if err != nil {
+		jsonMsg(c, "Failed to get servers", err)
+		return
+	}
+
+	// Include local server (id=1)
+	aggregated.TotalServers = len(servers) + 1
+
+	// Bounded concurrency for collecting stats
+	maxConcurrency := 10
+	sem := make(chan struct{}, maxConcurrency)
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	// Helper to aggregate stats
+	aggregateStats := func(stats interface{}) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		aggregated.OnlineServers++
+
+		// Type assertion to service.Status (matches the local status structure)
+		if status, ok := stats.(*service.Status); ok {
+			aggregated.AvgCpu += status.Cpu
+			aggregated.TotalMemory += status.Mem.Total
+			aggregated.UsedMemory += status.Mem.Current
+			aggregated.TotalDisk += status.Disk.Total
+			aggregated.UsedDisk += status.Disk.Current
+			aggregated.TotalUpload += status.NetTraffic.Sent
+			aggregated.TotalDownload += status.NetTraffic.Recv
+
+			// Aggregate Xray status
+			switch status.Xray.State {
+			case "running":
+				aggregated.XrayRunning++
+			case "stop":
+				aggregated.XrayStopped++
+			case "error":
+				aggregated.XrayError++
+			}
+		}
+	}
+
+	// Collect local server stats
+	if a.lastStatus != nil {
+		aggregateStats(a.lastStatus)
+	} else {
+		aggregated.OfflineServers++
+	}
+
+	// Collect remote server stats concurrently
+	for _, server := range servers {
+		wg.Add(1)
+		server := server // Capture loop variable
+
+		go func() {
+			defer wg.Done()
+
+			// Acquire semaphore slot
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			// Skip disabled servers
+			if !server.Enabled {
+				mu.Lock()
+				aggregated.OfflineServers++
+				mu.Unlock()
+				return
+			}
+
+			// Get connector and fetch stats
+			connector, err := a.serverMgmt.GetConnector(server.ID)
+			if err != nil {
+				mu.Lock()
+				aggregated.OfflineServers++
+				mu.Unlock()
+				return
+			}
+
+			ctx := c.Request.Context()
+			stats, err := connector.GetSystemStats(ctx)
+			if err != nil {
+				mu.Lock()
+				aggregated.OfflineServers++
+				mu.Unlock()
+				return
+			}
+
+			aggregateStats(stats)
+		}()
+	}
+
+	wg.Wait()
+
+	// Calculate average CPU
+	if aggregated.OnlineServers > 0 {
+		aggregated.AvgCpu = aggregated.AvgCpu / float64(aggregated.OnlineServers)
+	}
+
+	jsonObj(c, aggregated, nil)
 }
 
 // getCpuHistoryBucket retrieves aggregated CPU usage history based on the specified time bucket.
