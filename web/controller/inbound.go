@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/mhsanaei/3x-ui/v2/database/model"
-	"github.com/mhsanaei/3x-ui/v2/web/service"
-	"github.com/mhsanaei/3x-ui/v2/web/session"
+	"github.com/cofedish/3xui-agents/database/model"
+	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3xui-agents/web/session"
 
 	"github.com/gin-gonic/gin"
 )

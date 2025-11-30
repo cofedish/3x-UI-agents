@@ -4,8 +4,8 @@ import (
 	_ "embed"
 	"encoding/json"
 
-	"github.com/mhsanaei/3x-ui/v2/util/common"
-	"github.com/mhsanaei/3x-ui/v2/xray"
+	"github.com/cofedish/3xui-agents/util/common"
+	"github.com/cofedish/3xui-agents/xray"
 )
 
 // XraySettingService provides business logic for Xray configuration management.

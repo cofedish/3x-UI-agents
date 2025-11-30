@@ -4,8 +4,8 @@ package service
 import (
 	"context"
 
-	"github.com/mhsanaei/3x-ui/v2/database/model"
-	"github.com/mhsanaei/3x-ui/v2/xray"
+	"github.com/cofedish/3xui-agents/database/model"
+	"github.com/cofedish/3xui-agents/xray"
 )
 
 // ServerConnector provides a unified interface for managing both local and remote servers.

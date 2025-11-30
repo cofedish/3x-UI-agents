@@ -79,7 +79,7 @@ web/service/tgbot.go:2693            TODO: Sub-node push
 - ⏸️ Update DEPLOYMENT.md with real commands
 
 ### Module Path Migration (NEW REQUIREMENT)
-- ⏸️ Change go.mod module path from `github.com/MHSanaei/3x-ui`
+- ⏸️ Change go.mod module path from `github.com/cofedish/3xui-agents`
 - ⏸️ Update all internal imports (found ~100+ occurrences)
 - ⏸️ Update installer/updater scripts
 - ⏸️ Update UI links and documentation

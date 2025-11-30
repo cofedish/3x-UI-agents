@@ -266,8 +266,8 @@ package service
 
 import (
     "context"
-    "github.com/MHSanaei/3x-ui/database/model"
-    "github.com/MHSanaei/3x-ui/xray"
+    "github.com/cofedish/3xui-agents/database/model"
+    "github.com/cofedish/3xui-agents/xray"
 )
 
 type ServerConnector interface {
@@ -947,7 +947,7 @@ fi
 # Download agent binary
 ARCH=$(uname -m)
 VERSION="2.5.0"
-DOWNLOAD_URL="https://github.com/MHSanaei/3x-ui/releases/download/v${VERSION}/x-ui-agent-linux-${ARCH}"
+DOWNLOAD_URL="https://github.com/cofedish/3xui-agents/releases/download/v${VERSION}/x-ui-agent-linux-${ARCH}"
 
 echo "Downloading agent binary..."
 wget -O /usr/local/bin/x-ui-agent "$DOWNLOAD_URL"

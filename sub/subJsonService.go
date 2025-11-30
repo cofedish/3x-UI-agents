@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mhsanaei/3x-ui/v2/database/model"
-	"github.com/mhsanaei/3x-ui/v2/logger"
-	"github.com/mhsanaei/3x-ui/v2/util/json_util"
-	"github.com/mhsanaei/3x-ui/v2/util/random"
-	"github.com/mhsanaei/3x-ui/v2/web/service"
-	"github.com/mhsanaei/3x-ui/v2/xray"
+	"github.com/cofedish/3xui-agents/database/model"
+	"github.com/cofedish/3xui-agents/logger"
+	"github.com/cofedish/3xui-agents/util/json_util"
+	"github.com/cofedish/3xui-agents/util/random"
+	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3xui-agents/xray"
 )
 
 //go:embed default.json

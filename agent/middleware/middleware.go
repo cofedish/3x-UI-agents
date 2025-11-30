@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/mhsanaei/3x-ui/v2/logger"
+	"github.com/cofedish/3xui-agents/logger"
 )
 
 // MTLSAuth middleware verifies client certificate.

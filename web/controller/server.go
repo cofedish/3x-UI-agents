@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mhsanaei/3x-ui/v2/web/global"
-	"github.com/mhsanaei/3x-ui/v2/web/service"
+	"github.com/cofedish/3xui-agents/web/global"
+	"github.com/cofedish/3xui-agents/web/service"
 
 	"github.com/gin-gonic/gin"
 )

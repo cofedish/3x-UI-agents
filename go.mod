@@ -1,4 +1,4 @@
-module github.com/mhsanaei/3x-ui/v2
+module github.com/cofedish/3xui-agents
 
 go 1.25.4
 

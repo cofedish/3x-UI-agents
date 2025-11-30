@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mhsanaei/3x-ui/v2/database/model"
-	"github.com/mhsanaei/3x-ui/v2/logger"
-	"github.com/mhsanaei/3x-ui/v2/web/service"
+	"github.com/cofedish/3xui-agents/database/model"
+	"github.com/cofedish/3xui-agents/logger"
+	"github.com/cofedish/3xui-agents/web/service"
 )
 
 // HealthConfig holds configuration for health monitoring

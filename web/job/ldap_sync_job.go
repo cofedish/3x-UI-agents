@@ -5,10 +5,10 @@ import (
 
 	"strings"
 
-	"github.com/mhsanaei/3x-ui/v2/database/model"
-	"github.com/mhsanaei/3x-ui/v2/logger"
-	ldaputil "github.com/mhsanaei/3x-ui/v2/util/ldap"
-	"github.com/mhsanaei/3x-ui/v2/web/service"
+	"github.com/cofedish/3xui-agents/database/model"
+	"github.com/cofedish/3xui-agents/logger"
+	ldaputil "github.com/cofedish/3xui-agents/util/ldap"
+	"github.com/cofedish/3xui-agents/web/service"
 
 	"strconv"
 

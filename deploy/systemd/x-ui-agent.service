@@ -1,6 +1,6 @@
 [Unit]
 Description=3x-ui Agent - VPN Server Management Agent
-Documentation=https://github.com/MHSanaei/3x-ui
+Documentation=https://github.com/cofedish/3xui-agents
 After=network.target
 
 [Service]

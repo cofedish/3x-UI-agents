@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mhsanaei/3x-ui/v2/config"
-	"github.com/mhsanaei/3x-ui/v2/logger"
-	"github.com/mhsanaei/3x-ui/v2/web/entity"
+	"github.com/cofedish/3xui-agents/config"
+	"github.com/cofedish/3xui-agents/logger"
+	"github.com/cofedish/3xui-agents/web/entity"
 
 	"github.com/gin-gonic/gin"
 )

@@ -3,9 +3,9 @@ package job
 import (
 	"encoding/json"
 
-	"github.com/mhsanaei/3x-ui/v2/logger"
-	"github.com/mhsanaei/3x-ui/v2/web/service"
-	"github.com/mhsanaei/3x-ui/v2/xray"
+	"github.com/cofedish/3xui-agents/logger"
+	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3xui-agents/xray"
 
 	"github.com/valyala/fasthttp"
 )

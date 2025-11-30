@@ -4,11 +4,11 @@ package agent
 import (
 	"fmt"
 
-	"github.com/mhsanaei/3x-ui/v2/agent/api"
-	"github.com/mhsanaei/3x-ui/v2/agent/config"
-	"github.com/mhsanaei/3x-ui/v2/database"
-	xrayConfig "github.com/mhsanaei/3x-ui/v2/config"
-	"github.com/mhsanaei/3x-ui/v2/logger"
+	"github.com/cofedish/3xui-agents/agent/api"
+	"github.com/cofedish/3xui-agents/agent/config"
+	"github.com/cofedish/3xui-agents/database"
+	xrayConfig "github.com/cofedish/3xui-agents/config"
+	"github.com/cofedish/3xui-agents/logger"
 )
 
 // Run starts the agent in server mode.
