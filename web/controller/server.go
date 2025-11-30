@@ -21,6 +21,7 @@ type ServerController struct {
 
 	serverService  service.ServerService
 	settingService service.SettingService
+	serverMgmt     *service.ServerManagementService
 
 	lastStatus *service.Status
 
@@ -30,7 +31,9 @@ type ServerController struct {
 
 // NewServerController creates a new ServerController, initializes routes, and starts background tasks.
 func NewServerController(g *gin.RouterGroup) *ServerController {
-	a := &ServerController{}
+	a := &ServerController{
+		serverMgmt: &service.ServerManagementService{},
+	}
 	a.initRouter(g)
 	a.startTask()
 	return a
@@ -81,8 +84,42 @@ func (a *ServerController) startTask() {
 	})
 }
 
+// getServerIdFromRequest extracts server_id from query parameter, defaults to 1 for backward compatibility.
+func (a *ServerController) getServerIdFromRequest(c *gin.Context) int {
+	serverIdStr := c.DefaultQuery("server_id", "1")
+	serverId, err := strconv.Atoi(serverIdStr)
+	if err != nil || serverId < 1 {
+		return 1
+	}
+	return serverId
+}
+
 // status returns the current server status information.
-func (a *ServerController) status(c *gin.Context) { jsonObj(c, a.lastStatus, nil) }
+// Supports optional server_id query parameter for multi-server mode.
+func (a *ServerController) status(c *gin.Context) {
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local cache if server_id=1
+	if serverId == 1 {
+		jsonObj(c, a.lastStatus, nil)
+		return
+	}
+
+	// Multi-server mode: use connector to get fresh status
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	stats, err := connector.GetSystemStats(c.Request.Context())
+	if err != nil {
+		jsonMsg(c, "Failed to get server status", err)
+		return
+	}
+
+	jsonObj(c, stats, nil)
+}
 
 // getCpuHistoryBucket retrieves aggregated CPU usage history based on the specified time bucket.
 func (a *ServerController) getCpuHistoryBucket(c *gin.Context) {
@@ -136,6 +173,7 @@ func (a *ServerController) installXray(c *gin.Context) {
 }
 
 // updateGeofile updates the specified geo file for Xray.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *ServerController) updateGeofile(c *gin.Context) {
 	fileName := c.Param("fileName")
 
@@ -146,36 +184,125 @@ func (a *ServerController) updateGeofile(c *gin.Context) {
 		return
 	}
 
-	err := a.serverService.UpdateGeofile(fileName)
-	jsonMsg(c, I18nWeb(c, "pages.index.geofileUpdatePopover"), err)
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		err := a.serverService.UpdateGeofile(fileName)
+		jsonMsg(c, I18nWeb(c, "pages.index.geofileUpdatePopover"), err)
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	err = connector.UpdateGeoFiles(c.Request.Context())
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.index.geofileUpdatePopover"), err)
+		return
+	}
+	jsonMsg(c, I18nWeb(c, "pages.index.geofileUpdatePopover"), nil)
 }
 
 // stopXrayService stops the Xray service.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *ServerController) stopXrayService(c *gin.Context) {
-	err := a.serverService.StopXrayService()
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		err := a.serverService.StopXrayService()
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "pages.xray.stopError"), err)
+			return
+		}
+		jsonMsg(c, I18nWeb(c, "pages.xray.stopSuccess"), err)
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	err = connector.StopXray(c.Request.Context())
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.xray.stopError"), err)
 		return
 	}
-	jsonMsg(c, I18nWeb(c, "pages.xray.stopSuccess"), err)
+	jsonMsg(c, I18nWeb(c, "pages.xray.stopSuccess"), nil)
 }
 
 // restartXrayService restarts the Xray service.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *ServerController) restartXrayService(c *gin.Context) {
-	err := a.serverService.RestartXrayService()
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		err := a.serverService.RestartXrayService()
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "pages.xray.restartError"), err)
+			return
+		}
+		jsonMsg(c, I18nWeb(c, "pages.xray.restartSuccess"), err)
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	err = connector.RestartXray(c.Request.Context())
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.xray.restartError"), err)
 		return
 	}
-	jsonMsg(c, I18nWeb(c, "pages.xray.restartSuccess"), err)
+	jsonMsg(c, I18nWeb(c, "pages.xray.restartSuccess"), nil)
 }
 
 // getLogs retrieves the application logs based on count, level, and syslog filters.
+// Supports optional server_id query parameter for multi-server mode.
 func (a *ServerController) getLogs(c *gin.Context) {
 	count := c.Param("count")
-	level := c.PostForm("level")
-	syslog := c.PostForm("syslog")
-	logs := a.serverService.GetLogs(count, level, syslog)
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		level := c.PostForm("level")
+		syslog := c.PostForm("syslog")
+		logs := a.serverService.GetLogs(count, level, syslog)
+		jsonObj(c, logs, nil)
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	// Convert count to integer
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		countInt = 100
+	}
+
+	logs, err := connector.GetLogs(c.Request.Context(), countInt)
+	if err != nil {
+		jsonMsg(c, "Failed to get logs", err)
+		return
+	}
 	jsonObj(c, logs, nil)
 }
 
