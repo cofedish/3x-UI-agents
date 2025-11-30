@@ -1,0 +1,59 @@
+[Unit]
+Description=3x-ui Agent - VPN Server Management Agent
+Documentation=https://github.com/MHSanaei/3x-ui
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root
+ExecStart=/usr/local/bin/x-ui-agent agent
+Restart=on-failure
+RestartSec=10s
+LimitNOFILE=65536
+
+# Environment variables - customize as needed
+# See deploy/agent.env.example for all available options
+
+# Server identification
+Environment="AGENT_SERVER_ID=vpn-server-1"
+Environment="AGENT_SERVER_NAME=VPN US East"
+Environment="AGENT_TAGS=us,production"
+
+# Network
+Environment="AGENT_LISTEN_ADDR=0.0.0.0:2054"
+
+# Authentication (mTLS recommended)
+Environment="AGENT_AUTH_TYPE=mtls"
+Environment="AGENT_CERT_FILE=/etc/x-ui-agent/certs/agent.crt"
+Environment="AGENT_KEY_FILE=/etc/x-ui-agent/certs/agent.key"
+Environment="AGENT_CA_FILE=/etc/x-ui-agent/certs/ca.crt"
+
+# For JWT auth (alternative):
+# Environment="AGENT_AUTH_TYPE=jwt"
+# Environment="AGENT_JWT_SECRET=your-secret-here"
+
+# Controller endpoint (optional, for future use)
+Environment="AGENT_CONTROLLER_ENDPOINT=https://panel.example.com:2053"
+
+# Xray configuration
+Environment="XRAY_BIN_FOLDER=/usr/local/x-ui/bin"
+Environment="XRAY_CONFIG_FOLDER=/etc/x-ui"
+
+# Logging
+Environment="AGENT_LOG_LEVEL=info"
+Environment="AGENT_LOG_FILE=/var/log/x-ui-agent/agent.log"
+
+# Performance tuning
+Environment="AGENT_MAX_CONCURRENT=50"
+Environment="AGENT_REQUEST_TIMEOUT=30"
+Environment="AGENT_RATE_LIMIT=100"
+
+# Security hardening
+ProtectSystem=full
+ProtectHome=true
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
