@@ -5,6 +5,16 @@
 <a-layout id="app" v-cloak :class="themeSwitcher.currentTheme + ' index-page'">
   <a-sidebar></a-sidebar>
   <a-layout id="content-layout">
+    <a-layout-header style="background: transparent; padding: 16px 24px 0; height: auto;">
+      <a-row type="flex" justify="space-between" align="middle">
+        <a-col>
+          <h2 style="margin: 0;">{{ i18n "pages.index.title" }}</h2>
+        </a-col>
+        <a-col>
+          <a-server-selector ref="serverSelector"></a-server-selector>
+        </a-col>
+      </a-row>
+    </a-layout-header>
     <a-layout-content>
       <a-spin :spinning="loadingStates.spinning" :delay="200" :tip="loadingTip">
         <transition name="list" appear>
@@ -449,6 +459,7 @@
 </a-layout>
 {{template "page/body_scripts" .}}
 {{template "component/aSidebar" .}}
+{{template "component/aServerSelector" .}}
 {{template "component/aThemeSwitch" .}}
 {{template "component/aCustomStatistic" .}}
 {{template "modals/textModal"}}
@@ -903,9 +914,17 @@
         this.loadingStates.spinning = spinning;
         this.loadingTip = tip;
       },
+      getServerIdParam() {
+        // Get server_id from the server selector component
+        if (this.$refs.serverSelector && this.$refs.serverSelector.getServerIdParam) {
+          return this.$refs.serverSelector.getServerIdParam();
+        }
+        return '';
+      },
       async getStatus() {
         try {
-          const msg = await HttpUtil.get('/panel/api/server/status');
+          const serverIdParam = this.getServerIdParam();
+          const msg = await HttpUtil.get('/panel/api/server/status' + serverIdParam);
           if (msg.success) {
             if (!this.loadingStates.fetched) {
               this.loadingStates.fetched = true;
@@ -938,7 +957,8 @@
       async fetchCpuHistoryBucket() {
         const bucket = this.cpuHistoryModal.bucket || 2
         try {
-          const msg = await HttpUtil.get(`/panel/api/server/cpuHistory/${bucket}`)
+          const serverIdParam = this.getServerIdParam();
+          const msg = await HttpUtil.get(`/panel/api/server/cpuHistory/${bucket}${serverIdParam}`)
           if (msg.success && Array.isArray(msg.obj)) {
             const vals = []
             const labels = []
@@ -994,9 +1014,10 @@
           onOk: async () => {
             versionModal.hide();
             this.loading(true, '{{ i18n "pages.index.dontRefresh"}}');
+            const serverIdParam = this.getServerIdParam();
             const url = isSingleFile
-              ? `/panel/api/server/updateGeofile/${fileName}`
-              : `/panel/api/server/updateGeofile`;
+              ? `/panel/api/server/updateGeofile/${fileName}${serverIdParam}`
+              : `/panel/api/server/updateGeofile${serverIdParam}`;
             await HttpUtil.post(url);
             this.loading(false);
           },
@@ -1004,7 +1025,8 @@
       },
       async stopXrayService() {
         this.loading(true);
-        const msg = await HttpUtil.post('/panel/api/server/stopXrayService');
+        const serverIdParam = this.getServerIdParam();
+        const msg = await HttpUtil.post('/panel/api/server/stopXrayService' + serverIdParam);
         this.loading(false);
         if (!msg.success) {
           return;
@@ -1012,7 +1034,8 @@
       },
       async restartXrayService() {
         this.loading(true);
-        const msg = await HttpUtil.post('/panel/api/server/restartXrayService');
+        const serverIdParam = this.getServerIdParam();
+        const msg = await HttpUtil.post('/panel/api/server/restartXrayService' + serverIdParam);
         this.loading(false);
         if (!msg.success) {
           return;
@@ -1020,7 +1043,8 @@
       },
       async openLogs() {
         logModal.loading = true;
-        const msg = await HttpUtil.post('/panel/api/server/logs/' + logModal.rows, { level: logModal.level, syslog: logModal.syslog });
+        const serverIdParam = this.getServerIdParam();
+        const msg = await HttpUtil.post('/panel/api/server/logs/' + logModal.rows + serverIdParam, { level: logModal.level, syslog: logModal.syslog });
         if (!msg.success) {
           return;
         }
