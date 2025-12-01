@@ -3,11 +3,11 @@ package service
 import (
 	"errors"
 
-	"github.com/cofedish/3xui-agents/database"
-	"github.com/cofedish/3xui-agents/database/model"
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/util/crypto"
-	ldaputil "github.com/cofedish/3xui-agents/util/ldap"
+	"github.com/cofedish/3x-UI-agents/database"
+	"github.com/cofedish/3x-UI-agents/database/model"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/util/crypto"
+	ldaputil "github.com/cofedish/3x-UI-agents/util/ldap"
 	"github.com/xlzd/gotp"
 	"gorm.io/gorm"
 )

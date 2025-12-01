@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/web/service"
 
 	"github.com/shirou/gopsutil/v4/cpu"
 )

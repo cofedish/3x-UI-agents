@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/cofedish/3xui-agents/logger"
+	"github.com/cofedish/3x-UI-agents/logger"
 )
 
 // NewErrorf creates a new error with formatted message.

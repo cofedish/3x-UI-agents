@@ -5,9 +5,9 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/web/service"
-	"github.com/cofedish/3xui-agents/web/session"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/web/session"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"

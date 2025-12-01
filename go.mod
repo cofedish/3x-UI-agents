@@ -1,4 +1,4 @@
-module github.com/cofedish/3xui-agents
+module github.com/cofedish/3x-UI-agents
 
 go 1.25.4
 

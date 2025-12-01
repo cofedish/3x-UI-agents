@@ -1,7 +1,7 @@
 package job
 
 import (
-	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/web/service"
 )
 
 // CheckHashStorageJob periodically cleans up expired hash entries from the Telegram bot's hash storage.

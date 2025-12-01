@@ -20,11 +20,11 @@ type AgentConfig struct {
 	ControllerEndpoint string
 
 	// Authentication
-	AuthType     string // "mtls" or "jwt"
-	CertFile     string
-	KeyFile      string
-	CAFile       string
-	JWTSecret    string
+	AuthType  string // "mtls" or "jwt"
+	CertFile  string
+	KeyFile   string
+	CAFile    string
+	JWTSecret string
 
 	// Xray settings
 	XrayBinFolder    string

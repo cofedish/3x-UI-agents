@@ -11,13 +11,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-json"
 
-	"github.com/cofedish/3xui-agents/database"
-	"github.com/cofedish/3xui-agents/database/model"
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/util/common"
-	"github.com/cofedish/3xui-agents/util/random"
-	"github.com/cofedish/3xui-agents/web/service"
-	"github.com/cofedish/3xui-agents/xray"
+	"github.com/cofedish/3x-UI-agents/database"
+	"github.com/cofedish/3x-UI-agents/database/model"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/util/common"
+	"github.com/cofedish/3x-UI-agents/util/random"
+	"github.com/cofedish/3x-UI-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/xray"
 )
 
 // SubService provides business logic for generating subscription links and managing subscription data.

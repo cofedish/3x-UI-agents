@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/xray"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/xray"
 )
 
 // ClearLogsJob clears old log files to prevent disk space issues.

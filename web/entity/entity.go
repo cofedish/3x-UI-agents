@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cofedish/3xui-agents/util/common"
+	"github.com/cofedish/3x-UI-agents/util/common"
 )
 
 // Msg represents a standard API response message with success status, message text, and optional data object.

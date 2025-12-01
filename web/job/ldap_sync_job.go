@@ -5,10 +5,10 @@ import (
 
 	"strings"
 
-	"github.com/cofedish/3xui-agents/database/model"
-	"github.com/cofedish/3xui-agents/logger"
-	ldaputil "github.com/cofedish/3xui-agents/util/ldap"
-	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/database/model"
+	"github.com/cofedish/3x-UI-agents/logger"
+	ldaputil "github.com/cofedish/3x-UI-agents/util/ldap"
+	"github.com/cofedish/3x-UI-agents/web/service"
 
 	"strconv"
 

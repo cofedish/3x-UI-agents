@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cofedish/3xui-agents/database"
-	"github.com/cofedish/3xui-agents/database/model"
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/util/common"
-	"github.com/cofedish/3xui-agents/xray"
+	"github.com/cofedish/3x-UI-agents/database"
+	"github.com/cofedish/3x-UI-agents/database/model"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/util/common"
+	"github.com/cofedish/3x-UI-agents/xray"
 
 	"gorm.io/gorm"
 )

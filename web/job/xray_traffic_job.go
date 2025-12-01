@@ -3,9 +3,9 @@ package job
 import (
 	"encoding/json"
 
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/web/service"
-	"github.com/cofedish/3xui-agents/xray"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/xray"
 
 	"github.com/valyala/fasthttp"
 )

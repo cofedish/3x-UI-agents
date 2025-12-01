@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/cofedish/3x-UI-agents/database/model"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/web/service"
 	"github.com/gin-gonic/gin"
-	"github.com/cofedish/3xui-agents/database/model"
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/web/service"
 )
 
 // ServerManagementController handles server CRUD operations.
@@ -40,9 +40,9 @@ func (c *ServerManagementController) ListServers(ctx *gin.Context) {
 	}
 
 	// Get filters
-	status := ctx.Query("status")      // online, offline, error, pending
-	search := ctx.Query("search")      // search by name or endpoint
-	tagsFilter := ctx.Query("tags")    // comma-separated tags
+	status := ctx.Query("status")   // online, offline, error, pending
+	search := ctx.Query("search")   // search by name or endpoint
+	tagsFilter := ctx.Query("tags") // comma-separated tags
 
 	// Get all servers for filtering
 	servers, err := c.serverMgmt.GetAllServers()

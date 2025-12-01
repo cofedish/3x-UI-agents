@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cofedish/3xui-agents/web/global"
-	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/web/global"
+	"github.com/cofedish/3x-UI-agents/web/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -130,16 +130,16 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 		TotalServers   int     `json:"totalServers"`
 		OnlineServers  int     `json:"onlineServers"`
 		OfflineServers int     `json:"offlineServers"`
-		AvgCpu         float64 `json:"cpu"`           // Average CPU percentage
-		TotalMemory    uint64  `json:"totalMemory"`   // Total memory across all servers
-		UsedMemory     uint64  `json:"usedMemory"`    // Total used memory
-		TotalDisk      uint64  `json:"totalDisk"`     // Total disk space
-		UsedDisk       uint64  `json:"usedDisk"`      // Total used disk
-		TotalUpload    uint64  `json:"totalUp"`       // Total upload traffic
-		TotalDownload  uint64  `json:"totalDown"`     // Total download traffic
-		XrayRunning    int     `json:"xrayRunning"`   // Count of servers with Xray running
-		XrayStopped    int     `json:"xrayStopped"`   // Count of servers with Xray stopped
-		XrayError      int     `json:"xrayError"`     // Count of servers with Xray errors
+		AvgCpu         float64 `json:"cpu"`         // Average CPU percentage
+		TotalMemory    uint64  `json:"totalMemory"` // Total memory across all servers
+		UsedMemory     uint64  `json:"usedMemory"`  // Total used memory
+		TotalDisk      uint64  `json:"totalDisk"`   // Total disk space
+		UsedDisk       uint64  `json:"usedDisk"`    // Total used disk
+		TotalUpload    uint64  `json:"totalUp"`     // Total upload traffic
+		TotalDownload  uint64  `json:"totalDown"`   // Total download traffic
+		XrayRunning    int     `json:"xrayRunning"` // Count of servers with Xray running
+		XrayStopped    int     `json:"xrayStopped"` // Count of servers with Xray stopped
+		XrayError      int     `json:"xrayError"`   // Count of servers with Xray errors
 	}
 
 	aggregated := &AggregatedStats{}

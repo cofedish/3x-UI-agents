@@ -11,15 +11,15 @@ import (
 	"syscall"
 	_ "unsafe"
 
-	"github.com/cofedish/3xui-agents/agent"
-	"github.com/cofedish/3xui-agents/config"
-	"github.com/cofedish/3xui-agents/database"
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/sub"
-	"github.com/cofedish/3xui-agents/util/crypto"
-	"github.com/cofedish/3xui-agents/web"
-	"github.com/cofedish/3xui-agents/web/global"
-	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/agent"
+	"github.com/cofedish/3x-UI-agents/config"
+	"github.com/cofedish/3x-UI-agents/database"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/sub"
+	"github.com/cofedish/3x-UI-agents/util/crypto"
+	"github.com/cofedish/3x-UI-agents/web"
+	"github.com/cofedish/3x-UI-agents/web/global"
+	"github.com/cofedish/3x-UI-agents/web/service"
 
 	"github.com/joho/godotenv"
 	"github.com/op/go-logging"
@@ -81,8 +81,8 @@ func runWebServer() {
 
 			// --- FIX FOR TELEGRAM BOT CONFLICT (409): Stop bot before restart ---
 			service.StopBot()
-			// --			
-			
+			// --
+
 			err := server.Stop()
 			if err != nil {
 				logger.Debug("Error stopping web server:", err)
@@ -114,7 +114,7 @@ func runWebServer() {
 			// --- FIX FOR TELEGRAM BOT CONFLICT (409) on full shutdown ---
 			service.StopBot()
 			// ------------------------------------------------------------
-			
+
 			server.Stop()
 			subServer.Stop()
 			log.Println("Shutting down servers.")

@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cofedish/3xui-agents/database/model"
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/database/model"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/web/service"
 )
 
 // HealthConfig holds configuration for health monitoring
@@ -24,7 +24,7 @@ type HealthConfig struct {
 // loadHealthConfig loads configuration from environment variables with defaults
 func loadHealthConfig() HealthConfig {
 	cfg := HealthConfig{
-		MaxConcurrency: 10,            // Default: 10 concurrent checks
+		MaxConcurrency: 10, // Default: 10 concurrent checks
 		CheckTimeout:   10 * time.Second,
 		InfoTimeout:    5 * time.Second,
 	}

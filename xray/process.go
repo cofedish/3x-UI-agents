@@ -13,9 +13,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cofedish/3xui-agents/config"
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/util/common"
+	"github.com/cofedish/3x-UI-agents/config"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/util/common"
 )
 
 // GetBinaryName returns the Xray binary filename for the current OS and architecture.

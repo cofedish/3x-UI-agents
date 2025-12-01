@@ -4,8 +4,8 @@ package model
 import (
 	"fmt"
 
-	"github.com/cofedish/3xui-agents/util/json_util"
-	"github.com/cofedish/3xui-agents/xray"
+	"github.com/cofedish/3x-UI-agents/util/json_util"
+	"github.com/cofedish/3x-UI-agents/xray"
 )
 
 // Protocol represents the protocol type for Xray inbounds.
@@ -69,7 +69,7 @@ type OutboundTraffics struct {
 // InboundClientIps stores IP addresses associated with inbound clients for access control.
 type InboundClientIps struct {
 	Id          int    `json:"id" gorm:"primaryKey;autoIncrement"`
-	ServerId    int    `json:"serverId" form:"serverId" gorm:"index"`        // Foreign key to Server (for multi-server support)
+	ServerId    int    `json:"serverId" form:"serverId" gorm:"index"` // Foreign key to Server (for multi-server support)
 	ClientEmail string `json:"clientEmail" form:"clientEmail" gorm:"unique"`
 	Ips         string `json:"ips" form:"ips"`
 }
@@ -127,10 +127,10 @@ type Client struct {
 // In single-server mode, there is only one server with ID=1 (local).
 type Server struct {
 	Id       int    `json:"id" gorm:"primaryKey;autoIncrement"`
-	Name     string `json:"name" gorm:"unique;not null"`           // Unique server name (e.g., "US-East-1")
-	Endpoint string `json:"endpoint" gorm:"not null"`              // Agent endpoint (e.g., "https://vpn1.example.com:2054")
-	Region   string `json:"region"`                                // Geographic region (e.g., "us-east")
-	Tags     string `json:"tags"`                                  // JSON array of tags (e.g., ["production", "us"])
+	Name     string `json:"name" gorm:"unique;not null"` // Unique server name (e.g., "US-East-1")
+	Endpoint string `json:"endpoint" gorm:"not null"`    // Agent endpoint (e.g., "https://vpn1.example.com:2054")
+	Region   string `json:"region"`                      // Geographic region (e.g., "us-east")
+	Tags     string `json:"tags"`                        // JSON array of tags (e.g., ["production", "us"])
 
 	// Authentication
 	AuthType string `json:"authType" gorm:"not null"` // "mtls", "jwt", or "local"
@@ -138,8 +138,8 @@ type Server struct {
 
 	// Status
 	Status    string `json:"status" gorm:"default:'pending';index"` // "pending", "online", "offline", "error"
-	LastSeen  int64  `json:"lastSeen"`                               // Unix timestamp of last successful health check
-	LastError string `json:"lastError"`                              // Last error message (if status is "error")
+	LastSeen  int64  `json:"lastSeen"`                              // Unix timestamp of last successful health check
+	LastError string `json:"lastError"`                             // Last error message (if status is "error")
 
 	// Metadata
 	Version     string `json:"version"`     // Agent version
@@ -162,7 +162,7 @@ type ServerTask struct {
 	ServerId int    `json:"serverId" gorm:"not null;index"` // Foreign key to Server
 	Server   Server `json:"server" gorm:"foreignKey:ServerId"`
 
-	Operation string `json:"operation" gorm:"not null"` // Operation type (e.g., "add_inbound", "restart_xray")
+	Operation string `json:"operation" gorm:"not null"`                      // Operation type (e.g., "add_inbound", "restart_xray")
 	Status    string `json:"status" gorm:"not null;index;default:'pending'"` // "pending", "running", "completed", "failed"
 
 	// Request/Response
@@ -171,8 +171,8 @@ type ServerTask struct {
 	ErrorMessage string `json:"errorMessage"` // Error details if failed
 
 	// Execution
-	StartedAt   int64 `json:"startedAt"`   // Unix timestamp when task started
-	CompletedAt int64 `json:"completedAt"` // Unix timestamp when task completed
+	StartedAt   int64 `json:"startedAt"`                   // Unix timestamp when task started
+	CompletedAt int64 `json:"completedAt"`                 // Unix timestamp when task completed
 	RetryCount  int   `json:"retryCount" gorm:"default:0"` // Number of retry attempts
 
 	// Audit

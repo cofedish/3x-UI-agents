@@ -5,7 +5,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cofedish/3xui-agents/logger"
+	"github.com/cofedish/3x-UI-agents/logger"
 )
 
 // PanelService provides business logic for panel management operations.

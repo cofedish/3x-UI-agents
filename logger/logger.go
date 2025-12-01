@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/cofedish/3xui-agents/config"
+	"github.com/cofedish/3x-UI-agents/config"
 	"github.com/op/go-logging"
 )
 

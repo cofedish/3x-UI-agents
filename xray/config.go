@@ -3,7 +3,7 @@ package xray
 import (
 	"bytes"
 
-	"github.com/cofedish/3xui-agents/util/json_util"
+	"github.com/cofedish/3x-UI-agents/util/json_util"
 )
 
 // Config represents the complete Xray configuration structure.

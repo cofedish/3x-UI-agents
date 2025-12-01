@@ -6,7 +6,7 @@ import (
 	"encoding/gob"
 	"net/http"
 
-	"github.com/cofedish/3xui-agents/database/model"
+	"github.com/cofedish/3x-UI-agents/database/model"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"

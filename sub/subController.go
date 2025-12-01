@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/cofedish/3xui-agents/config"
+	"github.com/cofedish/3x-UI-agents/config"
 
 	"github.com/gin-gonic/gin"
 )

@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/cofedish/3x-UI-agents/agent/config"
+	"github.com/cofedish/3x-UI-agents/agent/middleware"
+	"github.com/cofedish/3x-UI-agents/logger"
 	"github.com/gin-gonic/gin"
-	"github.com/cofedish/3xui-agents/agent/config"
-	"github.com/cofedish/3xui-agents/agent/middleware"
-	"github.com/cofedish/3xui-agents/logger"
 )
 
 // SetupRouter creates and configures the Gin router for agent API.

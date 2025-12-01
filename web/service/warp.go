@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/util/common"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/util/common"
 )
 
 // WarpService provides business logic for Cloudflare WARP integration.

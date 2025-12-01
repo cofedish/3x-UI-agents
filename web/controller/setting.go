@@ -4,10 +4,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cofedish/3xui-agents/util/crypto"
-	"github.com/cofedish/3xui-agents/web/entity"
-	"github.com/cofedish/3xui-agents/web/service"
-	"github.com/cofedish/3xui-agents/web/session"
+	"github.com/cofedish/3x-UI-agents/util/crypto"
+	"github.com/cofedish/3x-UI-agents/web/entity"
+	"github.com/cofedish/3x-UI-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/web/session"
 
 	"github.com/gin-gonic/gin"
 )

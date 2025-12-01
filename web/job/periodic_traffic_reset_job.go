@@ -1,8 +1,8 @@
 package job
 
 import (
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/web/service"
 )
 
 // Period represents the time period for traffic resets.

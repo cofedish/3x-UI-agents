@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/xray"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/xray"
 
 	"go.uber.org/atomic"
 )

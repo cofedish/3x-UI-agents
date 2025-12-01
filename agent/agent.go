@@ -4,11 +4,11 @@ package agent
 import (
 	"fmt"
 
-	"github.com/cofedish/3xui-agents/agent/api"
-	"github.com/cofedish/3xui-agents/agent/config"
-	"github.com/cofedish/3xui-agents/database"
-	xrayConfig "github.com/cofedish/3xui-agents/config"
-	"github.com/cofedish/3xui-agents/logger"
+	"github.com/cofedish/3x-UI-agents/agent/api"
+	"github.com/cofedish/3x-UI-agents/agent/config"
+	xrayConfig "github.com/cofedish/3x-UI-agents/config"
+	"github.com/cofedish/3x-UI-agents/database"
+	"github.com/cofedish/3x-UI-agents/logger"
 )
 
 // Run starts the agent in server mode.

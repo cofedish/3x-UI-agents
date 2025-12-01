@@ -4,8 +4,8 @@ package service
 import (
 	"context"
 
-	"github.com/cofedish/3xui-agents/database/model"
-	"github.com/cofedish/3xui-agents/xray"
+	"github.com/cofedish/3x-UI-agents/database/model"
+	"github.com/cofedish/3x-UI-agents/xray"
 )
 
 // ServerConnector provides a unified interface for managing both local and remote servers.
@@ -104,25 +104,25 @@ type SystemStats struct {
 	NetOutSpeed int64 `json:"netOutSpeed"` // Bytes/sec
 
 	// System
-	Uptime           int64  `json:"uptime"`           // Seconds
-	LoadAverage      string `json:"loadAverage"`      // "0.5, 0.7, 0.9"
-	TCPConnections   int    `json:"tcpConnections"`   // Active TCP connections
-	UDPConnections   int    `json:"udpConnections"`   // Active UDP connections
-	XrayConnections  int    `json:"xrayConnections"`  // Active Xray client connections
-	PublicIPv4       string `json:"publicIPv4"`
-	PublicIPv6       string `json:"publicIPv6"`
+	Uptime          int64  `json:"uptime"`          // Seconds
+	LoadAverage     string `json:"loadAverage"`     // "0.5, 0.7, 0.9"
+	TCPConnections  int    `json:"tcpConnections"`  // Active TCP connections
+	UDPConnections  int    `json:"udpConnections"`  // Active UDP connections
+	XrayConnections int    `json:"xrayConnections"` // Active Xray client connections
+	PublicIPv4      string `json:"publicIPv4"`
+	PublicIPv6      string `json:"publicIPv6"`
 }
 
 // CertInfo contains SSL/TLS certificate information.
 type CertInfo struct {
-	Domain     string `json:"domain"`
-	CertPath   string `json:"certPath"`
-	KeyPath    string `json:"keyPath"`
-	IssuedBy   string `json:"issuedBy"`   // CA or "Self-signed"
-	NotBefore  int64  `json:"notBefore"`  // Unix timestamp
-	NotAfter   int64  `json:"notAfter"`   // Unix timestamp
-	ValidDays  int    `json:"validDays"`  // Days until expiration
-	IsValid    bool   `json:"isValid"`    // Is currently valid
-	IsExpired  bool   `json:"isExpired"`  // Is expired
-	AutoRenew  bool   `json:"autoRenew"`  // Auto-renewal enabled
+	Domain    string `json:"domain"`
+	CertPath  string `json:"certPath"`
+	KeyPath   string `json:"keyPath"`
+	IssuedBy  string `json:"issuedBy"`  // CA or "Self-signed"
+	NotBefore int64  `json:"notBefore"` // Unix timestamp
+	NotAfter  int64  `json:"notAfter"`  // Unix timestamp
+	ValidDays int    `json:"validDays"` // Days until expiration
+	IsValid   bool   `json:"isValid"`   // Is currently valid
+	IsExpired bool   `json:"isExpired"` // Is expired
+	AutoRenew bool   `json:"autoRenew"` // Auto-renewal enabled
 }

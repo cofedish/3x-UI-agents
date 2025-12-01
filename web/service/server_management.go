@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cofedish/3xui-agents/database"
-	"github.com/cofedish/3xui-agents/database/model"
+	"github.com/cofedish/3x-UI-agents/database"
+	"github.com/cofedish/3x-UI-agents/database/model"
 )
 
 // ServerManagementService manages the list of servers (local and remote).

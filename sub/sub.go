@@ -15,13 +15,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/util/common"
-	webpkg "github.com/cofedish/3xui-agents/web"
-	"github.com/cofedish/3xui-agents/web/locale"
-	"github.com/cofedish/3xui-agents/web/middleware"
-	"github.com/cofedish/3xui-agents/web/network"
-	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/util/common"
+	webpkg "github.com/cofedish/3x-UI-agents/web"
+	"github.com/cofedish/3x-UI-agents/web/locale"
+	"github.com/cofedish/3x-UI-agents/web/middleware"
+	"github.com/cofedish/3x-UI-agents/web/network"
+	"github.com/cofedish/3x-UI-agents/web/service"
 
 	"github.com/gin-gonic/gin"
 )

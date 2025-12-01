@@ -20,12 +20,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cofedish/3xui-agents/config"
-	"github.com/cofedish/3xui-agents/database"
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/util/common"
-	"github.com/cofedish/3xui-agents/util/sys"
-	"github.com/cofedish/3xui-agents/xray"
+	"github.com/cofedish/3x-UI-agents/config"
+	"github.com/cofedish/3x-UI-agents/database"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/util/common"
+	"github.com/cofedish/3x-UI-agents/util/sys"
+	"github.com/cofedish/3x-UI-agents/xray"
 
 	"github.com/google/uuid"
 	"github.com/shirou/gopsutil/v4/cpu"

@@ -3,8 +3,8 @@
 package job
 
 import (
-	"github.com/cofedish/3xui-agents/logger"
-	"github.com/cofedish/3xui-agents/web/service"
+	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/web/service"
 )
 
 // CheckXrayRunningJob monitors Xray process health and restarts it if it crashes.

@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cofedish/3x-UI-agents/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/cofedish/3xui-agents/logger"
 )
 
 // MTLSAuth middleware verifies client certificate.
@@ -164,14 +164,14 @@ func RequestLogger() gin.HandlerFunc {
 
 // RateLimiter implements a simple token bucket rate limiter.
 type RateLimiter struct {
-	limit    int                    // requests per minute
-	buckets  map[string]*tokenBucket
-	mu       sync.RWMutex
+	limit         int // requests per minute
+	buckets       map[string]*tokenBucket
+	mu            sync.RWMutex
 	cleanupTicker *time.Ticker
 }
 
 type tokenBucket struct {
-	tokens    int
+	tokens     int
 	lastRefill time.Time
 }
 
@@ -234,7 +234,7 @@ func (rl *RateLimiter) allow(key string) bool {
 	bucket, exists := rl.buckets[key]
 	if !exists {
 		bucket = &tokenBucket{
-			tokens:    rl.limit,
+			tokens:     rl.limit,
 			lastRefill: now,
 		}
 		rl.buckets[key] = bucket

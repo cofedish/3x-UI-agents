@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/cofedish/3xui-agents/logger"
+	"github.com/cofedish/3x-UI-agents/logger"
 )
 
 // NewLogWriter returns a new LogWriter for processing Xray log output.
