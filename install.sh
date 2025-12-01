@@ -145,22 +145,30 @@ config_after_install() {
 install_x-ui() {
     cd /usr/local/
 
-    # Download resources
+    # Download resources (prefer release; fall back to source build if no releases)
+    build_from_source=false
     if [ $# == 0 ]; then
         tag_version=$(curl -Ls "https://api.github.com/repos/cofedish/3x-UI-agents/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
         if [[ ! -n "$tag_version" ]]; then
             echo -e "${yellow}Trying to fetch version with IPv4...${plain}"
             tag_version=$(curl -4 -Ls "https://api.github.com/repos/cofedish/3x-UI-agents/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+        fi
+
+        if [[ ! -n "$tag_version" ]]; then
+            echo -e "${yellow}No GitHub release found; falling back to latest tag...${plain}"
+            tag_version=$(curl -4 -Ls "https://api.github.com/repos/cofedish/3x-UI-agents/tags?per_page=1" | grep '"name":' | head -n1 | sed -E 's/.*"([^"]+)".*/\1/')
             if [[ ! -n "$tag_version" ]]; then
-                echo -e "${red}Failed to fetch x-ui version, it may be due to GitHub API restrictions, please try it later${plain}"
+                echo -e "${red}Failed to resolve version (releases/tags). Please try again later or specify a version.${plain}"
                 exit 1
             fi
-        fi
-        echo -e "Got x-ui latest version: ${tag_version}, beginning the installation..."
-        wget --inet4-only -N -O /usr/local/x-ui-linux-$(arch).tar.gz https://github.com/cofedish/3x-UI-agents/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz
-        if [[ $? -ne 0 ]]; then
-            echo -e "${red}Downloading x-ui failed, please be sure that your server can access GitHub ${plain}"
-            exit 1
+            build_from_source=true
+        else
+            echo -e "Got x-ui latest release: ${tag_version}, beginning the installation..."
+            wget --inet4-only -N -O /usr/local/x-ui-linux-$(arch).tar.gz https://github.com/cofedish/3x-UI-agents/releases/download/${tag_version}/x-ui-linux-$(arch).tar.gz
+            if [[ $? -ne 0 ]]; then
+                echo -e "${yellow}Release download failed; attempting to build from source tag ${tag_version}.${plain}"
+                build_from_source=true
+            fi
         fi
     else
         tag_version=$1
@@ -176,8 +184,8 @@ install_x-ui() {
         echo -e "Beginning to install x-ui $1"
         wget --inet4-only -N -O /usr/local/x-ui-linux-$(arch).tar.gz ${url}
         if [[ $? -ne 0 ]]; then
-            echo -e "${red}Download x-ui $1 failed, please check if the version exists ${plain}"
-            exit 1
+            echo -e "${yellow}Release ${tag_version} not found; attempting to build from source.${plain}"
+            build_from_source=true
         fi
     fi
     wget --inet4-only -O /usr/bin/x-ui-temp https://raw.githubusercontent.com/cofedish/3x-UI-agents/main/x-ui.sh
@@ -196,20 +204,50 @@ install_x-ui() {
         rm /usr/local/x-ui/ -rf
     fi
 
-    # Extract resources and set permissions
-    tar zxvf x-ui-linux-$(arch).tar.gz
-    rm x-ui-linux-$(arch).tar.gz -f
-    
-    cd x-ui
+    if [[ "${build_from_source}" == "true" ]]; then
+        echo -e "${yellow}Building from source tag ${tag_version}...${plain}"
+        command -v go >/dev/null 2>&1
+        if [[ $? -ne 0 ]]; then
+            echo -e "${red}Go toolchain is required to build from source. Please install Go and retry.${plain}"
+            exit 1
+        fi
+        tmpdir=$(mktemp -d)
+        curl -L "https://github.com/cofedish/3x-UI-agents/archive/refs/tags/${tag_version}.tar.gz" -o "${tmpdir}/src.tar.gz"
+        if [[ $? -ne 0 ]]; then
+            echo -e "${red}Failed to download source archive for ${tag_version}.${plain}"
+            exit 1
+        fi
+        mkdir -p "${tmpdir}/src"
+        tar -xzf "${tmpdir}/src.tar.gz" -C "${tmpdir}/src" --strip-components=1
+        cd "${tmpdir}/src"
+        GOOS=$(uname -s | tr '[:upper:]' '[:lower:]') GOARCH=$(arch) go build -o x-ui ./main.go
+        if [[ $? -ne 0 ]]; then
+            echo -e "${red}Source build failed. Please check Go installation or try again later.${plain}"
+            exit 1
+        fi
+        # replace any existing install
+        rm -rf /usr/local/x-ui
+        mkdir -p /usr/local/x-ui
+        cp -r . /usr/local/x-ui
+        cd /usr/local/x-ui
+    else
+        # Extract resources and set permissions
+        tar zxvf x-ui-linux-$(arch).tar.gz
+        rm x-ui-linux-$(arch).tar.gz -f
+        cd x-ui
+    fi
+
     chmod +x x-ui
     chmod +x x-ui.sh
 
-    # Check the system's architecture and rename the file accordingly
-    if [[ $(arch) == "armv5" || $(arch) == "armv6" || $(arch) == "armv7" ]]; then
-        mv bin/xray-linux-$(arch) bin/xray-linux-arm
-        chmod +x bin/xray-linux-arm
+    # Check the system's architecture and rename the file accordingly (release packages only)
+    if [[ "${build_from_source}" != "true" ]]; then
+        if [[ $(arch) == "armv5" || $(arch) == "armv6" || $(arch) == "armv7" ]]; then
+            mv bin/xray-linux-$(arch) bin/xray-linux-arm
+            chmod +x bin/xray-linux-arm
+        fi
+        chmod +x x-ui bin/xray-linux-$(arch)
     fi
-    chmod +x x-ui bin/xray-linux-$(arch)
 
     # Update x-ui cli and se set permission
     mv -f /usr/bin/x-ui-temp /usr/bin/x-ui
