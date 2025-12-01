@@ -33,6 +33,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3x-UI-agents/master/i
 ## شكر خاص إلى
 
 - [cofedish](https://github.com/cofedish)
+- [alireza0](https://github.com/alireza0)
 
 ## الاعتراف
 

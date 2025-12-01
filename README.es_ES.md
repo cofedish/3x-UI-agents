@@ -33,6 +33,8 @@ Para documentación completa, visita la [Wiki del proyecto](https://github.com/c
 ## Un Agradecimiento Especial a
 
 - [cofedish](https://github.com/cofedish)
+- [alireza0](https://github.com/alireza0)
+
 
 ## Reconocimientos
 

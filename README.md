@@ -30,9 +30,10 @@ bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3x-UI-agents/master/i
 
 For full documentation, please visit the [project Wiki](https://github.com/cofedish/3x-UI-agents/wiki).
 
-## Maintainer
+## A Special Thanks to
 
 - [cofedish](https://github.com/cofedish)
+- [alireza0](https://github.com/alireza0)
 
 ## Acknowledgment
 
