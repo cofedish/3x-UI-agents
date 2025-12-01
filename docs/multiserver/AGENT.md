@@ -32,7 +32,7 @@ The 3x-ui agent is a lightweight service that runs on each managed VPN server, e
 
 ```bash
 # Download and install agent binary
-wget https://github.com/cofedish/3xui-agents/releases/latest/download/x-ui-linux-amd64.tar.gz
+wget https://github.com/cofedish/3x-UI-agents/releases/latest/download/x-ui-linux-amd64.tar.gz
 tar -xzf x-ui-linux-amd64.tar.gz
 sudo mv x-ui /usr/local/bin/
 sudo chmod +x /usr/local/bin/x-ui
@@ -42,7 +42,7 @@ sudo chmod +x /usr/local/bin/x-ui
 
 ```bash
 # Clone repository
-git clone https://github.com/cofedish/3xui-agents.git
+git clone https://github.com/cofedish/3x-UI-agents.git
 cd 3xui-agents/scripts/certs
 
 # Generate CA (once)

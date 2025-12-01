@@ -7,13 +7,13 @@
   </picture>
 </p>
 
-[![Release](https://img.shields.io/github/v/release/cofedish/3xui-agents.svg)](https://github.com/cofedish/3xui-agents/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/cofedish/3xui-agents/release.yml.svg)](https://github.com/cofedish/3xui-agents/actions)
-[![GO Version](https://img.shields.io/github/go-mod/go-version/cofedish/3xui-agents.svg)](#)
-[![Downloads](https://img.shields.io/github/downloads/cofedish/3xui-agents/total.svg)](https://github.com/cofedish/3xui-agents/releases/latest)
+[![Release](https://img.shields.io/github/v/release/cofedish/3x-UI-agents.svg)](https://github.com/cofedish/3x-UI-agents/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/cofedish/3x-UI-agents/release.yml.svg)](https://github.com/cofedish/3x-UI-agents/actions)
+[![GO Version](https://img.shields.io/github/go-mod/go-version/cofedish/3x-UI-agents.svg)](#)
+[![Downloads](https://img.shields.io/github/downloads/cofedish/3x-UI-agents/total.svg)](https://github.com/cofedish/3x-UI-agents/releases/latest)
 [![License](https://img.shields.io/badge/license-GPL%20V3-blue.svg?longCache=true)](https://www.gnu.org/licenses/gpl-3.0.en.html)
-[![Go Reference](https://pkg.go.dev/badge/github.com/cofedish/3xui-agents/v2.svg)](https://pkg.go.dev/github.com/cofedish/3xui-agents/v2)
-[![Go Report Card](https://goreportcard.com/badge/github.com/cofedish/3xui-agents/v2)](https://goreportcard.com/report/github.com/cofedish/3xui-agents/v2)
+[![Go Reference](https://pkg.go.dev/badge/github.com/cofedish/3x-UI-agents/v2.svg)](https://pkg.go.dev/github.com/cofedish/3x-UI-agents/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cofedish/3x-UI-agents/v2)](https://goreportcard.com/report/github.com/cofedish/3x-UI-agents/v2)
 
 **3X-UI** — 一个基于网页的高级开源控制面板，专为管理 Xray-core 服务器而设计。它提供了用户友好的界面，用于配置和监控各种 VPN 和代理协议。
 
@@ -25,10 +25,10 @@
 ## 快速开始
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3xui-agents/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3x-UI-agents/master/install.sh)
 ```
 
-完整文档请参阅 [项目Wiki](https://github.com/cofedish/3xui-agents/wiki)。
+完整文档请参阅 [项目Wiki](https://github.com/cofedish/3x-UI-agents/wiki)。
 
 ## 特别感谢
 
@@ -54,4 +54,4 @@ bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3xui-agents/master/in
 
 ## 随时间变化的星标数
 
-[![Stargazers over time](https://starchart.cc/cofedish/3xui-agents.svg?variant=adaptive)](https://starchart.cc/cofedish/3xui-agents) 
+[![Stargazers over time](https://starchart.cc/cofedish/3x-UI-agents.svg?variant=adaptive)](https://starchart.cc/cofedish/3x-UI-agents) 

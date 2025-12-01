@@ -7,13 +7,13 @@
   </picture>
 </p>
 
-[![Release](https://img.shields.io/github/v/release/cofedish/3xui-agents.svg)](https://github.com/cofedish/3xui-agents/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/cofedish/3xui-agents/release.yml.svg)](https://github.com/cofedish/3xui-agents/actions)
-[![GO Version](https://img.shields.io/github/go-mod/go-version/cofedish/3xui-agents.svg)](#)
-[![Downloads](https://img.shields.io/github/downloads/cofedish/3xui-agents/total.svg)](https://github.com/cofedish/3xui-agents/releases/latest)
+[![Release](https://img.shields.io/github/v/release/cofedish/3x-UI-agents.svg)](https://github.com/cofedish/3x-UI-agents/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/cofedish/3x-UI-agents/release.yml.svg)](https://github.com/cofedish/3x-UI-agents/actions)
+[![GO Version](https://img.shields.io/github/go-mod/go-version/cofedish/3x-UI-agents.svg)](#)
+[![Downloads](https://img.shields.io/github/downloads/cofedish/3x-UI-agents/total.svg)](https://github.com/cofedish/3x-UI-agents/releases/latest)
 [![License](https://img.shields.io/badge/license-GPL%20V3-blue.svg?longCache=true)](https://www.gnu.org/licenses/gpl-3.0.en.html)
-[![Go Reference](https://pkg.go.dev/badge/github.com/cofedish/3xui-agents/v2.svg)](https://pkg.go.dev/github.com/cofedish/3xui-agents/v2)
-[![Go Report Card](https://goreportcard.com/badge/github.com/cofedish/3xui-agents/v2)](https://goreportcard.com/report/github.com/cofedish/3xui-agents/v2)
+[![Go Reference](https://pkg.go.dev/badge/github.com/cofedish/3x-UI-agents/v2.svg)](https://pkg.go.dev/github.com/cofedish/3x-UI-agents/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cofedish/3x-UI-agents/v2)](https://goreportcard.com/report/github.com/cofedish/3x-UI-agents/v2)
 
 **3X-UI** — یک پنل کنترل پیشرفته مبتنی بر وب با کد باز که برای مدیریت سرور Xray-core طراحی شده است. این پنل یک رابط کاربری آسان برای پیکربندی و نظارت بر پروتکل‌های مختلف VPN و پراکسی ارائه می‌دهد.
 
@@ -25,10 +25,10 @@
 ## شروع سریع
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3xui-agents/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3x-UI-agents/master/install.sh)
 ```
 
-برای مستندات کامل، لطفاً به [ویکی پروژه](https://github.com/cofedish/3xui-agents/wiki) مراجعه کنید.
+برای مستندات کامل، لطفاً به [ویکی پروژه](https://github.com/cofedish/3x-UI-agents/wiki) مراجعه کنید.
 
 ## تشکر ویژه از
 
@@ -54,4 +54,4 @@ bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3xui-agents/master/in
 
 ## ستاره‌ها در طول زمان
 
-[![Stargazers over time](https://starchart.cc/cofedish/3xui-agents.svg?variant=adaptive)](https://starchart.cc/cofedish/3xui-agents) 
+[![Stargazers over time](https://starchart.cc/cofedish/3x-UI-agents.svg?variant=adaptive)](https://starchart.cc/cofedish/3x-UI-agents) 

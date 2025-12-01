@@ -7,13 +7,13 @@
   </picture>
 </p>
 
-[![Release](https://img.shields.io/github/v/release/cofedish/3xui-agents.svg)](https://github.com/cofedish/3xui-agents/releases)
-[![Build](https://img.shields.io/github/actions/workflow/status/cofedish/3xui-agents/release.yml.svg)](https://github.com/cofedish/3xui-agents/actions)
-[![GO Version](https://img.shields.io/github/go-mod/go-version/cofedish/3xui-agents.svg)](#)
-[![Downloads](https://img.shields.io/github/downloads/cofedish/3xui-agents/total.svg)](https://github.com/cofedish/3xui-agents/releases/latest)
+[![Release](https://img.shields.io/github/v/release/cofedish/3x-UI-agents.svg)](https://github.com/cofedish/3x-UI-agents/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/cofedish/3x-UI-agents/release.yml.svg)](https://github.com/cofedish/3x-UI-agents/actions)
+[![GO Version](https://img.shields.io/github/go-mod/go-version/cofedish/3x-UI-agents.svg)](#)
+[![Downloads](https://img.shields.io/github/downloads/cofedish/3x-UI-agents/total.svg)](https://github.com/cofedish/3x-UI-agents/releases/latest)
 [![License](https://img.shields.io/badge/license-GPL%20V3-blue.svg?longCache=true)](https://www.gnu.org/licenses/gpl-3.0.en.html)
-[![Go Reference](https://pkg.go.dev/badge/github.com/cofedish/3xui-agents/v2.svg)](https://pkg.go.dev/github.com/cofedish/3xui-agents/v2)
-[![Go Report Card](https://goreportcard.com/badge/github.com/cofedish/3xui-agents/v2)](https://goreportcard.com/report/github.com/cofedish/3xui-agents/v2)
+[![Go Reference](https://pkg.go.dev/badge/github.com/cofedish/3x-UI-agents/v2.svg)](https://pkg.go.dev/github.com/cofedish/3x-UI-agents/v2)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cofedish/3x-UI-agents/v2)](https://goreportcard.com/report/github.com/cofedish/3x-UI-agents/v2)
 
 **3X-UI** — panel de control avanzado basado en web de código abierto diseñado para gestionar el servidor Xray-core. Ofrece una interfaz fácil de usar para configurar y monitorear varios protocolos VPN y proxy.
 
@@ -25,10 +25,10 @@ Como una versión mejorada del proyecto X-UI original, 3X-UI proporciona mayor e
 ## Inicio Rápido
 
 ```
-bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3xui-agents/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3x-UI-agents/master/install.sh)
 ```
 
-Para documentación completa, visita la [Wiki del proyecto](https://github.com/cofedish/3xui-agents/wiki).
+Para documentación completa, visita la [Wiki del proyecto](https://github.com/cofedish/3x-UI-agents/wiki).
 
 ## Un Agradecimiento Especial a
 
@@ -54,4 +54,4 @@ Para documentación completa, visita la [Wiki del proyecto](https://github.com/c
 
 ## Estrellas a lo Largo del Tiempo
 
-[![Stargazers over time](https://starchart.cc/cofedish/3xui-agents.svg?variant=adaptive)](https://starchart.cc/cofedish/3xui-agents) 
+[![Stargazers over time](https://starchart.cc/cofedish/3x-UI-agents.svg?variant=adaptive)](https://starchart.cc/cofedish/3x-UI-agents) 

@@ -68,11 +68,11 @@ download_agent() {
   echo -e "${YELLOW}Downloading agent binary...${NC}"
 
   BINARY_NAME="x-ui-$OS-$ARCH"
-  DOWNLOAD_URL="https://github.com/cofedish/3xui-agents/releases/download/$AGENT_VERSION/$BINARY_NAME"
+  DOWNLOAD_URL="https://github.com/cofedish/3x-UI-agents/releases/download/$AGENT_VERSION/$BINARY_NAME"
 
   if [ "$AGENT_VERSION" = "latest" ]; then
     # Get latest release URL
-    DOWNLOAD_URL=$(curl -s https://api.github.com/repos/cofedish/3xui-agents/releases/latest | grep "browser_download_url.*$BINARY_NAME" | cut -d '"' -f 4)
+    DOWNLOAD_URL=$(curl -s https://api.github.com/repos/cofedish/3x-UI-agents/releases/latest | grep "browser_download_url.*$BINARY_NAME" | cut -d '"' -f 4)
   fi
 
   echo "Downloading from: $DOWNLOAD_URL"

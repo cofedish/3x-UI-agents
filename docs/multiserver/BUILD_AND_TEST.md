@@ -21,7 +21,7 @@
 ### Step 1: Clone Repository (Already Done)
 
 ```bash
-git clone https://github.com/cofedish/3xui-agents.git
+git clone https://github.com/cofedish/3x-UI-agents.git
 cd 3xui-agents/3x-ui
 git checkout feature/multiserver-controller-agent
 ```

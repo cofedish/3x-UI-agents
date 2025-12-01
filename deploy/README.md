@@ -31,7 +31,7 @@ This guide covers deploying 3x-ui in a multi-server architecture with a central 
 
 ```bash
 # Install controller with standard installation
-bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3xui-agents/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3x-UI-agents/master/install.sh)
 
 # Access panel at: http://your-server-ip:2053
 ```
@@ -42,7 +42,7 @@ On your local machine (with OpenSSL installed):
 
 ```bash
 # Clone repository
-git clone https://github.com/cofedish/3xui-agents.git
+git clone https://github.com/cofedish/3x-UI-agents.git
 cd 3xui-agents/3x-ui/deploy/certs
 
 # Generate CA certificate (once)
@@ -113,7 +113,7 @@ For each remote agent server:
 
 ```bash
 # Download and install agent
-curl -sSL https://raw.githubusercontent.com/cofedish/3xui-agents/main/scripts/agent/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/cofedish/3x-UI-agents/main/scripts/agent/install.sh | sudo bash
 
 # Or see scripts/agent/README.md for detailed manual installation
 ```
@@ -265,14 +265,14 @@ Critical files to backup:
 
 **Controller:**
 ```bash
-bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3xui-agents/master/install.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3x-UI-agents/master/install.sh)
 ```
 
 **Agents:**
 ```bash
 # Download new version
 VERSION="v2.1.0"
-wget https://github.com/cofedish/3xui-agents/releases/download/$VERSION/x-ui-linux-amd64
+wget https://github.com/cofedish/3x-UI-agents/releases/download/$VERSION/x-ui-linux-amd64
 sudo systemctl stop x-ui-agent
 sudo mv x-ui-linux-amd64 /usr/local/bin/x-ui-agent
 sudo chmod +x /usr/local/bin/x-ui-agent
@@ -337,8 +337,8 @@ openssl x509 -in agent-server-1/agent.crt -noout -text
 
 ## Support
 
-- **Issues**: https://github.com/cofedish/3xui-agents/issues
-- **Discussions**: https://github.com/cofedish/3xui-agents/discussions
+- **Issues**: https://github.com/cofedish/3x-UI-agents/issues
+- **Discussions**: https://github.com/cofedish/3x-UI-agents/discussions
 
 ## License
 

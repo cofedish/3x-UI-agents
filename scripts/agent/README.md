@@ -4,7 +4,7 @@
 
 ```bash
 # Download and run installer
-curl -sSL https://raw.githubusercontent.com/cofedish/3xui-agents/main/scripts/agent/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/cofedish/3x-UI-agents/main/scripts/agent/install.sh | sudo bash
 ```
 
 ## Manual Installation
@@ -24,7 +24,7 @@ case "$ARCH" in
 esac
 
 # Download
-wget https://github.com/cofedish/3xui-agents/releases/download/$VERSION/x-ui-linux-$ARCH
+wget https://github.com/cofedish/3x-UI-agents/releases/download/$VERSION/x-ui-linux-$ARCH
 chmod +x x-ui-linux-$ARCH
 sudo mv x-ui-linux-$ARCH /usr/local/bin/x-ui-agent
 ```
@@ -189,7 +189,7 @@ openssl s_client -connect localhost:2054 -CAfile /etc/x-ui-agent/certs/ca.crt
 sudo systemctl stop x-ui-agent
 
 # Download new version
-wget https://github.com/cofedish/3xui-agents/releases/download/v2.1.0/x-ui-linux-amd64
+wget https://github.com/cofedish/3x-UI-agents/releases/download/v2.1.0/x-ui-linux-amd64
 sudo mv x-ui-linux-amd64 /usr/local/bin/x-ui-agent
 sudo chmod +x /usr/local/bin/x-ui-agent
 
@@ -252,8 +252,8 @@ curl -k --cert controller.crt --key controller.key \
 
 ## Support
 
-- **Issues:** https://github.com/cofedish/3xui-agents/issues
-- **Documentation:** https://github.com/cofedish/3xui-agents/tree/main/docs
+- **Issues:** https://github.com/cofedish/3x-UI-agents/issues
+- **Documentation:** https://github.com/cofedish/3x-UI-agents/tree/main/docs
 - **Community:** Telegram group
 
 ## License

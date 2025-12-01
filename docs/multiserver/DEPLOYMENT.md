@@ -108,7 +108,7 @@ cp /etc/x-ui/3x-ui.db /etc/x-ui/3x-ui.db.backup
 curl -sSL https://example.com/install-agent.sh | bash
 
 # Or manually:
-wget https://github.com/cofedish/3xui-agents/releases/download/vX.X.X/x-ui-agent-linux-amd64
+wget https://github.com/cofedish/3x-UI-agents/releases/download/vX.X.X/x-ui-agent-linux-amd64
 chmod +x x-ui-agent-linux-amd64
 mv x-ui-agent-linux-amd64 /usr/local/bin/x-ui-agent
 
