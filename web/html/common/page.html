@@ -46,10 +46,7 @@
 <script src="{{ .base_path }}assets/js/axios-init.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/js/util/date-util.js?{{ .cur_ver }}"></script>
 <script src="{{ .base_path }}assets/js/util/index.js?{{ .cur_ver }}"></script>
-<script>
-  const basePath = '{{ .base_path }}';
-  axios.defaults.baseURL = basePath;
-</script>
+<script id="basepath-script" src="{{ .base_path }}assets/js/basepath.js?{{ .cur_ver }}" data-base-path="{{ .base_path }}"></script>
 {{ end }}
   
 {{ define "page/body_end" }}
