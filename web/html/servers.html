@@ -34,7 +34,7 @@
             <a-col :sm="24" :md="8">
               <a-input-search
                 v-model="filters.search"
-                :placeholder="'{{ i18n \"servers.searchPlaceholder\" }}'"
+                :placeholder="'{{ i18n "servers.searchPlaceholder" }}'"
                 @search="applyFilters"
                 allow-clear
               >
@@ -44,7 +44,7 @@
             <a-col :sm="24" :md="8">
               <a-select
                 v-model="filters.status"
-                :placeholder="'{{ i18n \"servers.filterByStatus\" }}'"
+                :placeholder="'{{ i18n "servers.filterByStatus" }}'"
                 style="width: 100%"
                 @change="applyFilters"
                 allow-clear
@@ -59,7 +59,7 @@
             <a-col :sm="24" :md="8">
               <a-input
                 v-model="filters.tags"
-                :placeholder="'{{ i18n \"servers.filterByTags\" }}'"
+                :placeholder="'{{ i18n "servers.filterByTags" }}'"
                 @pressEnter="applyFilters"
                 allow-clear
               >
@@ -72,7 +72,7 @@
           <a-row :gutter="16" class="mb-16">
             <a-col :span="6">
               <a-statistic
-                :title="'{{ i18n \"servers.stats.total\" }}'"
+                :title="'{{ i18n "servers.stats.total" }}'"
                 :value="stats.total"
                 :value-style="{ color: '#1890ff' }"
               >
@@ -81,7 +81,7 @@
             </a-col>
             <a-col :span="6">
               <a-statistic
-                :title="'{{ i18n \"servers.stats.online\" }}'"
+                :title="'{{ i18n "servers.stats.online" }}'"
                 :value="stats.online"
                 :value-style="{ color: '#52c41a' }"
               >
@@ -90,7 +90,7 @@
             </a-col>
             <a-col :span="6">
               <a-statistic
-                :title="'{{ i18n \"servers.stats.offline\" }}'"
+                :title="'{{ i18n "servers.stats.offline" }}'"
                 :value="stats.offline"
                 :value-style="{ color: '#ff4d4f' }"
               >
@@ -99,7 +99,7 @@
             </a-col>
             <a-col :span="6">
               <a-statistic
-                :title="'{{ i18n \"servers.stats.errors\" }}'"
+                :title="'{{ i18n "servers.stats.errors" }}'"
                 :value="stats.error"
                 :value-style="{ color: '#faad14' }"
               >
@@ -156,7 +156,7 @@
 
             <template #actions="text, record">
               <a-space>
-                <a-tooltip title="{{ i18n 'servers.testHealth' }}">
+                <a-tooltip title='{{ i18n "servers.testHealth" }}'>
                   <a-button
                     size="small"
                     icon="heart"
@@ -164,21 +164,21 @@
                     :loading="healthChecking[record.id]"
                   ></a-button>
                 </a-tooltip>
-                <a-tooltip title="{{ i18n 'servers.restartXray' }}" v-if="record.id !== 1">
+                <a-tooltip title='{{ i18n "servers.restartXray" }}' v-if="record.id !== 1">
                   <a-button
                     size="small"
                     icon="reload"
                     @click="restartXray(record)"
                   ></a-button>
                 </a-tooltip>
-                <a-tooltip title="{{ i18n 'edit' }}">
+                <a-tooltip title='{{ i18n "edit" }}'>
                   <a-button
                     size="small"
                     icon="edit"
                     @click="showEditModal(record)"
                   ></a-button>
                 </a-tooltip>
-                <a-tooltip title="{{ i18n 'delete' }}" v-if="record.id !== 1">
+                <a-tooltip title='{{ i18n "delete" }}' v-if="record.id !== 1">
                   <a-button
                     size="small"
                     type="danger"
@@ -193,7 +193,7 @@
 
         <!-- Add/Edit Modal -->
         <a-modal
-          :title="modalMode === 'add' ? '{{ i18n \"servers.addServer\" }}' : '{{ i18n \"servers.editServer\" }}'"
+          :title="modalMode === 'add' ? '{{ i18n "servers.addServer" }}' : '{{ i18n "servers.editServer" }}'"
           :visible="modalVisible"
           @ok="handleModalOk"
           @cancel="handleModalCancel"
@@ -201,45 +201,45 @@
           :width="600"
         >
           <a-form-model ref="serverForm" :model="currentServer" :rules="rules" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
-            <a-form-model-item label="{{ i18n 'servers.form.name' }}" prop="name">
-              <a-input v-model="currentServer.name" :placeholder="'{{ i18n \"servers.form.namePlaceholder\" }}'" />
+            <a-form-model-item label='{{ i18n "servers.form.name" }}' prop="name">
+              <a-input v-model="currentServer.name" :placeholder="'{{ i18n "servers.form.namePlaceholder" }}'" />
             </a-form-model-item>
 
-            <a-form-model-item label="{{ i18n 'servers.form.endpoint' }}" prop="endpoint">
-              <a-input v-model="currentServer.endpoint" :placeholder="'{{ i18n \"servers.form.endpointPlaceholder\" }}'" />
+            <a-form-model-item label='{{ i18n "servers.form.endpoint" }}' prop="endpoint">
+              <a-input v-model="currentServer.endpoint" :placeholder="'{{ i18n "servers.form.endpointPlaceholder" }}'" />
               <small style="color: #999;">{{ i18n "servers.form.endpointHint" }}</small>
             </a-form-model-item>
 
-            <a-form-model-item label="{{ i18n 'servers.form.authType' }}" prop="authType">
+            <a-form-model-item label='{{ i18n "servers.form.authType" }}' prop="authType">
               <a-select v-model="currentServer.authType">
                 <a-select-option value="mtls">{{ i18n "servers.form.authTypeMtls" }}</a-select-option>
                 <a-select-option value="jwt">{{ i18n "servers.form.authTypeJwt" }}</a-select-option>
               </a-select>
             </a-form-model-item>
 
-            <a-form-model-item label="{{ i18n 'servers.form.authData' }}" prop="authData" v-if="currentServer.authType === 'mtls'">
+            <a-form-model-item label='{{ i18n "servers.form.authData" }}' prop="authData" v-if="currentServer.authType === 'mtls'">
               <a-textarea
                 v-model="currentServer.authData"
                 :rows="6"
-                :placeholder="'{{ i18n \"servers.form.authDataPlaceholder\" }}'"
+                :placeholder="'{{ i18n "servers.form.authDataPlaceholder" }}'"
               />
               <small style="color: #999;">{{ i18n "servers.form.authDataHint" }}</small>
             </a-form-model-item>
 
-            <a-form-model-item label="{{ i18n 'servers.form.authData' }}" prop="authData" v-if="currentServer.authType === 'jwt'">
-              <a-input v-model="currentServer.authData" type="password" :placeholder="'{{ i18n \"servers.form.jwtTokenPlaceholder\" }}'" />
+            <a-form-model-item label='{{ i18n "servers.form.authData" }}' prop="authData" v-if="currentServer.authType === 'jwt'">
+              <a-input v-model="currentServer.authData" type="password" :placeholder="'{{ i18n "servers.form.jwtTokenPlaceholder" }}'" />
             </a-form-model-item>
 
-            <a-form-model-item label="{{ i18n 'servers.form.tags' }}">
+            <a-form-model-item label='{{ i18n "servers.form.tags" }}'>
               <a-select
                 mode="tags"
                 v-model="currentServer.tagsArray"
-                :placeholder="'{{ i18n \"servers.form.tagsPlaceholder\" }}'"
+                :placeholder="'{{ i18n "servers.form.tagsPlaceholder" }}'"
                 style="width: 100%"
               ></a-select>
             </a-form-model-item>
 
-            <a-form-model-item label="{{ i18n 'enabled' }}">
+            <a-form-model-item label='{{ i18n "enabled" }}'>
               <a-switch v-model="currentServer.enabled" />
             </a-form-model-item>
           </a-form-model>
