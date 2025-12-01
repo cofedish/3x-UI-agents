@@ -6,7 +6,7 @@
             @change="onServerChange"
             :style="{ minWidth: '180px' }"
             :loading="loading"
-            :placeholder="'{{ i18n \"selectServer\" }}'"
+            :placeholder='{{ i18n "selectServer" }}'
             show-search
             option-filter-prop="children"
             :filter-option="filterOption"
@@ -19,7 +19,7 @@
                 <a-icon type="home" />
                 {{ '{{ i18n "localServer" }}' }} ({{ '{{ i18n "defaultLabel" }}' }})
             </a-select-option>
-            <a-select-opt-group v-if="remoteServers.length > 0" :label="'{{ i18n \"remoteServers\" }}'">
+            <a-select-opt-group v-if="remoteServers.length > 0" :label='{{ i18n "remoteServers" }}'>
                 <a-select-option
                     v-for="server in remoteServers"
                     :key="server.id"
