@@ -36,7 +36,7 @@ import (
 //go:embed assets
 var assetsFS embed.FS
 
-//go:embed html/*
+//go:embed html
 var htmlFS embed.FS
 
 //go:embed translation/*
