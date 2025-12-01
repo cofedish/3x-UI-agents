@@ -2,8 +2,6 @@
 package middleware
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"net/http"
 	"sync"
@@ -15,25 +13,10 @@ import (
 )
 
 // MTLSAuth middleware verifies client certificate.
+// NOTE: The TLS layer (with RequireAndVerifyClientCert) already performs
+// certificate verification. This middleware provides additional validation
+// and extracts client certificate information for logging.
 func MTLSAuth(caFile string) gin.HandlerFunc {
-	// Load CA certificate
-	caCert, err := tls.LoadX509KeyPair(caFile, caFile)
-	if err != nil {
-		logger.Error("Failed to load CA certificate:", err)
-		return func(c *gin.Context) {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"error": gin.H{
-					"code":    "MTLS_SETUP_ERROR",
-					"message": "mTLS configuration error",
-				},
-			})
-		}
-	}
-
-	caCertPool := x509.NewCertPool()
-	caCertPool.AddCert(caCert.Leaf)
-
 	return func(c *gin.Context) {
 		// Check if TLS is used
 		if c.Request.TLS == nil {
@@ -48,7 +31,7 @@ func MTLSAuth(caFile string) gin.HandlerFunc {
 			return
 		}
 
-		// Verify client certificate
+		// Verify client certificate (should already be verified by TLS layer)
 		if len(c.Request.TLS.PeerCertificates) == 0 {
 			logger.Warning("No client certificate provided")
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -64,25 +47,11 @@ func MTLSAuth(caFile string) gin.HandlerFunc {
 		// Get client certificate
 		clientCert := c.Request.TLS.PeerCertificates[0]
 
-		// Verify against CA
-		opts := x509.VerifyOptions{
-			Roots: caCertPool,
-		}
-
-		if _, err := clientCert.Verify(opts); err != nil {
-			logger.Warning("Client certificate verification failed:", err)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"error": gin.H{
-					"code":    "CERT_VERIFICATION_FAILED",
-					"message": "Client certificate verification failed",
-				},
-			})
-			return
-		}
-
-		// Certificate is valid
+		// Extract and store client CN for logging/audit
 		c.Set("client_cn", clientCert.Subject.CommonName)
+
+		logger.Info(fmt.Sprintf("Client authenticated via mTLS: CN=%s", clientCert.Subject.CommonName))
+
 		c.Next()
 	}
 }

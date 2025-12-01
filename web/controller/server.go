@@ -217,7 +217,7 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 			}
 
 			// Get connector and fetch stats
-			connector, err := a.serverMgmt.GetConnector(server.ID)
+			connector, err := a.serverMgmt.GetConnector(server.Id)
 			if err != nil {
 				mu.Lock()
 				aggregated.OfflineServers++

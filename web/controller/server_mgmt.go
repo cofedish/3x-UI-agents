@@ -3,7 +3,6 @@ package controller
 
 import (
 	"encoding/json"
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -45,11 +44,11 @@ func (c *ServerManagementController) ListServers(ctx *gin.Context) {
 	search := ctx.Query("search")      // search by name or endpoint
 	tagsFilter := ctx.Query("tags")    // comma-separated tags
 
-	// For now, get all servers (TODO: implement filtering and pagination)
+	// Get all servers for filtering
 	servers, err := c.serverMgmt.GetAllServers()
 	if err != nil {
 		logger.Error("Failed to get servers:", err)
-		jsonMsg(ctx, "Failed to get servers", err, http.StatusInternalServerError)
+		jsonMsg(ctx, "Failed to get servers", err)
 		return
 	}
 
@@ -116,14 +115,14 @@ func (c *ServerManagementController) ListServers(ctx *gin.Context) {
 func (c *ServerManagementController) GetServer(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		jsonMsg(ctx, "Invalid server ID", err, http.StatusBadRequest)
+		jsonMsg(ctx, "Invalid server ID", err)
 		return
 	}
 
 	server, err := c.serverMgmt.GetServer(id)
 	if err != nil {
 		logger.Error("Failed to get server:", err)
-		jsonMsg(ctx, "Server not found", err, http.StatusNotFound)
+		jsonMsg(ctx, "Server not found", err)
 		return
 	}
 
@@ -136,23 +135,23 @@ func (c *ServerManagementController) AddServer(ctx *gin.Context) {
 	var server model.Server
 
 	if err := ctx.ShouldBindJSON(&server); err != nil {
-		jsonMsg(ctx, "Invalid server data", err, http.StatusBadRequest)
+		jsonMsg(ctx, "Invalid server data", err)
 		return
 	}
 
 	// Validate required fields
 	if server.Name == "" {
-		jsonMsg(ctx, "Server name is required", nil, http.StatusBadRequest)
+		jsonMsg(ctx, "Server name is required", nil)
 		return
 	}
 
 	if server.Endpoint == "" {
-		jsonMsg(ctx, "Server endpoint is required", nil, http.StatusBadRequest)
+		jsonMsg(ctx, "Server endpoint is required", nil)
 		return
 	}
 
 	if server.AuthType != "mtls" && server.AuthType != "jwt" && server.AuthType != "local" {
-		jsonMsg(ctx, "Invalid auth type (must be: mtls, jwt, or local)", nil, http.StatusBadRequest)
+		jsonMsg(ctx, "Invalid auth type (must be: mtls, jwt, or local)", nil)
 		return
 	}
 
@@ -163,7 +162,7 @@ func (c *ServerManagementController) AddServer(ctx *gin.Context) {
 
 	if err := c.serverMgmt.AddServer(&server); err != nil {
 		logger.Error("Failed to add server:", err)
-		jsonMsg(ctx, "Failed to add server", err, http.StatusInternalServerError)
+		jsonMsg(ctx, "Failed to add server", err)
 		return
 	}
 
@@ -175,13 +174,13 @@ func (c *ServerManagementController) AddServer(ctx *gin.Context) {
 func (c *ServerManagementController) UpdateServer(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		jsonMsg(ctx, "Invalid server ID", err, http.StatusBadRequest)
+		jsonMsg(ctx, "Invalid server ID", err)
 		return
 	}
 
 	var server model.Server
 	if err := ctx.ShouldBindJSON(&server); err != nil {
-		jsonMsg(ctx, "Invalid server data", err, http.StatusBadRequest)
+		jsonMsg(ctx, "Invalid server data", err)
 		return
 	}
 
@@ -189,11 +188,11 @@ func (c *ServerManagementController) UpdateServer(ctx *gin.Context) {
 
 	if err := c.serverMgmt.UpdateServer(&server); err != nil {
 		logger.Error("Failed to update server:", err)
-		jsonMsg(ctx, "Failed to update server", err, http.StatusInternalServerError)
+		jsonMsg(ctx, "Failed to update server", err)
 		return
 	}
 
-	jsonMsg(ctx, "Server updated successfully", nil, http.StatusOK)
+	jsonMsg(ctx, "Server updated successfully", nil)
 }
 
 // DeleteServer deletes a server.
@@ -201,17 +200,17 @@ func (c *ServerManagementController) UpdateServer(ctx *gin.Context) {
 func (c *ServerManagementController) DeleteServer(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		jsonMsg(ctx, "Invalid server ID", err, http.StatusBadRequest)
+		jsonMsg(ctx, "Invalid server ID", err)
 		return
 	}
 
 	if err := c.serverMgmt.DeleteServer(id); err != nil {
 		logger.Error("Failed to delete server:", err)
-		jsonMsg(ctx, "Failed to delete server", err, http.StatusInternalServerError)
+		jsonMsg(ctx, "Failed to delete server", err)
 		return
 	}
 
-	jsonMsg(ctx, "Server deleted successfully", nil, http.StatusOK)
+	jsonMsg(ctx, "Server deleted successfully", nil)
 }
 
 // GetServerHealth tests server connectivity and returns health status.
@@ -219,14 +218,14 @@ func (c *ServerManagementController) DeleteServer(ctx *gin.Context) {
 func (c *ServerManagementController) GetServerHealth(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		jsonMsg(ctx, "Invalid server ID", err, http.StatusBadRequest)
+		jsonMsg(ctx, "Invalid server ID", err)
 		return
 	}
 
 	connector, err := c.serverMgmt.GetConnector(id)
 	if err != nil {
 		logger.Error("Failed to get connector:", err)
-		jsonMsg(ctx, "Failed to connect to server", err, http.StatusInternalServerError)
+		jsonMsg(ctx, "Failed to connect to server", err)
 		return
 	}
 
@@ -248,21 +247,21 @@ func (c *ServerManagementController) GetServerHealth(ctx *gin.Context) {
 func (c *ServerManagementController) GetServerInfo(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		jsonMsg(ctx, "Invalid server ID", err, http.StatusBadRequest)
+		jsonMsg(ctx, "Invalid server ID", err)
 		return
 	}
 
 	connector, err := c.serverMgmt.GetConnector(id)
 	if err != nil {
 		logger.Error("Failed to get connector:", err)
-		jsonMsg(ctx, "Failed to connect to server", err, http.StatusInternalServerError)
+		jsonMsg(ctx, "Failed to connect to server", err)
 		return
 	}
 
 	info, err := connector.GetServerInfo(ctx.Request.Context())
 	if err != nil {
 		logger.Error("Failed to get server info:", err)
-		jsonMsg(ctx, "Failed to get server info", err, http.StatusInternalServerError)
+		jsonMsg(ctx, "Failed to get server info", err)
 		return
 	}
 
@@ -275,7 +274,7 @@ func (c *ServerManagementController) GetServerStats(ctx *gin.Context) {
 	servers, err := c.serverMgmt.GetAllServers()
 	if err != nil {
 		logger.Error("Failed to get servers:", err)
-		jsonMsg(ctx, "Failed to get server stats", err, http.StatusInternalServerError)
+		jsonMsg(ctx, "Failed to get server stats", err)
 		return
 	}
 

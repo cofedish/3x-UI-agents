@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
 	"runtime"
 	"strings"
 	"time"
@@ -14,7 +13,6 @@ import (
 	"github.com/cofedish/3xui-agents/config"
 	"github.com/cofedish/3xui-agents/database"
 	"github.com/cofedish/3xui-agents/database/model"
-	"github.com/cofedish/3xui-agents/logger"
 	"github.com/cofedish/3xui-agents/xray"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
@@ -43,11 +41,7 @@ func NewLocalConnector(serverId int) *LocalConnector {
 
 // GetServerInfo returns basic server information.
 func (c *LocalConnector) GetServerInfo(ctx context.Context) (*ServerInfo, error) {
-	xrayVersion, err := c.xrayService.GetXrayVersions()
-	if err != nil {
-		logger.Warning("Failed to get Xray version:", err)
-		xrayVersion = "unknown"
-	}
+	xrayVersion := c.xrayService.GetXrayVersion()
 
 	hostInfo, err := host.Info()
 	uptime := int64(0)
@@ -73,7 +67,7 @@ func (c *LocalConnector) GetServerInfo(ctx context.Context) (*ServerInfo, error)
 func (c *LocalConnector) GetHealth(ctx context.Context) (*HealthStatus, error) {
 	isRunning := c.xrayService.IsXrayRunning()
 
-	xrayVersion, _ := c.xrayService.GetXrayVersions()
+	xrayVersion := c.xrayService.GetXrayVersion()
 
 	status := "online"
 	if !isRunning {
@@ -127,8 +121,9 @@ func (c *LocalConnector) AddInbound(ctx context.Context, inbound *model.Inbound)
 	// Set server_id
 	inbound.ServerId = c.serverId
 
-	// Delegate to inbound service
-	return c.inboundService.AddInbound(inbound)
+	// Delegate to inbound service (ignore returned inbound and needRestart)
+	_, _, err := c.inboundService.AddInbound(inbound)
+	return err
 }
 
 // UpdateInbound updates an existing inbound.
@@ -136,8 +131,9 @@ func (c *LocalConnector) UpdateInbound(ctx context.Context, inbound *model.Inbou
 	// Ensure server_id matches
 	inbound.ServerId = c.serverId
 
-	// Delegate to inbound service
-	return c.inboundService.UpdateInbound(inbound)
+	// Delegate to inbound service (ignore needRestart return value)
+	_, _, err := c.inboundService.UpdateInbound(inbound)
+	return err
 }
 
 // DeleteInbound deletes an inbound by ID.
@@ -148,8 +144,9 @@ func (c *LocalConnector) DeleteInbound(ctx context.Context, id int) error {
 		return err
 	}
 
-	// Delegate to inbound service
-	return c.inboundService.DelInbound(inbound.Id)
+	// Delegate to inbound service (ignore needRestart return value)
+	_, err = c.inboundService.DelInbound(inbound.Id)
+	return err
 }
 
 // AddClient adds a client to an inbound.
@@ -157,8 +154,9 @@ func (c *LocalConnector) AddClient(ctx context.Context, inbound *model.Inbound) 
 	// Ensure server_id
 	inbound.ServerId = c.serverId
 
-	// Delegate to inbound service
-	return c.inboundService.AddInboundClient(inbound)
+	// Delegate to inbound service (ignore needRestart return value)
+	_, err := c.inboundService.AddInboundClient(inbound)
+	return err
 }
 
 // UpdateClient updates a client in an inbound.
@@ -166,13 +164,36 @@ func (c *LocalConnector) UpdateClient(ctx context.Context, inbound *model.Inboun
 	// Ensure server_id
 	inbound.ServerId = c.serverId
 
-	// Delegate to inbound service
-	clientId, err := c.inboundService.GetClientIdByIndex(inbound.Id, clientIndex)
+	// Get existing inbound to find client ID
+	existingInbound, err := c.GetInbound(ctx, inbound.Id)
 	if err != nil {
 		return err
 	}
 
-	return c.inboundService.UpdateInboundClient(inbound, clientId)
+	// Parse clients to get client ID
+	clients, err := c.inboundService.GetClients(existingInbound)
+	if err != nil {
+		return err
+	}
+
+	if clientIndex < 0 || clientIndex >= len(clients) {
+		return fmt.Errorf("client index %d out of range", clientIndex)
+	}
+
+	// Determine client ID based on protocol
+	var clientId string
+	switch existingInbound.Protocol {
+	case "trojan":
+		clientId = clients[clientIndex].Password
+	case "shadowsocks":
+		clientId = clients[clientIndex].Email
+	default:
+		clientId = clients[clientIndex].ID
+	}
+
+	// Delegate to inbound service (ignore needRestart return value)
+	_, err = c.inboundService.UpdateInboundClient(inbound, clientId)
+	return err
 }
 
 // DeleteClient deletes a client from an inbound.
@@ -183,8 +204,9 @@ func (c *LocalConnector) DeleteClient(ctx context.Context, inboundId int, client
 		return err
 	}
 
-	// Delegate to inbound service
-	return c.inboundService.DelInboundClient(inboundId, clientEmail)
+	// Delegate to inbound service (ignore needRestart return value)
+	_, err = c.inboundService.DelInboundClient(inboundId, clientEmail)
+	return err
 }
 
 // ResetClientTraffic resets traffic for a specific client.
@@ -195,41 +217,32 @@ func (c *LocalConnector) ResetClientTraffic(ctx context.Context, inboundId int, 
 		return err
 	}
 
-	// Delegate to inbound service
-	return c.inboundService.ResetClientTraffic(inboundId, email)
+	// Delegate to inbound service (ignore needRestart return value)
+	_, err = c.inboundService.ResetClientTraffic(inboundId, email)
+	return err
 }
 
 // GetOnlineClients returns list of currently online client emails.
 func (c *LocalConnector) GetOnlineClients(ctx context.Context) ([]string, error) {
-	// Delegate to inbound service
-	onlineClients, err := c.inboundService.GetOnlineClients()
-	if err != nil {
-		return nil, err
-	}
-
-	var emails []string
-	for email := range onlineClients {
-		emails = append(emails, email)
-	}
-
+	// Delegate to inbound service (returns []string directly)
+	emails := c.inboundService.GetOnlineClients()
 	return emails, nil
 }
 
 // GetTraffic retrieves current traffic statistics.
 func (c *LocalConnector) GetTraffic(ctx context.Context, reset bool) (*xray.Traffic, error) {
-	// Get Xray API
-	xrayApi := xray.GetXrayAPI()
-	if xrayApi == nil {
-		return nil, fmt.Errorf("xray api not initialized")
-	}
-
-	// Get traffic
-	traffics, err := xrayApi.GetTraffic(reset)
+	// Delegate to xray service
+	traffics, _, err := c.xrayService.GetXrayTraffic()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get traffic: %w", err)
 	}
 
-	return traffics, nil
+	// Return aggregated traffic or first entry
+	if len(traffics) > 0 {
+		return traffics[0], nil
+	}
+
+	return &xray.Traffic{}, nil
 }
 
 // GetClientTraffics retrieves traffic stats for all clients.
@@ -262,10 +275,7 @@ func (c *LocalConnector) RestartXray(ctx context.Context) error {
 
 // GetXrayVersion returns the installed Xray version.
 func (c *LocalConnector) GetXrayVersion(ctx context.Context) (string, error) {
-	version, err := c.xrayService.GetXrayVersions()
-	if err != nil {
-		return "", err
-	}
+	version := c.xrayService.GetXrayVersion()
 	return version, nil
 }
 
@@ -328,12 +338,10 @@ func (c *LocalConnector) GetSystemStats(ctx context.Context) (*SystemStats, erro
 		stats.Uptime = int64(hostInfo.Uptime)
 		// Load average is Linux-specific
 		if runtime.GOOS == "linux" {
-			if info, err := host.InfoWithContext(ctx); err == nil {
-				// Note: gopsutil v4 doesn't expose load average directly
-				// We can read it from /proc/loadavg on Linux
-				if loadData, err := os.ReadFile("/proc/loadavg"); err == nil {
-					stats.LoadAverage = strings.TrimSpace(string(loadData))
-				}
+			// Note: gopsutil v4 doesn't expose load average directly
+			// We can read it from /proc/loadavg on Linux
+			if loadData, err := os.ReadFile("/proc/loadavg"); err == nil {
+				stats.LoadAverage = strings.TrimSpace(string(loadData))
 			}
 		}
 	}
@@ -344,18 +352,19 @@ func (c *LocalConnector) GetSystemStats(ctx context.Context) (*SystemStats, erro
 	stats.UDPConnections = 0
 	stats.XrayConnections = 0
 
-	// Public IPs (delegate to server service if needed)
-	ipv4, _ := c.serverService.GetPublicIP(true)
-	ipv6, _ := c.serverService.GetPublicIP(false)
-	stats.PublicIPv4 = ipv4
-	stats.PublicIPv6 = ipv6
+	// Public IPs - TODO: implement GetPublicIP in ServerService
+	stats.PublicIPv4 = ""
+	stats.PublicIPv6 = ""
 
 	return stats, nil
 }
 
 // GetLogs retrieves the last N lines of Xray logs.
 func (c *LocalConnector) GetLogs(ctx context.Context, count int) ([]string, error) {
-	logPath := path.Join(config.GetLogFolder(), config.GetAccessLogName())
+	logPath, err := xray.GetAccessLogPath()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get log path: %w", err)
+	}
 
 	// Read log file
 	data, err := os.ReadFile(logPath)
@@ -377,7 +386,17 @@ func (c *LocalConnector) GetLogs(ctx context.Context, count int) ([]string, erro
 
 // UpdateGeoFiles updates Xray geo files (geoip.dat, geosite.dat).
 func (c *LocalConnector) UpdateGeoFiles(ctx context.Context) error {
-	return c.serverService.UpdateGeoFiles()
+	// Note: ServerService has UpdateGeofile (singular) method
+	// Update both geoip and geosite files
+	err := c.serverService.UpdateGeofile("geoip.dat")
+	if err != nil {
+		return fmt.Errorf("failed to update geoip: %w", err)
+	}
+	err = c.serverService.UpdateGeofile("geosite.dat")
+	if err != nil {
+		return fmt.Errorf("failed to update geosite: %w", err)
+	}
+	return nil
 }
 
 // InstallXray installs a specific version of Xray.

@@ -3,9 +3,14 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -78,7 +83,7 @@ func respondError(c *gin.Context, code string, message string, statusCode int) {
 func (h *AgentHandlers) Health(c *gin.Context) {
 	isRunning := h.xrayService.IsXrayRunning()
 
-	xrayVersion, _ := h.xrayService.GetXrayVersions()
+	xrayVersion := h.xrayService.GetXrayVersion()
 
 	status := "online"
 	if !isRunning {
@@ -97,7 +102,7 @@ func (h *AgentHandlers) Health(c *gin.Context) {
 // Info returns detailed server information.
 // GET /api/v1/info
 func (h *AgentHandlers) Info(c *gin.Context) {
-	xrayVersion, _ := h.xrayService.GetXrayVersions()
+	xrayVersion := h.xrayService.GetXrayVersion()
 
 	hostInfo, err := host.Info()
 	uptime := int64(0)
@@ -170,7 +175,8 @@ func (h *AgentHandlers) AddInbound(c *gin.Context) {
 		return
 	}
 
-	if err := h.inboundService.AddInbound(&inbound); err != nil {
+	_, _, err := h.inboundService.AddInbound(&inbound)
+	if err != nil {
 		logger.Error("Failed to add inbound:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to add inbound: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -196,7 +202,8 @@ func (h *AgentHandlers) UpdateInbound(c *gin.Context) {
 
 	inbound.Id = id
 
-	if err := h.inboundService.UpdateInbound(&inbound); err != nil {
+	_, _, err = h.inboundService.UpdateInbound(&inbound)
+	if err != nil {
 		logger.Error("Failed to update inbound:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to update inbound: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -214,7 +221,8 @@ func (h *AgentHandlers) DeleteInbound(c *gin.Context) {
 		return
 	}
 
-	if err := h.inboundService.DelInbound(id); err != nil {
+	_, err = h.inboundService.DelInbound(id)
+	if err != nil {
 		logger.Error("Failed to delete inbound:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to delete inbound: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -240,7 +248,8 @@ func (h *AgentHandlers) AddClient(c *gin.Context) {
 
 	inbound.Id = id
 
-	if err := h.inboundService.AddInboundClient(&inbound); err != nil {
+	_, err = h.inboundService.AddInboundClient(&inbound)
+	if err != nil {
 		logger.Error("Failed to add client:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to add client: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -264,7 +273,8 @@ func (h *AgentHandlers) DeleteClient(c *gin.Context) {
 		return
 	}
 
-	if err := h.inboundService.DelInboundClient(id, email); err != nil {
+	_, err = h.inboundService.DelInboundClient(id, email)
+	if err != nil {
 		logger.Error("Failed to delete client:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to delete client: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -276,22 +286,18 @@ func (h *AgentHandlers) DeleteClient(c *gin.Context) {
 // GetTraffic returns traffic statistics.
 // GET /api/v1/traffic
 func (h *AgentHandlers) GetTraffic(c *gin.Context) {
-	reset := c.Query("reset") == "true"
-
-	xrayApi := xray.GetXrayAPI()
-	if xrayApi == nil {
-		respondError(c, "XRAY_NOT_INITIALIZED", "Xray API not initialized", http.StatusServiceUnavailable)
-		return
-	}
-
-	traffic, err := xrayApi.GetTraffic(reset)
+	// Use XrayService to get traffic
+	traffics, clientTraffics, err := h.xrayService.GetXrayTraffic()
 	if err != nil {
 		logger.Error("Failed to get traffic:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to get traffic: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	respondSuccess(c, traffic)
+	respondSuccess(c, gin.H{
+		"traffics":       traffics,
+		"clientTraffics": clientTraffics,
+	})
 }
 
 // GetClientTraffics returns client traffic statistics.
@@ -313,18 +319,8 @@ func (h *AgentHandlers) GetClientTraffics(c *gin.Context) {
 // GetOnlineClients returns list of online clients.
 // GET /api/v1/clients/online
 func (h *AgentHandlers) GetOnlineClients(c *gin.Context) {
-	onlineClients, err := h.inboundService.GetOnlineClients()
-	if err != nil {
-		logger.Error("Failed to get online clients:", err)
-		respondError(c, "OPERATION_FAILED", "Failed to get online clients: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	emails := make([]string, 0, len(onlineClients))
-	for email := range onlineClients {
-		emails = append(emails, email)
-	}
-
+	// GetOnlineClients returns []string directly
+	emails := h.inboundService.GetOnlineClients()
 	respondSuccess(c, emails)
 }
 
@@ -367,13 +363,7 @@ func (h *AgentHandlers) RestartXray(c *gin.Context) {
 // GetXrayVersion returns Xray version.
 // GET /api/v1/xray/version
 func (h *AgentHandlers) GetXrayVersion(c *gin.Context) {
-	version, err := h.xrayService.GetXrayVersions()
-	if err != nil {
-		logger.Error("Failed to get Xray version:", err)
-		respondError(c, "OPERATION_FAILED", "Failed to get Xray version: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
+	version := h.xrayService.GetXrayVersion()
 	respondSuccess(c, gin.H{"version": version})
 }
 
@@ -443,11 +433,9 @@ func (h *AgentHandlers) GetSystemStats(c *gin.Context) {
 		stats["uptime"] = hostInfo.Uptime
 	}
 
-	// Public IPs
-	ipv4, _ := h.serverService.GetPublicIP(true)
-	ipv6, _ := h.serverService.GetPublicIP(false)
-	stats["public_ipv4"] = ipv4
-	stats["public_ipv6"] = ipv6
+	// Public IPs - TODO: implement GetPublicIP in ServerService
+	stats["public_ipv4"] = ""
+	stats["public_ipv6"] = ""
 
 	respondSuccess(c, stats)
 }
@@ -462,26 +450,124 @@ func (h *AgentHandlers) GetLogs(c *gin.Context) {
 		}
 	}
 
-	// Limit count to prevent abuse
+	// Limit count to prevent abuse (max 1000 lines)
 	if count > 1000 {
 		count = 1000
 	}
+	if count < 1 {
+		count = 10
+	}
 
-	// TODO: Implement actual log reading
-	logs := []string{
-		"Log functionality not fully implemented",
-		"This is a placeholder",
+	// Read logs from configured log file with security restrictions
+	logs, err := h.readLogFile(count)
+	if err != nil {
+		logger.Warning("Failed to read log file:", err)
+		// Don't expose internal errors to API clients
+		respondError(c, "LOG_READ_ERROR", "Unable to read logs", http.StatusInternalServerError)
+		return
 	}
 
 	respondSuccess(c, logs)
 }
 
+// readLogFile securely reads the last N lines from the agent log file.
+// Only reads from the configured log file path to prevent path traversal attacks.
+func (h *AgentHandlers) readLogFile(count int) ([]string, error) {
+	logFile := os.Getenv("AGENT_LOG_FILE")
+	if logFile == "" {
+		logFile = "/var/log/x-ui-agent/agent.log"
+	}
+
+	// Security: Use filepath.Clean to prevent path traversal
+	logFile = filepath.Clean(logFile)
+
+	// Security: Verify the log file path matches expected pattern
+	// This prevents reading arbitrary files even if AGENT_LOG_FILE is manipulated
+	allowedPaths := []string{
+		"/var/log/x-ui-agent/",
+		"/var/log/3x-ui-agent/",
+		"/tmp/x-ui-agent/",
+		"./logs/",
+	}
+
+	allowed := false
+	for _, prefix := range allowedPaths {
+		cleanPrefix := filepath.Clean(prefix)
+		if strings.HasPrefix(logFile, cleanPrefix) {
+			allowed = true
+			break
+		}
+	}
+
+	if !allowed {
+		return nil, fmt.Errorf("log file path not in allowlist: %s", logFile)
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(logFile); os.IsNotExist(err) {
+		// If log file doesn't exist, return empty logs (not an error)
+		return []string{"Log file not found. Logs may be directed to stdout."}, nil
+	}
+
+	// Use tail command for efficient reading of last N lines
+	cmd := exec.Command("tail", "-n", strconv.Itoa(count), logFile)
+	output, err := cmd.Output()
+	if err != nil {
+		// Fallback: try reading file directly if tail fails
+		return h.readLogFileDirect(logFile, count)
+	}
+
+	// Split lines and reverse (most recent first)
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+
+	// Reverse array to show most recent first
+	for i, j := 0, len(lines)-1; i < j; i, j = i+1, j-1 {
+		lines[i], lines[j] = lines[j], lines[i]
+	}
+
+	return lines, nil
+}
+
+// readLogFileDirect reads log file directly when tail command is unavailable.
+// Fallback implementation for Windows or systems without tail.
+func (h *AgentHandlers) readLogFileDirect(logFile string, count int) ([]string, error) {
+	data, err := os.ReadFile(logFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read log file: %w", err)
+	}
+
+	// Split into lines
+	allLines := strings.Split(string(data), "\n")
+
+	// Get last N lines
+	start := len(allLines) - count
+	if start < 0 {
+		start = 0
+	}
+
+	lines := allLines[start:]
+
+	// Reverse to show most recent first
+	for i, j := 0, len(lines)-1; i < j; i, j = i+1, j-1 {
+		lines[i], lines[j] = lines[j], lines[i]
+	}
+
+	return lines, nil
+}
+
 // UpdateGeoFiles triggers geo file update.
 // POST /api/v1/geofiles/update
 func (h *AgentHandlers) UpdateGeoFiles(c *gin.Context) {
-	if err := h.serverService.UpdateGeoFiles(); err != nil {
-		logger.Error("Failed to update geo files:", err)
-		respondError(c, "OPERATION_FAILED", "Failed to update geo files: "+err.Error(), http.StatusInternalServerError)
+	// ServerService has UpdateGeofile (singular) method
+	// Update both geoip and geosite files
+	if err := h.serverService.UpdateGeofile("geoip.dat"); err != nil {
+		logger.Error("Failed to update geoip:", err)
+		respondError(c, "OPERATION_FAILED", "Failed to update geoip: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := h.serverService.UpdateGeofile("geosite.dat"); err != nil {
+		logger.Error("Failed to update geosite:", err)
+		respondError(c, "OPERATION_FAILED", "Failed to update geosite: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

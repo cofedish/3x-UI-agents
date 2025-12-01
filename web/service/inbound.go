@@ -765,7 +765,9 @@ func (s *InboundService) DelInboundClient(inboundId int, clientId string) (bool,
 }
 
 func (s *InboundService) UpdateInboundClient(data *model.Inbound, clientId string) (bool, error) {
-	// TODO: check if TrafficReset field is updating
+	// This function updates a specific client within an inbound.
+	// Client-level Reset field is updated as part of the client JSON.
+	// Inbound-level TrafficReset is NOT updated here (use UpdateInbound for that).
 	clients, err := s.GetClients(data)
 	if err != nil {
 		return false, err

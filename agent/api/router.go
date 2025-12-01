@@ -3,8 +3,10 @@ package api
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/cofedish/3xui-agents/agent/config"
@@ -125,9 +127,22 @@ func startTLSServer(cfg *config.AgentConfig, router *gin.Engine) error {
 		return fmt.Errorf("failed to load server certificate: %w", err)
 	}
 
-	// Configure TLS
+	// Load CA certificate for client verification
+	caCert, err := os.ReadFile(cfg.CAFile)
+	if err != nil {
+		return fmt.Errorf("failed to load CA certificate: %w", err)
+	}
+
+	caCertPool := x509.NewCertPool()
+	if !caCertPool.AppendCertsFromPEM(caCert) {
+		return fmt.Errorf("failed to parse CA certificate")
+	}
+
+	// Configure TLS with client certificate requirement
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    caCertPool,
 		MinVersion:   tls.VersionTLS13,
 		CipherSuites: []uint16{
 			tls.TLS_AES_128_GCM_SHA256,
@@ -143,7 +158,7 @@ func startTLSServer(cfg *config.AgentConfig, router *gin.Engine) error {
 		TLSConfig: tlsConfig,
 	}
 
-	logger.Info("Starting mTLS server...")
+	logger.Info("Starting mTLS server (TLS 1.3 + client certificate required)...")
 	return server.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile)
 }
 

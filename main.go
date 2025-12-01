@@ -469,6 +469,9 @@ func main() {
 		runWebServer()
 	case "agent":
 		// Run in agent mode (for remote VPN servers)
+		// Initialize logger first
+		logger.InitLogger(logging.DEBUG)
+
 		if err := agent.Run(); err != nil {
 			log.Fatalf("Agent failed: %v", err)
 		}

@@ -354,14 +354,8 @@ func (a *InboundController) addInboundClient(c *gin.Context) {
 		return
 	}
 
-	// Extract client from inbound settings
-	if len(data.ClientStats) == 0 {
-		jsonMsg(c, "No client data provided", nil)
-		return
-	}
-	client := &data.ClientStats[0]
-
-	err = connector.AddClient(c.Request.Context(), data.Id, client)
+	// AddClient expects the inbound object with client data
+	err = connector.AddClient(c.Request.Context(), data)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
@@ -450,9 +444,11 @@ func (a *InboundController) updateInboundClient(c *gin.Context) {
 		jsonMsg(c, "No client data provided", nil)
 		return
 	}
-	client := &inbound.ClientStats[0]
 
-	err = connector.UpdateClient(c.Request.Context(), inbound.Id, clientId, client)
+	// UpdateClient expects inbound with the updated client data and client index
+	// For now, we assume the client to update is at index 0 of ClientStats
+	// TODO: Find actual index based on clientId
+	err = connector.UpdateClient(c.Request.Context(), inbound, 0)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
