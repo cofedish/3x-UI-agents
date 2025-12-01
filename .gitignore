@@ -3,6 +3,8 @@
 .vscode/
 .cache/
 .sync*
+deploy/certs/
+test/fixtures/mtls/
 
 # Ignore log files
 *.log
