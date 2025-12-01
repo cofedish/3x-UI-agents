@@ -32,24 +32,17 @@ bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3x-UI-agents/master/i
 
 ## شكر خاص إلى
 
-- [alireza0](https://github.com/alireza0/)
+- [cofedish](https://github.com/cofedish)
 
 ## الاعتراف
 
 - [Iran v2ray rules](https://github.com/chocolate4u/Iran-v2ray-rules) (الترخيص: **GPL-3.0**): _قواعد توجيه v2ray/xray و v2ray/xray-clients المحسنة مع النطاقات الإيرانية المدمجة وتركيز على الأمان وحظر الإعلانات._
 - [Russia v2ray rules](https://github.com/runetfreedom/russia-v2ray-rules-dat) (الترخيص: **GPL-3.0**): _يحتوي هذا المستودع على قواعد توجيه V2Ray محدثة تلقائيًا بناءً على بيانات النطاقات والعناوين المحظورة في روسيا._
 
-## دعم المشروع
 
-**إذا كان هذا المشروع مفيدًا لك، فقد ترغب في إعطائه**:star2:
+Maintained by [cofedish](https://github.com/cofedish). If this project is helpful to you, please star the repo or support via GitHub Sponsors:
+- https://github.com/sponsors/cofedish
 
-<a href="https://www.buymeacoffee.com/MHSanaei" target="_blank">
-<img src="./media/default-yellow.png" alt="Buy Me A Coffee" style="height: 70px !important;width: 277px !important;" >
-</a>
-</br>
-<a href="https://nowpayments.io/donation/hsanaei" target="_blank" rel="noreferrer noopener">
-   <img src="./media/donation-button-black.svg" alt="Crypto donation button by NOWPayments">
-</a>
 
 ## النجوم عبر الزمن
 

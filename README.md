@@ -30,9 +30,9 @@ bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3x-UI-agents/master/i
 
 For full documentation, please visit the [project Wiki](https://github.com/cofedish/3x-UI-agents/wiki).
 
-## A Special Thanks to
+## Maintainer
 
-- [alireza0](https://github.com/alireza0/)
+- [cofedish](https://github.com/cofedish)
 
 ## Acknowledgment
 
@@ -41,16 +41,9 @@ For full documentation, please visit the [project Wiki](https://github.com/cofed
 
 ## Support project
 
-**If this project is helpful to you, you may wish to give it a**:star2:
+Maintained by [cofedish](https://github.com/cofedish). If this project is helpful to you, please star the repo or support via GitHub Sponsors:
+- https://github.com/sponsors/cofedish
 
-<a href="https://www.buymeacoffee.com/MHSanaei" target="_blank">
-<img src="./media/default-yellow.png" alt="Buy Me A Coffee" style="height: 70px !important;width: 277px !important;" >
-</a>
-
-</br>
-<a href="https://nowpayments.io/donation/hsanaei" target="_blank" rel="noreferrer noopener">
-   <img src="./media/donation-button-black.svg" alt="Crypto donation button by NOWPayments">
-</a>
 
 ## Stargazers over Time
 

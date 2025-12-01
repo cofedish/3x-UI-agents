@@ -32,25 +32,17 @@ Para documentación completa, visita la [Wiki del proyecto](https://github.com/c
 
 ## Un Agradecimiento Especial a
 
-- [alireza0](https://github.com/alireza0/)
+- [cofedish](https://github.com/cofedish)
 
 ## Reconocimientos
 
 - [Iran v2ray rules](https://github.com/chocolate4u/Iran-v2ray-rules) (Licencia: **GPL-3.0**): _Reglas de enrutamiento mejoradas para v2ray/xray y v2ray/xray-clients con dominios iraníes incorporados y un enfoque en seguridad y bloqueo de anuncios._
 - [Russia v2ray rules](https://github.com/runetfreedom/russia-v2ray-rules-dat) (Licencia: **GPL-3.0**): _Este repositorio contiene reglas de enrutamiento V2Ray actualizadas automáticamente basadas en datos de dominios y direcciones bloqueadas en Rusia._
 
-## Apoyar el Proyecto
 
-**Si este proyecto te es útil, puedes darle una**:star2:
+Maintained by [cofedish](https://github.com/cofedish). If this project is helpful to you, please star the repo or support via GitHub Sponsors:
+- https://github.com/sponsors/cofedish
 
-<a href="https://www.buymeacoffee.com/MHSanaei" target="_blank">
-<img src="./media/default-yellow.png" alt="Buy Me A Coffee" style="height: 70px !important;width: 277px !important;" >
-</a>
-
-</br>
-<a href="https://nowpayments.io/donation/hsanaei" target="_blank" rel="noreferrer noopener">
-   <img src="./media/donation-button-black.svg" alt="Crypto donation button by NOWPayments">
-</a>
 
 ## Estrellas a lo Largo del Tiempo
 
