@@ -1,1 +1,1 @@
-v1.1.22 - Agent installer: fix /etc/x-ui permissions and systemd write paths
+v1.1.23 - mTLS inline PEM support, i18n fallback, ru servers keys
