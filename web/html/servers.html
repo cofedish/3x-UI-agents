@@ -263,7 +263,7 @@ new Vue({
       filters: {
         search: '',
         status: '',
-        tags: ''
+        tags: []
       },
       pagination: {
         current: 1,
@@ -305,13 +305,18 @@ new Vue({
         const params = {
           page: this.pagination.current,
           limit: this.pagination.pageSize,
-          ...this.filters
+          search: this.filters.search || '',
+          status: this.filters.status || '',
+          tags: Array.isArray(this.filters.tags) ? this.filters.tags.join(',') : (this.filters.tags || '')
         };
         const response = await axios.get('panel/api/servers', { params });
-        if (response && response.success) {
-          this.servers = response.obj.servers || [];
-          this.pagination.total = response.obj.total || 0;
-        }
+        const res = (response && response.data) ? response.data : response;
+        const obj = (res && res.obj) ? res.obj : {};
+
+        const servers = Array.isArray(obj.servers) ? obj.servers : (Array.isArray(obj.items) ? obj.items : []);
+        this.servers = servers || [];
+        const total = obj.total ?? obj.totalCount ?? this.servers.length;
+        this.pagination.total = Number.isFinite(total) ? total : this.servers.length;
       } catch (error) {
         this.$message.error('{{ i18n "pages.servers.loadError" }}');
       } finally {
@@ -321,9 +326,9 @@ new Vue({
     async loadStats() {
       try {
         const response = await axios.get('panel/api/servers/stats');
-        if (response && response.success) {
-          this.stats = response.obj;
-        }
+        const res = (response && response.data) ? response.data : response;
+        const obj = (res && res.obj) ? res.obj : {};
+        this.stats = obj && typeof obj === 'object' ? obj : { total: 0, online: 0, offline: 0, error: 0, pending: 0 };
       } catch (error) {
         console.error('Failed to load stats:', error);
       }
@@ -363,13 +368,18 @@ new Vue({
 
           let response;
           if (this.modalMode === 'add') {
-            response = await axios.post('panel/api/servers', payload);
+            response = await axios.post('panel/api/servers', payload, {
+              headers: { 'Content-Type': 'application/json' }
+            });
           } else {
-            response = await axios.put(`panel/api/servers/${this.currentServer.id}`, payload);
+            response = await axios.put(`panel/api/servers/${this.currentServer.id}`, payload, {
+              headers: { 'Content-Type': 'application/json' }
+            });
           }
 
+          const res = (response && response.data) ? response.data : response;
           // Check response success before showing success message
-          if (response && response.success) {
+          if (res && res.success) {
             if (this.modalMode === 'add') {
               this.$message.success('{{ i18n "pages.servers.addSuccess" }}');
             } else {
@@ -380,7 +390,7 @@ new Vue({
             this.loadStats();
           } else {
             // API returned error
-            this.$message.error(response.msg || '{{ i18n "somethingWentWrong" }}');
+            this.$message.error(res.msg || '{{ i18n "somethingWentWrong" }}');
           }
         } catch (error) {
           this.$message.error(error.message || '{{ i18n "somethingWentWrong" }}');
@@ -415,8 +425,9 @@ new Vue({
       this.$set(this.healthChecking, server.id, true);
       try {
         const response = await axios.get(`panel/api/servers/${server.id}/health`);
-        if (response && response.success) {
-          this.$message.success(`${server.name}: ${response.obj.status}`);
+        const res = (response && response.data) ? response.data : response;
+        if (res && res.success) {
+          this.$message.success(`${server.name}: ${res.obj.status}`);
           this.loadServers();
         }
       } catch (error) {
