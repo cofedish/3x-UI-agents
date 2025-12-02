@@ -20,6 +20,8 @@ CONFIG_DIR="/etc/x-ui-agent"
 CERT_DIR="$CONFIG_DIR/certs"
 LOG_DIR="/var/log/x-ui-agent"
 SERVICE_NAME="x-ui-agent"
+AUTH_TYPE=""
+JWT_TOKEN=""
 
 echo -e "${GREEN}=== 3x-ui Agent Installer ===${NC}"
 echo ""
@@ -53,11 +55,11 @@ install_dependencies() {
 
   if command -v apt-get &> /dev/null; then
     apt-get update -qq
-    apt-get install -y wget curl ca-certificates
+    apt-get install -y wget curl ca-certificates openssl
   elif command -v yum &> /dev/null; then
-    yum install -y wget curl ca-certificates
+    yum install -y wget curl ca-certificates openssl
   elif command -v dnf &> /dev/null; then
-    dnf install -y wget curl ca-certificates
+    dnf install -y wget curl ca-certificates openssl
   else
     echo -e "${YELLOW}Warning: Could not detect package manager${NC}"
   fi
@@ -133,6 +135,38 @@ create_directories() {
   echo -e "${GREEN}Directories created${NC}"
 }
 
+generate_mtls_certs() {
+  echo -e "${YELLOW}Generating mTLS certificates...${NC}"
+  # CA
+  if [ ! -f "$CERT_DIR/ca.crt" ] || [ ! -f "$CERT_DIR/ca.key" ]; then
+    openssl req -x509 -nodes -newkey rsa:4096 -days 365 \
+      -subj "/ST=Test/L=Test/O=3x-ui-agent/OU=Agents/CN=agent-ca" \
+      -keyout "$CERT_DIR/ca.key" -out "$CERT_DIR/ca.crt"
+  fi
+
+  # Agent cert
+  openssl req -new -nodes -newkey rsa:2048 \
+    -subj "/ST=Test/L=Test/O=3x-ui-agent/OU=Agents/CN=agent" \
+    -keyout "$CERT_DIR/agent.key" -out "$CERT_DIR/agent.csr"
+
+  openssl x509 -req -in "$CERT_DIR/agent.csr" -days 365 \
+    -CA "$CERT_DIR/ca.crt" -CAkey "$CERT_DIR/ca.key" -CAcreateserial \
+    -out "$CERT_DIR/agent.crt"
+
+  rm -f "$CERT_DIR/agent.csr"
+  chmod 600 "$CERT_DIR/agent.key"
+  chmod 644 "$CERT_DIR/agent.crt" "$CERT_DIR/ca.crt"
+  echo -e "${GREEN}mTLS certificates created in $CERT_DIR${NC}"
+}
+
+generate_jwt_token() {
+  JWT_TOKEN=$(openssl rand -hex 32)
+  echo "$JWT_TOKEN" > "$CONFIG_DIR/agent.jwt"
+  chmod 600 "$CONFIG_DIR/agent.jwt"
+  echo -e "${GREEN}JWT token generated: $JWT_TOKEN${NC}"
+  echo -e "${YELLOW}Token saved to $CONFIG_DIR/agent.jwt${NC}"
+}
+
 # Create systemd service
 create_service() {
   echo -e "${YELLOW}Creating systemd service...${NC}"
@@ -152,10 +186,11 @@ RestartSec=10s
 
 # Environment variables (customize as needed)
 Environment="AGENT_LISTEN_ADDR=0.0.0.0:2054"
-Environment="AGENT_AUTH_TYPE=mtls"
+Environment="AGENT_AUTH_TYPE=$AUTH_TYPE"
 Environment="AGENT_CERT_FILE=$CERT_DIR/agent.crt"
 Environment="AGENT_KEY_FILE=$CERT_DIR/agent.key"
 Environment="AGENT_CA_FILE=$CERT_DIR/ca.crt"
+Environment="AGENT_JWT_TOKEN=$JWT_TOKEN"
 Environment="AGENT_LOG_LEVEL=info"
 Environment="AGENT_LOG_FILE=$LOG_DIR/agent.log"
 Environment="AGENT_RATE_LIMIT=100"
@@ -192,6 +227,28 @@ configure_firewall() {
   fi
 }
 
+choose_auth_type() {
+  echo -e "${YELLOW}Select authentication method for agent:${NC}"
+  echo "1) mTLS (certs will be generated automatically)"
+  echo "2) JWT (random token will be generated)"
+  read -rp "Choose [1-2]: " auth_choice
+  case "$auth_choice" in
+    1)
+      AUTH_TYPE="mtls"
+      generate_mtls_certs
+      ;;
+    2)
+      AUTH_TYPE="jwt"
+      generate_jwt_token
+      ;;
+    *)
+      echo -e "${RED}Invalid choice, defaulting to mTLS${NC}"
+      AUTH_TYPE="mtls"
+      generate_mtls_certs
+      ;;
+  esac
+}
+
 # Display next steps
 display_next_steps() {
   echo ""
@@ -224,6 +281,11 @@ display_next_steps() {
   echo "- Agent listens on port 2054 by default"
   echo "- Only controller should have access to this port"
   echo "- Configure firewall to restrict access"
+  if [ "$AUTH_TYPE" = "jwt" ]; then
+    echo "- JWT token: stored in $CONFIG_DIR/agent.jwt (and AGENT_JWT_TOKEN env)"
+  else
+    echo "- mTLS certs generated in $CERT_DIR (agent.crt/key, ca.crt)"
+  fi
   echo ""
 }
 
@@ -233,6 +295,7 @@ main() {
   install_dependencies
   download_agent
   create_directories
+  choose_auth_type
   create_service
   configure_firewall
   display_next_steps
