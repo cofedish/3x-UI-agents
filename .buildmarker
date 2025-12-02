@@ -1,1 +1,1 @@
-v1.1.16 - Fixed critical bug: server add success shown even when API fails
+v1.1.17 - Complete servers page fixes: UI data flow + i18n + testing
