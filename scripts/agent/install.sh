@@ -68,19 +68,43 @@ download_agent() {
   echo -e "${YELLOW}Downloading agent binary...${NC}"
 
   BINARY_NAME="x-ui-$OS-$ARCH"
-  DOWNLOAD_URL="https://github.com/cofedish/3x-UI-agents/releases/download/$AGENT_VERSION/$BINARY_NAME"
+  ARCHIVE_NAME="$BINARY_NAME.tar.gz"
+  DOWNLOAD_URL="https://github.com/cofedish/3x-UI-agents/releases/download/$AGENT_VERSION/$ARCHIVE_NAME"
 
   if [ "$AGENT_VERSION" = "latest" ]; then
     # Get latest release URL
-    DOWNLOAD_URL=$(curl -s https://api.github.com/repos/cofedish/3x-UI-agents/releases/latest | grep "browser_download_url.*$BINARY_NAME" | cut -d '"' -f 4)
+    DOWNLOAD_URL=$(curl -s https://api.github.com/repos/cofedish/3x-UI-agents/releases/latest | grep "browser_download_url.*$ARCHIVE_NAME" | cut -d '"' -f 4)
   fi
 
   echo "Downloading from: $DOWNLOAD_URL"
 
-  wget -q --show-progress -O "$INSTALL_DIR/x-ui-agent" "$DOWNLOAD_URL" || {
+  # Create temporary directory for extraction
+  TMP_DIR=$(mktemp -d)
+
+  # Download archive
+  wget -q --show-progress -O "$TMP_DIR/$ARCHIVE_NAME" "$DOWNLOAD_URL" || {
     echo -e "${RED}Error: Failed to download agent binary${NC}"
+    rm -rf "$TMP_DIR"
     exit 1
   }
+
+  # Extract archive
+  echo -e "${YELLOW}Extracting archive...${NC}"
+  tar -xzf "$TMP_DIR/$ARCHIVE_NAME" -C "$TMP_DIR" || {
+    echo -e "${RED}Error: Failed to extract archive${NC}"
+    rm -rf "$TMP_DIR"
+    exit 1
+  }
+
+  # Move binary to install directory
+  mv "$TMP_DIR/x-ui" "$INSTALL_DIR/x-ui-agent" || {
+    echo -e "${RED}Error: Failed to install binary${NC}"
+    rm -rf "$TMP_DIR"
+    exit 1
+  }
+
+  # Cleanup
+  rm -rf "$TMP_DIR"
 
   chmod +x "$INSTALL_DIR/x-ui-agent"
   echo -e "${GREEN}Agent binary installed to $INSTALL_DIR/x-ui-agent${NC}"
