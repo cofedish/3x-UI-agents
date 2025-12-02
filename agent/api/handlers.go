@@ -85,10 +85,9 @@ func (h *AgentHandlers) Health(c *gin.Context) {
 
 	xrayVersion := h.xrayService.GetXrayVersion()
 
+	// For controller health, "online" means agent is reachable.
+	// xray_running is reported separately and no longer degrades status.
 	status := "online"
-	if !isRunning {
-		status = "degraded"
-	}
 
 	respondSuccess(c, gin.H{
 		"status":       status,

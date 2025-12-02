@@ -1,1 +1,1 @@
-v1.1.27 - set version to 1.1.26 in config/version
+v1.1.28 - agent health: always online; xray_running reported separately
