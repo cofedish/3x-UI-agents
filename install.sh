@@ -292,6 +292,53 @@ install_x-ui() {
 └───────────────────────────────────────────────────────┘"
 }
 
+# Installation mode selection
+show_install_menu() {
+    echo -e "┌───────────────────────────────────────────────────────┐"
+    echo -e "│  ${blue}3x-UI Installation${plain}                                  │"
+    echo -e "├───────────────────────────────────────────────────────┤"
+    echo -e "│  ${green}1${plain}) Install Control Panel (with Web UI)            │"
+    echo -e "│  ${green}2${plain}) Install Agent (for remote VPN servers)         │"
+    echo -e "│  ${green}0${plain}) Exit                                           │"
+    echo -e "└───────────────────────────────────────────────────────┘"
+    echo ""
+    read -rp "Please select installation type [1-2]: " install_choice
+
+    case "${install_choice}" in
+        1)
+            echo -e "${green}Installing Control Panel...${plain}"
+            install_base
+            install_x-ui $1
+            ;;
+        2)
+            echo -e "${green}Installing Agent...${plain}"
+            if [ -f "./scripts/agent/install.sh" ]; then
+                bash ./scripts/agent/install.sh
+            else
+                echo -e "${yellow}Downloading agent installer...${plain}"
+                wget --inet4-only -O /tmp/install-agent.sh https://raw.githubusercontent.com/cofedish/3x-UI-agents/main/scripts/agent/install.sh
+                chmod +x /tmp/install-agent.sh
+                bash /tmp/install-agent.sh
+                rm -f /tmp/install-agent.sh
+            fi
+            ;;
+        0)
+            echo -e "${green}Installation cancelled.${plain}"
+            exit 0
+            ;;
+        *)
+            echo -e "${red}Invalid option. Please select 1, 2, or 0.${plain}"
+            show_install_menu
+            ;;
+    esac
+}
+
 echo -e "${green}Running...${plain}"
-install_base
-install_x-ui $1
+
+# If argument provided, skip menu (for automation)
+if [ $# -gt 0 ]; then
+    install_base
+    install_x-ui $1
+else
+    show_install_menu
+fi

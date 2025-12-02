@@ -108,8 +108,10 @@ Vue.component('a-server-selector', {
             this.loading = true;
             try {
                 const response = await axios.get('panel/api/servers');
-                if (response && response.success) {
-                    this.servers = response.obj.servers || [];
+                const res = (response && response.data) ? response.data : response;
+                if (res && res.success) {
+                    const obj = res.obj || {};
+                    this.servers = Array.isArray(obj.servers) ? obj.servers : [];
                 }
             } catch (error) {
                 console.error('Failed to load servers:', error);
