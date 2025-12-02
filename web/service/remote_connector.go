@@ -6,8 +6,8 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"
@@ -71,32 +71,87 @@ func NewRemoteConnector(server *model.Server) (*RemoteConnector, error) {
 
 // createMTLSClient creates an HTTP client with mTLS authentication.
 func createMTLSClient(server *model.Server) (*http.Client, error) {
-	// Parse auth data (JSON with cert paths)
+	// Parse auth data. We support:
+	// 1) JSON with file paths: { "certFile": "...", "keyFile": "...", "caFile": "..." }
+	// 2) JSON with PEM contents: { "certPem": "...", "keyPem": "...", "caPem": "..." }
+	// 3) Raw PEM bundle (cert + key + ca) pasted as a single string.
 	var authData struct {
 		CertFile string `json:"certFile"`
 		KeyFile  string `json:"keyFile"`
 		CAFile   string `json:"caFile"`
+		CertPem  string `json:"certPem"`
+		KeyPem   string `json:"keyPem"`
+		CAPem    string `json:"caPem"`
 	}
 
-	if err := json.Unmarshal([]byte(server.AuthData), &authData); err != nil {
-		return nil, fmt.Errorf("invalid mTLS auth data: %w", err)
+	raw := server.AuthData
+	_ = json.Unmarshal([]byte(raw), &authData) // best effort
+
+	// Try PEM contents first (inlined)
+	var cert tls.Certificate
+	var caCertPool *x509.CertPool
+
+	if authData.CertPem != "" && authData.KeyPem != "" {
+		c, err := tls.X509KeyPair([]byte(authData.CertPem), []byte(authData.KeyPem))
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse inlined client certificate: %w", err)
+		}
+		cert = c
 	}
 
-	// Load client certificate
-	cert, err := tls.LoadX509KeyPair(authData.CertFile, authData.KeyFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load client certificate: %w", err)
+	if authData.CAPem != "" {
+		caCertPool = x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM([]byte(authData.CAPem)) {
+			return nil, fmt.Errorf("failed to parse inlined CA certificate")
+		}
 	}
 
-	// Load CA certificate
-	caCert, err := os.ReadFile(authData.CAFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load CA certificate: %w", err)
+	// If no PEM provided, try file paths
+	if (cert.Certificate == nil || len(cert.Certificate) == 0) && authData.CertFile != "" && authData.KeyFile != "" {
+		c, err := tls.LoadX509KeyPair(authData.CertFile, authData.KeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load client certificate: %w", err)
+		}
+		cert = c
 	}
 
-	caCertPool := x509.NewCertPool()
-	if !caCertPool.AppendCertsFromPEM(caCert) {
-		return nil, fmt.Errorf("failed to parse CA certificate")
+	if caCertPool == nil && authData.CAFile != "" {
+		caCert, err := os.ReadFile(authData.CAFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load CA certificate: %w", err)
+		}
+		caCertPool = x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caCert) {
+			return nil, fmt.Errorf("failed to parse CA certificate")
+		}
+	}
+
+	// If still empty, attempt to parse raw PEM bundle pasted directly
+	if cert.Certificate == nil || len(cert.Certificate) == 0 || caCertPool == nil {
+		var certPEM, keyPEM, caPEM []byte
+		certPEM, keyPEM, caPEM = splitPEMBundle([]byte(raw))
+
+		if len(certPEM) > 0 && len(keyPEM) > 0 {
+			c, err := tls.X509KeyPair(certPEM, keyPEM)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse pasted client cert/key: %w", err)
+			}
+			cert = c
+		}
+
+		if len(caPEM) > 0 {
+			caCertPool = x509.NewCertPool()
+			if !caCertPool.AppendCertsFromPEM(caPEM) {
+				return nil, fmt.Errorf("failed to parse pasted CA certificate")
+			}
+		}
+	}
+
+	if cert.Certificate == nil || len(cert.Certificate) == 0 {
+		return nil, fmt.Errorf("invalid mTLS auth data: client cert/key not provided")
+	}
+	if caCertPool == nil {
+		return nil, fmt.Errorf("invalid mTLS auth data: CA certificate not provided")
 	}
 
 	// Create TLS config
@@ -115,6 +170,31 @@ func createMTLSClient(server *model.Server) (*http.Client, error) {
 	}
 
 	return client, nil
+}
+
+// splitPEMBundle best-effort splits a combined PEM string into cert, key, and CA blocks.
+func splitPEMBundle(data []byte) (certPEM, keyPEM, caPEM []byte) {
+	rest := data
+	for {
+		var block *pem.Block
+		block, rest = pem.Decode(rest)
+		if block == nil {
+			break
+		}
+		switch block.Type {
+		case "CERTIFICATE":
+			if certPEM == nil {
+				certPEM = pem.EncodeToMemory(block)
+			} else {
+				caPEM = append(caPEM, pem.EncodeToMemory(block)...)
+			}
+		case "PRIVATE KEY", "RSA PRIVATE KEY", "EC PRIVATE KEY", "ED25519 PRIVATE KEY":
+			keyPEM = pem.EncodeToMemory(block)
+		default:
+			// ignore
+		}
+	}
+	return
 }
 
 // createJWTClient creates an HTTP client with JWT authentication.

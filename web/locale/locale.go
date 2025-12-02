@@ -93,16 +93,24 @@ func I18n(i18nType I18nType, key string, params ...string) string {
 		return key
 	}
 
-	msg, err := localizer.Localize(&i18n.LocalizeConfig{
+	cfg := &i18n.LocalizeConfig{
 		MessageID:    key,
 		TemplateData: templateData,
-	})
-	if err != nil {
-		logger.Errorf("Failed to localize message: %v", err)
-		return ""
 	}
 
-	return msg
+	// Primary localization (current language)
+	if msg, err := localizer.Localize(cfg); err == nil {
+		return msg
+	}
+
+	// Fallback to English if key missing in selected language
+	if fallback, err := i18n.NewLocalizer(i18nBundle, "en-US").Localize(cfg); err == nil {
+		return fallback
+	}
+
+	// Last resort: return key to avoid breaking UI
+	logger.Errorf("Failed to localize message: %s", key)
+	return key
 }
 
 // initTGBotLocalizer initializes the bot localizer with the configured language.
@@ -139,7 +147,7 @@ func LocalizerMiddleware() gin.HandlerFunc {
 			lang = c.GetHeader("Accept-Language")
 		}
 
-		LocalizerWeb = i18n.NewLocalizer(i18nBundle, lang)
+		LocalizerWeb = i18n.NewLocalizer(i18nBundle, lang, "en-US")
 
 		c.Set("localizer", LocalizerWeb)
 		c.Set("I18n", I18n)
