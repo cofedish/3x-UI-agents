@@ -1,1 +1,1 @@
-v1.1.23 - mTLS inline PEM support, i18n fallback, ru servers keys
+v1.1.24 - build fix: base64 import
