@@ -1,1 +1,1 @@
-v1.1.11 rebuild to ensure embedded translations are included
+v1.1.14 - Fixed i18n keys for servers page (pages.servers.*)
