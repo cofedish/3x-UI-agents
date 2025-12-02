@@ -1,1 +1,1 @@
-v1.1.28 - agent health: always online; xray_running reported separately
+v1.1.29 - agent installer keeps xray assets and sets bin path

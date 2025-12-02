@@ -15,6 +15,8 @@ NC='\033[0m' # No Color
 
 # Configuration
 AGENT_VERSION="${AGENT_VERSION:-latest}"
+APP_DIR="/usr/local/x-ui-agent"
+BIN_DIR="$APP_DIR/bin"
 INSTALL_DIR="/usr/local/bin"
 CONFIG_DIR="/etc/x-ui-agent"
 CERT_DIR="$CONFIG_DIR/certs"
@@ -23,6 +25,7 @@ SERVICE_NAME="x-ui-agent"
 AUTH_TYPE=""
 JWT_TOKEN=""
 AGENT_HOST_IP="${AGENT_HOST_IP:-}"
+XRAY_VERSION="${XRAY_VERSION:-v25.10.15}"
 
 echo -e "${GREEN}=== 3x-ui Agent Installer ===${NC}"
 echo ""
@@ -73,11 +76,11 @@ install_dependencies() {
 
   if command -v apt-get &> /dev/null; then
     apt-get update -qq
-    apt-get install -y wget curl ca-certificates openssl
+    apt-get install -y wget curl ca-certificates openssl unzip
   elif command -v yum &> /dev/null; then
-    yum install -y wget curl ca-certificates openssl
+    yum install -y wget curl ca-certificates openssl unzip
   elif command -v dnf &> /dev/null; then
-    dnf install -y wget curl ca-certificates openssl
+    dnf install -y wget curl ca-certificates openssl unzip
   else
     echo -e "${YELLOW}Warning: Could not detect package manager${NC}"
   fi
@@ -116,22 +119,34 @@ download_agent() {
     exit 1
   }
 
-  # Move binary to install directory (archive contains x-ui/ directory with binary inside)
-  if [ -f "$TMP_DIR/x-ui/x-ui" ]; then
-    mv "$TMP_DIR/x-ui/x-ui" "$INSTALL_DIR/x-ui-agent"
+  # Move full app (with bin/xray) to APP_DIR
+  rm -rf "$APP_DIR"
+  mkdir -p "$APP_DIR"
+
+  if [ -d "$TMP_DIR/x-ui" ]; then
+    cp -a "$TMP_DIR/x-ui/." "$APP_DIR/"
   elif [ -f "$TMP_DIR/x-ui" ]; then
-    mv "$TMP_DIR/x-ui" "$INSTALL_DIR/x-ui-agent"
+    mkdir -p "$APP_DIR/bin"
+    cp "$TMP_DIR/x-ui" "$APP_DIR/x-ui"
   else
-    echo -e "${RED}Error: Binary not found in archive${NC}"
+    echo -e "${RED}Error: Package contents not found${NC}"
     rm -rf "$TMP_DIR"
     exit 1
   fi
 
+  # Ensure executables are runnable
+  chmod +x "$APP_DIR/x-ui" || true
+  if [ -d "$BIN_DIR" ]; then
+    chmod +x "$BIN_DIR"/* 2>/dev/null || true
+  fi
+
+  # Symlink CLI entrypoint for convenience
+  ln -sf "$APP_DIR/x-ui" "$INSTALL_DIR/x-ui-agent"
+
   # Cleanup
   rm -rf "$TMP_DIR"
 
-  chmod +x "$INSTALL_DIR/x-ui-agent"
-  echo -e "${GREEN}Agent binary installed to $INSTALL_DIR/x-ui-agent${NC}"
+  echo -e "${GREEN}Agent installed to $APP_DIR (binary: $APP_DIR/x-ui)${NC}"
 }
 
 # Create directories
@@ -149,8 +164,52 @@ create_directories() {
   chmod 755 "$CONFIG_DIR"
   chmod 755 "$LOG_DIR"
   chmod 755 "/etc/x-ui"
+  mkdir -p "$BIN_DIR"
 
   echo -e "${GREEN}Directories created${NC}"
+}
+
+ensure_xray_assets() {
+  local xray_bin="$BIN_DIR/xray-linux-$ARCH"
+  if [ -f "$xray_bin" ]; then
+    echo -e "${GREEN}Xray binary found: $xray_bin${NC}"
+    return
+  fi
+
+  echo -e "${YELLOW}Xray core not found, downloading...${NC}"
+  local base_url="https://github.com/XTLS/Xray-core/releases/download/${XRAY_VERSION}/"
+  local pkg=""
+  case "$ARCH" in
+    amd64) pkg="Xray-linux-64.zip" ;;
+    arm64) pkg="Xray-linux-arm64-v8a.zip" ;;
+    armv7) pkg="Xray-linux-arm32-v7a.zip" ;;
+    armv6) pkg="Xray-linux-arm32-v6.zip" ;;
+    armv5) pkg="Xray-linux-arm32-v5.zip" ;;
+    386) pkg="Xray-linux-32.zip" ;;
+    s390x) pkg="Xray-linux-s390x.zip" ;;
+    *) echo -e "${RED}Unsupported architecture for Xray: $ARCH${NC}"; return ;;
+  esac
+
+  TMP_DIR=$(mktemp -d)
+  wget -q -O "$TMP_DIR/xray.zip" "${base_url}${pkg}" || {
+    echo -e "${RED}Failed to download Xray package${NC}"
+    rm -rf "$TMP_DIR"
+    return
+  }
+  unzip -q "$TMP_DIR/xray.zip" -d "$TMP_DIR/xray" || {
+    echo -e "${RED}Failed to extract Xray package${NC}"
+    rm -rf "$TMP_DIR"
+    return
+  }
+  if [ -f "$TMP_DIR/xray/xray" ]; then
+    mv "$TMP_DIR/xray/xray" "$xray_bin"
+    chmod +x "$xray_bin"
+    echo -e "${GREEN}Installed Xray binary to $xray_bin${NC}"
+  fi
+  # Geo files (best-effort)
+  wget -q -O "$BIN_DIR/geoip.dat" https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat || true
+  wget -q -O "$BIN_DIR/geosite.dat" https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat || true
+  rm -rf "$TMP_DIR"
 }
 
 generate_mtls_certs() {
@@ -198,8 +257,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root
-ExecStart=$INSTALL_DIR/x-ui-agent agent
+WorkingDirectory=$APP_DIR
+ExecStart=$APP_DIR/x-ui agent
 Restart=on-failure
 RestartSec=10s
 
@@ -213,6 +272,9 @@ Environment="AGENT_JWT_TOKEN=$JWT_TOKEN"
 Environment="AGENT_LOG_LEVEL=info"
 Environment="AGENT_LOG_FILE=$LOG_DIR/agent.log"
 Environment="AGENT_RATE_LIMIT=100"
+Environment="XUI_BIN_FOLDER=$BIN_DIR"
+Environment="XUI_DB_FOLDER=/etc/x-ui"
+Environment="XUI_LOG_FOLDER=$LOG_DIR"
 
 # Security
 ProtectSystem=strict
@@ -286,6 +348,7 @@ main() {
   install_dependencies
   download_agent
   create_directories
+  ensure_xray_assets
   choose_auth_type
   create_service
   configure_firewall
