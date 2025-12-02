@@ -28,6 +28,8 @@
 "edit" = "Изменить"
 "delete" = "Удалить"
 "reset" = "Сбросить"
+"all" = "Все"
+"operations" = "Операции"
 "noData" = "Нет данных."
 "copySuccess" = "Скопировано"
 "sure" = "Да"
