@@ -22,6 +22,7 @@ LOG_DIR="/var/log/x-ui-agent"
 SERVICE_NAME="x-ui-agent"
 AUTH_TYPE=""
 JWT_TOKEN=""
+AGENT_HOST_IP="${AGENT_HOST_IP:-}"
 
 echo -e "${GREEN}=== 3x-ui Agent Installer ===${NC}"
 echo ""
@@ -47,6 +48,23 @@ detect_system() {
   esac
 
   echo -e "${GREEN}System: $OS-$ARCH${NC}"
+}
+
+detect_ip() {
+  if [ -n "$AGENT_HOST_IP" ]; then
+    echo -e "${GREEN}Using provided AGENT_HOST_IP: $AGENT_HOST_IP${NC}"
+    return
+  fi
+  echo -e "${YELLOW}Detecting public IP...${NC}"
+  AGENT_HOST_IP=$(curl -s https://ifconfig.me || true)
+  if [ -z "$AGENT_HOST_IP" ]; then
+    AGENT_HOST_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+  fi
+  if [ -z "$AGENT_HOST_IP" ]; then
+    echo -e "${RED}Unable to detect IP automatically. Set AGENT_HOST_IP and rerun.${NC}"
+    exit 1
+  fi
+  echo -e "${GREEN}Detected IP: $AGENT_HOST_IP${NC}"
 }
 
 # Install dependencies
@@ -146,12 +164,13 @@ generate_mtls_certs() {
 
   # Agent cert
   openssl req -new -nodes -newkey rsa:2048 \
-    -subj "/ST=Test/L=Test/O=3x-ui-agent/OU=Agents/CN=agent" \
+    -subj "/ST=Test/L=Test/O=3x-ui-agent/OU=Agents/CN=$AGENT_HOST_IP" \
     -keyout "$CERT_DIR/agent.key" -out "$CERT_DIR/agent.csr"
 
   openssl x509 -req -in "$CERT_DIR/agent.csr" -days 365 \
     -CA "$CERT_DIR/ca.crt" -CAkey "$CERT_DIR/ca.key" -CAcreateserial \
-    -out "$CERT_DIR/agent.crt"
+    -out "$CERT_DIR/agent.crt" \
+    -extfile <(printf "subjectAltName=IP:%s" "$AGENT_HOST_IP")
 
   rm -f "$CERT_DIR/agent.csr"
   chmod 600 "$CERT_DIR/agent.key"
@@ -254,44 +273,16 @@ display_next_steps() {
   echo ""
   echo -e "${GREEN}=== Installation Complete ===${NC}"
   echo ""
-  echo -e "${YELLOW}Next Steps:${NC}"
-  echo ""
-  echo "1. Copy certificates to $CERT_DIR/:"
-  echo "   - agent.crt (agent certificate)"
-  echo "   - agent.key (agent private key)"
-  echo "   - ca.crt (CA certificate)"
-  echo ""
-  echo "2. Set proper permissions:"
-  echo "   chmod 600 $CERT_DIR/agent.key"
-  echo "   chmod 644 $CERT_DIR/agent.crt"
-  echo "   chmod 644 $CERT_DIR/ca.crt"
-  echo ""
-  echo "3. Start the agent:"
-  echo "   systemctl start $SERVICE_NAME"
-  echo "   systemctl enable $SERVICE_NAME"
-  echo ""
-  echo "4. Check status:"
-  echo "   systemctl status $SERVICE_NAME"
-  echo "   journalctl -u $SERVICE_NAME -f"
-  echo ""
-  echo "5. Test agent API:"
-  echo "   curl -k https://localhost:2054/api/v1/health"
-  echo ""
-  echo -e "${YELLOW}Important:${NC}"
-  echo "- Agent listens on port 2054 by default"
-  echo "- Only controller should have access to this port"
-  echo "- Configure firewall to restrict access"
-  if [ "$AUTH_TYPE" = "jwt" ]; then
-    echo "- JWT token: stored in $CONFIG_DIR/agent.jwt (and AGENT_JWT_TOKEN env)"
-  else
-    echo "- mTLS certs generated in $CERT_DIR (agent.crt/key, ca.crt)"
-  fi
-  echo ""
+  echo "Service: $SERVICE_NAME (port 2054)"
+  echo "Auth: $AUTH_TYPE"
+  [ "$AUTH_TYPE" = "jwt" ] && echo "JWT token saved to $CONFIG_DIR/agent.jwt"
+  [ "$AUTH_TYPE" = "mtls" ] && echo "mTLS certs in $CERT_DIR (agent.crt/key, ca.crt, SAN IP: $AGENT_HOST_IP)"
 }
 
 # Main installation flow
 main() {
   detect_system
+  detect_ip
   install_dependencies
   download_agent
   create_directories

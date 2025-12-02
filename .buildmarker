@@ -1,1 +1,1 @@
-v1.1.25 - agent installer: choose mTLS or JWT, auto-generate creds
+v1.1.26 - agent installer: SAN IP certs, cleaner output
