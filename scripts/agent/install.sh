@@ -96,12 +96,16 @@ download_agent() {
     exit 1
   }
 
-  # Move binary to install directory
-  mv "$TMP_DIR/x-ui" "$INSTALL_DIR/x-ui-agent" || {
-    echo -e "${RED}Error: Failed to install binary${NC}"
+  # Move binary to install directory (archive contains x-ui/ directory with binary inside)
+  if [ -f "$TMP_DIR/x-ui/x-ui" ]; then
+    mv "$TMP_DIR/x-ui/x-ui" "$INSTALL_DIR/x-ui-agent"
+  elif [ -f "$TMP_DIR/x-ui" ]; then
+    mv "$TMP_DIR/x-ui" "$INSTALL_DIR/x-ui-agent"
+  else
+    echo -e "${RED}Error: Binary not found in archive${NC}"
     rm -rf "$TMP_DIR"
     exit 1
-  }
+  fi
 
   # Cleanup
   rm -rf "$TMP_DIR"
