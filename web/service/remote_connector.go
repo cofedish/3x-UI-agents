@@ -306,6 +306,11 @@ func (c *RemoteConnector) GetHealth(ctx context.Context) (*HealthStatus, error) 
 		return nil, fmt.Errorf("failed to parse health status: %w", err)
 	}
 
+	// Agents report status=online when reachable; default to online if missing
+	if health.Status == "" {
+		health.Status = "online"
+	}
+
 	return &health, nil
 }
 

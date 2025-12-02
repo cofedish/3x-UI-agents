@@ -60,20 +60,20 @@ type ServerConnector interface {
 type ServerInfo struct {
 	ServerId    int    `json:"serverId"`
 	ServerName  string `json:"serverName"`
-	Version     string `json:"version"`     // Panel/Agent version
-	XrayVersion string `json:"xrayVersion"` // Xray core version
-	OS          string `json:"os"`          // Operating system
-	Arch        string `json:"arch"`        // Architecture
-	Kernel      string `json:"kernel"`      // Kernel version (Linux)
-	Uptime      int64  `json:"uptime"`      // Uptime in seconds
+	Version     string `json:"version"`      // Panel/Agent version
+	XrayVersion string `json:"xray_version"` // Xray core version (agent uses snake_case)
+	OS          string `json:"os"`           // Operating system
+	Arch        string `json:"arch"`         // Architecture
+	Kernel      string `json:"kernel"`       // Kernel version (Linux)
+	Uptime      int64  `json:"uptime"`       // Uptime in seconds
 }
 
 // HealthStatus represents the current health status of a server.
 type HealthStatus struct {
-	Status      string `json:"status"`      // "online", "offline", "error"
-	XrayRunning bool   `json:"xrayRunning"` // Is Xray process running
+	Status      string `json:"status"`        // "online", "offline", "error"
+	XrayRunning bool   `json:"xray_running"`  // Is Xray process running (agent reports snake_case)
 	Version     string `json:"version"`
-	XrayVersion string `json:"xrayVersion"`
+	XrayVersion string `json:"xray_version"`
 	LastError   string `json:"lastError,omitempty"`
 	Timestamp   int64  `json:"timestamp"` // Unix timestamp of health check
 }
