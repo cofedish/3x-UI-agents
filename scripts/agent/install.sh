@@ -122,9 +122,13 @@ create_directories() {
   mkdir -p "$CERT_DIR"
   mkdir -p "$LOG_DIR"
 
+  # Agent needs /etc/x-ui for database (shared with panel if co-located)
+  mkdir -p "/etc/x-ui"
+
   chmod 700 "$CERT_DIR"
   chmod 755 "$CONFIG_DIR"
   chmod 755 "$LOG_DIR"
+  chmod 755 "/etc/x-ui"
 
   echo -e "${GREEN}Directories created${NC}"
 }
@@ -157,7 +161,8 @@ Environment="AGENT_LOG_FILE=$LOG_DIR/agent.log"
 Environment="AGENT_RATE_LIMIT=100"
 
 # Security
-ProtectSystem=full
+ProtectSystem=strict
+ReadWritePaths=/etc/x-ui /var/log/x-ui-agent
 ProtectHome=true
 NoNewPrivileges=true
 

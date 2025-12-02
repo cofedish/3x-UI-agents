@@ -1,1 +1,1 @@
-v1.1.21 - Fix agent installer binary path
+v1.1.22 - Agent installer: fix /etc/x-ui permissions and systemd write paths
