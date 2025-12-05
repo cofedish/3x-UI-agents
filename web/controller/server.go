@@ -356,6 +356,10 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 			"sent": aggregated.TotalUpload,
 			"recv": aggregated.TotalDownload,
 		},
+		"publicIP": map[string]string{
+			"ipv4": "",
+			"ipv6": "",
+		},
 		"appStats": map[string]interface{}{
 			"threads": 0,
 			"mem":     0,
