@@ -207,6 +207,7 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 		OnlineServers  int     `json:"onlineServers"`
 		OfflineServers int     `json:"offlineServers"`
 		AvgCpu         float64 `json:"cpu"`         // Average CPU percentage
+		TotalCpuCores  int     `json:"cpuCores"`    // Total CPU cores across all servers
 		TotalMemory    uint64  `json:"totalMemory"` // Total memory across all servers
 		UsedMemory     uint64  `json:"usedMemory"`  // Total used memory
 		TotalDisk      uint64  `json:"totalDisk"`   // Total disk space
@@ -237,15 +238,16 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 	var wg sync.WaitGroup
 
 	// Helper to aggregate stats
-	aggregateStats := func(stats interface{}) {
+	aggregateStats := func(stats interface{}, health *service.HealthStatus) {
 		mu.Lock()
 		defer mu.Unlock()
 
 		aggregated.OnlineServers++
 
-		// Type assertion to service.Status (matches the local status structure)
+		// Handle local server stats (service.Status)
 		if status, ok := stats.(*service.Status); ok {
 			aggregated.AvgCpu += status.Cpu
+			aggregated.TotalCpuCores += status.CpuCores
 			aggregated.TotalMemory += status.Mem.Total
 			aggregated.UsedMemory += status.Mem.Current
 			aggregated.TotalDisk += status.Disk.Total
@@ -262,12 +264,36 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 			case "error":
 				aggregated.XrayError++
 			}
+			return
+		}
+
+		// Handle remote server stats (service.SystemStats)
+		if sysStats, ok := stats.(*service.SystemStats); ok {
+			aggregated.AvgCpu += sysStats.CPUUsage
+			aggregated.TotalCpuCores += sysStats.CPUCores
+			aggregated.TotalMemory += sysStats.MemTotal
+			aggregated.UsedMemory += sysStats.MemUsed
+			aggregated.TotalDisk += sysStats.DiskTotal
+			aggregated.UsedDisk += sysStats.DiskUsed
+			// Note: SystemStats doesn't have traffic counters, only current speeds
+			// aggregated.TotalUpload += 0
+			// aggregated.TotalDownload += 0
+
+			// Aggregate Xray status from health
+			if health != nil {
+				if health.XrayRunning {
+					aggregated.XrayRunning++
+				} else {
+					aggregated.XrayStopped++
+				}
+			}
+			return
 		}
 	}
 
 	// Collect local server stats
 	if a.lastStatus != nil {
-		aggregateStats(a.lastStatus)
+		aggregateStats(a.lastStatus, nil) // Local status already includes Xray state
 	} else {
 		aggregated.OfflineServers++
 	}
@@ -310,7 +336,10 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 				return
 			}
 
-			aggregateStats(stats)
+			// Get health status for Xray state
+			health, _ := connector.GetHealth(ctx)
+
+			aggregateStats(stats, health)
 		}()
 	}
 
@@ -324,7 +353,7 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 	// Convert to Status-compatible format for frontend
 	statusFormat := map[string]interface{}{
 		"cpu":         aggregated.AvgCpu,
-		"cpuCores":    0,
+		"cpuCores":    aggregated.TotalCpuCores,
 		"logicalPro":  0,
 		"cpuSpeedMhz": 0,
 		"mem": map[string]uint64{
