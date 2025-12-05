@@ -1,1 +1,1 @@
-v1.1.34 - Fix agent stats camelCase field naming
+v1.1.34 - Fix agent stats camelCase field naming + fix load.Avg() API

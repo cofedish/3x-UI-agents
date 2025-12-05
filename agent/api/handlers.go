@@ -23,6 +23,7 @@ import (
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/load"
 	"github.com/shirou/gopsutil/v4/mem"
 )
 
@@ -455,7 +456,7 @@ func (h *AgentHandlers) GetSystemStats(c *gin.Context) {
 	}
 
 	// Load average
-	loadAvg, err := host.LoadAverage()
+	loadAvg, err := load.Avg()
 	if err == nil {
 		stats["loadAverage"] = fmt.Sprintf("%.2f, %.2f, %.2f", loadAvg.Load1, loadAvg.Load5, loadAvg.Load15)
 	} else {
