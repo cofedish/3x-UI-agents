@@ -48,10 +48,7 @@
 .server-selector {
     display: inline-flex;
     align-items: center;
-    /* DEBUG: Temporary border to make component visible */
-    border: 2px solid red;
-    padding: 4px;
-    background: rgba(255, 0, 0, 0.1);
+    gap: 8px;
 }
 </style>
 
@@ -59,6 +56,7 @@
 const SELECTED_SERVER_KEY = "selectedServerId";
 
 Vue.component('a-server-selector', {
+    delimiters: ['[[', ']]'],
     data() {
         return {
             selectedServerId: 1, // Default: local server
@@ -68,9 +66,7 @@ Vue.component('a-server-selector', {
     },
     computed: {
         remoteServers() {
-            const remote = this.servers.filter(s => s.id > 1);
-            console.log('[ServerSelector] Remote servers:', remote);
-            return remote;
+            return this.servers.filter(s => s.id > 1);
         },
         selectedServerName() {
             if (this.selectedServerId === 0) {
@@ -102,41 +98,32 @@ Vue.component('a-server-selector', {
         }
     },
     created() {
-        console.log('[ServerSelector] Component created');
         // Load saved selection
         const saved = localStorage.getItem(SELECTED_SERVER_KEY);
         if (saved) {
             this.selectedServerId = parseInt(saved);
         }
-        console.log('[ServerSelector] Selected server ID:', this.selectedServerId);
         this.loadServers();
-    },
-    mounted() {
-        console.log('[ServerSelector] Component mounted. Current state:', {
-            selectedServerId: this.selectedServerId,
-            servers: this.servers,
-            loading: this.loading
-        });
     },
     methods: {
         async loadServers() {
             this.loading = true;
-            console.log('[ServerSelector] Loading servers...');
             try {
                 const response = await axios.get('panel/api/servers');
-                console.log('[ServerSelector] Raw response:', response);
                 const res = (response && response.data) ? response.data : response;
-                console.log('[ServerSelector] Parsed response:', res);
                 if (res && res.success) {
                     const obj = res.obj || {};
-                    console.log('[ServerSelector] Response obj:', obj);
                     this.servers = Array.isArray(obj.servers) ? obj.servers : [];
-                    console.log('[ServerSelector] Servers loaded:', this.servers);
-                } else {
-                    console.warn('[ServerSelector] Response not successful:', res);
+
+                    // Validate selected server ID exists
+                    const validIds = [0, 1, ...this.servers.map(s => s.id)];
+                    if (!validIds.includes(this.selectedServerId)) {
+                        this.selectedServerId = 1;
+                        localStorage.setItem(SELECTED_SERVER_KEY, '1');
+                    }
                 }
             } catch (error) {
-                console.error('[ServerSelector] Failed to load servers:', error);
+                console.error('Failed to load servers:', error);
             } finally {
                 this.loading = false;
             }
