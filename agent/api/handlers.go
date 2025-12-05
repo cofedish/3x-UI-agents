@@ -395,46 +395,81 @@ func (h *AgentHandlers) GetSystemStats(c *gin.Context) {
 	// CPU
 	cpuPercents, err := cpu.Percent(time.Second, false)
 	if err == nil && len(cpuPercents) > 0 {
-		stats["cpu_usage"] = cpuPercents[0]
+		stats["cpuUsage"] = cpuPercents[0]
+	} else {
+		stats["cpuUsage"] = 0
 	}
 
 	cpuCounts, err := cpu.Counts(false)
 	if err == nil {
-		stats["cpu_cores"] = cpuCounts
+		stats["cpuCores"] = cpuCounts
+	} else {
+		stats["cpuCores"] = 0
 	}
 
 	// Memory
 	vmem, err := mem.VirtualMemory()
 	if err == nil {
-		stats["mem_total"] = vmem.Total
-		stats["mem_used"] = vmem.Used
-		stats["mem_usage"] = vmem.UsedPercent
+		stats["memTotal"] = vmem.Total
+		stats["memUsed"] = vmem.Used
+		stats["memUsage"] = vmem.UsedPercent
+	} else {
+		stats["memTotal"] = 0
+		stats["memUsed"] = 0
+		stats["memUsage"] = 0
 	}
 
 	swap, err := mem.SwapMemory()
 	if err == nil {
-		stats["swap_total"] = swap.Total
-		stats["swap_used"] = swap.Used
-		stats["swap_usage"] = swap.UsedPercent
+		stats["swapTotal"] = swap.Total
+		stats["swapUsed"] = swap.Used
+		stats["swapUsage"] = swap.UsedPercent
+	} else {
+		stats["swapTotal"] = 0
+		stats["swapUsed"] = 0
+		stats["swapUsage"] = 0
 	}
 
 	// Disk
 	diskStat, err := disk.Usage("/")
 	if err == nil {
-		stats["disk_total"] = diskStat.Total
-		stats["disk_used"] = diskStat.Used
-		stats["disk_usage"] = diskStat.UsedPercent
+		stats["diskTotal"] = diskStat.Total
+		stats["diskUsed"] = diskStat.Used
+		stats["diskUsage"] = diskStat.UsedPercent
+	} else {
+		stats["diskTotal"] = 0
+		stats["diskUsed"] = 0
+		stats["diskUsage"] = 0
 	}
 
-	// System uptime
+	// Network - TODO: implement network stats
+	stats["netInSpeed"] = 0
+	stats["netOutSpeed"] = 0
+
+	// System info
 	hostInfo, err := host.Info()
 	if err == nil {
 		stats["uptime"] = hostInfo.Uptime
+	} else {
+		stats["uptime"] = 0
 	}
 
+	// Load average
+	loadAvg, err := host.LoadAverage()
+	if err == nil {
+		stats["loadAverage"] = fmt.Sprintf("%.2f, %.2f, %.2f", loadAvg.Load1, loadAvg.Load5, loadAvg.Load15)
+	} else {
+		stats["loadAverage"] = "0, 0, 0"
+	}
+
+	// TCP/UDP connections - TODO: implement
+	stats["tcpConnections"] = 0
+	stats["udpConnections"] = 0
+	stats["xrayConnections"] = 0
+
 	// Public IPs - TODO: implement GetPublicIP in ServerService
-	stats["public_ipv4"] = ""
-	stats["public_ipv6"] = ""
+	stats["publicIPv4"] = ""
+	stats["publicIPv6"] = ""
 
 	respondSuccess(c, stats)
 }
