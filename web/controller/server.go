@@ -96,6 +96,63 @@ func (a *ServerController) getServerIdFromRequest(c *gin.Context) int {
 	return serverId
 }
 
+// convertSystemStatsToStatus converts SystemStats (remote) to Status (local) format for frontend compatibility.
+func convertSystemStatsToStatus(stats *service.SystemStats, health *service.HealthStatus) map[string]interface{} {
+	// Parse load average string to array
+	loads := []float64{0, 0, 0}
+	if stats.LoadAverage != "" {
+		fmt.Sscanf(stats.LoadAverage, "%f, %f, %f", &loads[0], &loads[1], &loads[2])
+	}
+
+	// Determine Xray state from health
+	xrayState := "stop"
+	xrayVersion := "Unknown"
+	if health != nil {
+		if health.XrayRunning {
+			xrayState = "running"
+		}
+		xrayVersion = health.XrayVersion
+	}
+
+	return map[string]interface{}{
+		"cpu":      stats.CPUUsage,
+		"cpuCores": stats.CPUCores,
+		"mem": map[string]uint64{
+			"current": stats.MemUsed,
+			"total":   stats.MemTotal,
+		},
+		"swap": map[string]uint64{
+			"current": stats.SwapUsed,
+			"total":   stats.SwapTotal,
+		},
+		"disk": map[string]uint64{
+			"current": stats.DiskUsed,
+			"total":   stats.DiskTotal,
+		},
+		"netIO": map[string]int64{
+			"up":   stats.NetOutSpeed,
+			"down": stats.NetInSpeed,
+		},
+		"netTraffic": map[string]uint64{
+			"sent": 0, // Not available from agent stats
+			"recv": 0, // Not available from agent stats
+		},
+		"publicIP": map[string]string{
+			"ipv4": stats.PublicIPv4,
+			"ipv6": stats.PublicIPv6,
+		},
+		"uptime":   stats.Uptime,
+		"loads":    loads,
+		"tcpCount": stats.TCPConnections,
+		"udpCount": stats.UDPConnections,
+		"xray": map[string]interface{}{
+			"state":    xrayState,
+			"version":  xrayVersion,
+			"errorMsg": "",
+		},
+	}
+}
+
 // status returns the current server status information.
 // Supports optional server_id query parameter for multi-server mode.
 func (a *ServerController) status(c *gin.Context) {
@@ -120,7 +177,17 @@ func (a *ServerController) status(c *gin.Context) {
 		return
 	}
 
-	jsonObj(c, stats, nil)
+	// Get health info for Xray state
+	health, err := connector.GetHealth(c.Request.Context())
+	if err != nil {
+		// Log error but continue with nil health (Xray will show as stopped)
+		logger.Warning("Failed to get health info:", err)
+		health = nil
+	}
+
+	// Convert SystemStats to Status format for frontend compatibility
+	statusMap := convertSystemStatsToStatus(stats, health)
+	jsonObj(c, statusMap, nil)
 }
 
 // aggregatedStatus returns aggregated status across all servers (local + remote).
