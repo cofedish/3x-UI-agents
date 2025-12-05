@@ -321,7 +321,67 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 		aggregated.AvgCpu = aggregated.AvgCpu / float64(aggregated.OnlineServers)
 	}
 
-	jsonObj(c, aggregated, nil)
+	// Convert to Status-compatible format for frontend
+	statusFormat := map[string]interface{}{
+		"cpu":         aggregated.AvgCpu,
+		"cpuCores":    0,
+		"logicalPro":  0,
+		"cpuSpeedMhz": 0,
+		"mem": map[string]uint64{
+			"current": aggregated.UsedMemory,
+			"total":   aggregated.TotalMemory,
+		},
+		"swap": map[string]uint64{
+			"current": 0,
+			"total":   0,
+		},
+		"disk": map[string]uint64{
+			"current": aggregated.UsedDisk,
+			"total":   aggregated.TotalDisk,
+		},
+		"xray": map[string]interface{}{
+			"state":    "unknown",
+			"errorMsg": "",
+			"version":  "",
+		},
+		"uptime": uint64(0),
+		"loads":  []float64{0, 0, 0},
+		"tcpCount": 0,
+		"udpCount": 0,
+		"netIO": map[string]uint64{
+			"up":   aggregated.TotalUpload,
+			"down": aggregated.TotalDownload,
+		},
+		"netTraffic": map[string]uint64{
+			"sent": aggregated.TotalUpload,
+			"recv": aggregated.TotalDownload,
+		},
+		"appStats": map[string]interface{}{
+			"threads": 0,
+			"mem":     0,
+			"uptime":  0,
+		},
+		// Add aggregated metadata
+		"_aggregated": map[string]interface{}{
+			"totalServers":   aggregated.TotalServers,
+			"onlineServers":  aggregated.OnlineServers,
+			"offlineServers": aggregated.OfflineServers,
+			"xrayRunning":    aggregated.XrayRunning,
+			"xrayStopped":    aggregated.XrayStopped,
+			"xrayError":      aggregated.XrayError,
+		},
+	}
+
+	// Determine aggregated Xray state
+	if aggregated.XrayRunning > 0 {
+		statusFormat["xray"].(map[string]interface{})["state"] = "running"
+	} else if aggregated.XrayStopped > 0 {
+		statusFormat["xray"].(map[string]interface{})["state"] = "stop"
+	} else if aggregated.XrayError > 0 {
+		statusFormat["xray"].(map[string]interface{})["state"] = "error"
+	}
+
+	jsonObj(c, statusFormat, nil)
 }
 
 // getCpuHistoryBucket retrieves aggregated CPU usage history based on the specified time bucket.
