@@ -48,6 +48,10 @@
 .server-selector {
     display: inline-flex;
     align-items: center;
+    /* DEBUG: Temporary border to make component visible */
+    border: 2px solid red;
+    padding: 4px;
+    background: rgba(255, 0, 0, 0.1);
 }
 </style>
 
@@ -64,7 +68,9 @@ Vue.component('a-server-selector', {
     },
     computed: {
         remoteServers() {
-            return this.servers.filter(s => s.id > 1);
+            const remote = this.servers.filter(s => s.id > 1);
+            console.log('[ServerSelector] Remote servers:', remote);
+            return remote;
         },
         selectedServerName() {
             if (this.selectedServerId === 0) {
@@ -96,25 +102,41 @@ Vue.component('a-server-selector', {
         }
     },
     created() {
+        console.log('[ServerSelector] Component created');
         // Load saved selection
         const saved = localStorage.getItem(SELECTED_SERVER_KEY);
         if (saved) {
             this.selectedServerId = parseInt(saved);
         }
+        console.log('[ServerSelector] Selected server ID:', this.selectedServerId);
         this.loadServers();
+    },
+    mounted() {
+        console.log('[ServerSelector] Component mounted. Current state:', {
+            selectedServerId: this.selectedServerId,
+            servers: this.servers,
+            loading: this.loading
+        });
     },
     methods: {
         async loadServers() {
             this.loading = true;
+            console.log('[ServerSelector] Loading servers...');
             try {
                 const response = await axios.get('panel/api/servers');
+                console.log('[ServerSelector] Raw response:', response);
                 const res = (response && response.data) ? response.data : response;
+                console.log('[ServerSelector] Parsed response:', res);
                 if (res && res.success) {
                     const obj = res.obj || {};
+                    console.log('[ServerSelector] Response obj:', obj);
                     this.servers = Array.isArray(obj.servers) ? obj.servers : [];
+                    console.log('[ServerSelector] Servers loaded:', this.servers);
+                } else {
+                    console.warn('[ServerSelector] Response not successful:', res);
                 }
             } catch (error) {
-                console.error('Failed to load servers:', error);
+                console.error('[ServerSelector] Failed to load servers:', error);
             } finally {
                 this.loading = false;
             }
