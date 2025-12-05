@@ -116,8 +116,10 @@ func convertSystemStatsToStatus(stats *service.SystemStats, health *service.Heal
 	}
 
 	return map[string]interface{}{
-		"cpu":      stats.CPUUsage,
-		"cpuCores": stats.CPUCores,
+		"cpu":         stats.CPUUsage,
+		"cpuCores":    stats.CPUCores,
+		"logicalPro":  0, // Not available from agent
+		"cpuSpeedMhz": 0, // Not available from agent
 		"mem": map[string]uint64{
 			"current": stats.MemUsed,
 			"total":   stats.MemTotal,
@@ -142,7 +144,13 @@ func convertSystemStatsToStatus(stats *service.SystemStats, health *service.Heal
 			"ipv4": stats.PublicIPv4,
 			"ipv6": stats.PublicIPv6,
 		},
-		"uptime":   stats.Uptime,
+		"uptime":    stats.Uptime,
+		"appUptime": 0, // Not available from agent
+		"appStats": map[string]interface{}{
+			"threads": 0,
+			"mem":     0,
+			"uptime":  0,
+		},
 		"loads":    loads,
 		"tcpCount": stats.TCPConnections,
 		"udpCount": stats.UDPConnections,
