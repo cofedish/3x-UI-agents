@@ -50,6 +50,7 @@
         data: {
             inModal: inModal,
             delayedStart: false,
+            inboundFormServers: [],
             get inbound() {
                 return inModal.inbound;
             },
@@ -88,6 +89,20 @@
             }
         },
         methods: {
+            async loadServers() {
+                try {
+                    const msg = await HttpUtil.get('/panel/api/server/list', { page: 1, limit: 100 });
+                    if (msg.success && msg.obj && msg.obj.servers) {
+                        this.inboundFormServers = msg.obj.servers;
+                        // Set default to local server if not already set
+                        if (!this.dbInbound.serverId) {
+                            this.dbInbound.serverId = 1;
+                        }
+                    }
+                } catch (e) {
+                    console.error('Failed to load servers:', e);
+                }
+            },
             streamNetworkChange() {
                 if (!inModal.inbound.canEnableTls()) {
                     this.inModal.inbound.stream.security = 'none';
@@ -207,6 +222,14 @@
             }
 
         },
+        watch: {
+            'inModal.visible'(visible) {
+                if (visible && !this.isEdit) {
+                    // Load servers when modal opens for creating new inbound
+                    this.loadServers();
+                }
+            }
+        }
     });
 
 </script>
