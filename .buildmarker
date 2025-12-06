@@ -1,1 +1,1 @@
-v1.1.60 - auto-restart Xray and open firewall ports after inbound changes
+v1.1.61 - fix build (logger import in inbound controller)
