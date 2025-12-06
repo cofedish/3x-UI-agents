@@ -1,1 +1,2 @@
-v1.1.50 - Change logs to ERROR level to ensure visibility in production
+v1.1.51 - Add detailed request/response logging to trace DELETE issue
+
