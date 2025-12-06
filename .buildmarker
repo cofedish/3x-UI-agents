@@ -1,1 +1,1 @@
-v1.1.56 - block DB writes if xray stopped; set remote host in add response
+v1.1.57 - pass remote host to QR/info links; agent stats expose IP and conn counts

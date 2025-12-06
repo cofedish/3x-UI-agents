@@ -544,9 +544,9 @@
         }
       }
       if (this.inbound.protocol == Protocols.WIREGUARD) {
-        this.links = this.inbound.genInboundLinks(dbInbound.remark).split('\r\n')
+        this.links = this.inbound.genInboundLinks(dbInbound.remark, app.remarkModel, this.dbInbound.address).split('\r\n')
       } else {
-        this.links = this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, this.clientSettings);
+        this.links = this.inbound.genAllLinks(this.dbInbound.remark, app.remarkModel, this.clientSettings, this.dbInbound.address);
       }
       if (this.clientSettings) {
         if (this.clientSettings.subId) {

@@ -4,6 +4,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -11,6 +12,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/cofedish/3x-UI-agents/config"
@@ -25,6 +27,7 @@ import (
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/load"
 	"github.com/shirou/gopsutil/v4/mem"
+	psnet "github.com/shirou/gopsutil/v4/net"
 )
 
 // AgentHandlers contains all agent API handlers.
@@ -472,9 +475,52 @@ func (h *AgentHandlers) GetSystemStats(c *gin.Context) {
 		stats["diskUsage"] = 0
 	}
 
-	// Network - TODO: implement network stats
+	// Network (placeholder: cumulative, speeds not calculated here)
 	stats["netInSpeed"] = 0
 	stats["netOutSpeed"] = 0
+
+	// Connections count
+	tcpCount, udpCount := 0, 0
+	if conns, err := psnet.Connections("inet"); err == nil {
+		for _, c := range conns {
+			switch c.Type {
+			case syscall.SOCK_STREAM:
+				tcpCount++
+			case syscall.SOCK_DGRAM:
+				udpCount++
+			}
+		}
+	}
+	stats["tcpConnections"] = tcpCount
+	stats["udpConnections"] = udpCount
+
+	// Public IPs (best-effort: first non-loopback address)
+	publicIPv4 := ""
+	publicIPv6 := ""
+	if ifs, err := net.Interfaces(); err == nil {
+		for _, iface := range ifs {
+			if (iface.Flags&net.FlagUp) == 0 || (iface.Flags&net.FlagLoopback) != 0 {
+				continue
+			}
+			addrs, _ := iface.Addrs()
+			for _, a := range addrs {
+				if ipNet, ok := a.(*net.IPNet); ok {
+					if ip := ipNet.IP; ip != nil && !ip.IsLoopback() {
+						if v4 := ip.To4(); v4 != nil && publicIPv4 == "" {
+							publicIPv4 = v4.String()
+						} else if v4 == nil && publicIPv6 == "" {
+							publicIPv6 = ip.String()
+						}
+					}
+				}
+			}
+			if publicIPv4 != "" && publicIPv6 != "" {
+				break
+			}
+		}
+	}
+	stats["publicIPv4"] = publicIPv4
+	stats["publicIPv6"] = publicIPv6
 
 	// System info
 	hostInfo, err := host.Info()
@@ -492,14 +538,7 @@ func (h *AgentHandlers) GetSystemStats(c *gin.Context) {
 		stats["loadAverage"] = "0, 0, 0"
 	}
 
-	// TCP/UDP connections - TODO: implement
-	stats["tcpConnections"] = 0
-	stats["udpConnections"] = 0
 	stats["xrayConnections"] = 0
-
-	// Public IPs - TODO: implement GetPublicIP in ServerService
-	stats["publicIPv4"] = ""
-	stats["publicIPv6"] = ""
 
 	respondSuccess(c, stats)
 }
