@@ -1,1 +1,1 @@
-v1.1.42 - Remove hardcoded local server to fix duplicates in server list
+v1.1.43 - Add serverId field to DBInbound class for server selector functionality
