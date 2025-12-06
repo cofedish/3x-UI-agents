@@ -51,6 +51,7 @@ Environment="AGENT_RATE_LIMIT=100"
 
 # Security hardening
 ProtectSystem=full
+ReadWritePaths=/etc/x-ui /etc/x-ui-agent /var/log/x-ui-agent /usr/local/x-ui-agent
 ProtectHome=true
 NoNewPrivileges=true
 PrivateTmp=true

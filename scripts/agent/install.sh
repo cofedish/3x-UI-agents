@@ -277,8 +277,8 @@ Environment="XUI_DB_FOLDER=/etc/x-ui"
 Environment="XUI_LOG_FOLDER=$LOG_DIR"
 
 # Security
-ProtectSystem=strict
-ReadWritePaths=/etc/x-ui /var/log/x-ui-agent /usr/local/x-ui-agent/bin
+ProtectSystem=full
+ReadWritePaths=/etc/x-ui /var/log/x-ui-agent /usr/local/x-ui-agent/bin /usr/local/x-ui-agent
 ProtectHome=true
 NoNewPrivileges=true
 
