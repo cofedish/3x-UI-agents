@@ -91,7 +91,7 @@
         methods: {
             async loadServers() {
                 try {
-                    const msg = await HttpUtil.get('/panel/api/server/list', { page: 1, limit: 100 });
+                    const msg = await HttpUtil.get('/panel/api/servers', { page: 1, limit: 100 });
                     if (msg.success && msg.obj && msg.obj.servers) {
                         this.inboundFormServers = msg.obj.servers;
                         // Set default to local server if not already set
