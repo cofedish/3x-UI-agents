@@ -15,6 +15,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 AGENT_VERSION="${AGENT_VERSION:-latest}"
+RESOLVED_AGENT_VERSION="$AGENT_VERSION"
 APP_DIR="/usr/local/x-ui-agent"
 BIN_DIR="$APP_DIR/bin"
 INSTALL_DIR="/usr/local/bin"
@@ -86,6 +87,16 @@ install_dependencies() {
   fi
 }
 
+# Stop running service if present (for upgrades)
+stop_existing_service() {
+  if systemctl list-units --type=service --all 2>/dev/null | grep -q "^$SERVICE_NAME.service"; then
+    if systemctl is-active --quiet "$SERVICE_NAME"; then
+      echo -e "${YELLOW}Stopping existing $SERVICE_NAME service...${NC}"
+      systemctl stop "$SERVICE_NAME" || true
+    fi
+  fi
+}
+
 # Download agent binary
 download_agent() {
   echo -e "${YELLOW}Downloading agent binary...${NC}"
@@ -97,6 +108,10 @@ download_agent() {
   if [ "$AGENT_VERSION" = "latest" ]; then
     # Get latest release URL
     DOWNLOAD_URL=$(curl -s https://api.github.com/repos/cofedish/3x-UI-agents/releases/latest | grep "browser_download_url.*$ARCHIVE_NAME" | cut -d '"' -f 4)
+    # Derive resolved version from URL
+    RESOLVED_AGENT_VERSION=$(printf "%s" "$DOWNLOAD_URL" | awk -F'/download/' '{print $2}' | cut -d'/' -f1)
+  else
+    RESOLVED_AGENT_VERSION="$AGENT_VERSION"
   fi
 
   echo "Downloading from: $DOWNLOAD_URL"
@@ -147,6 +162,7 @@ download_agent() {
   rm -rf "$TMP_DIR"
 
   echo -e "${GREEN}Agent installed to $APP_DIR (binary: $APP_DIR/x-ui)${NC}"
+  echo -e "${GREEN}Agent version: $RESOLVED_AGENT_VERSION${NC}"
 }
 
 # Create directories
@@ -336,6 +352,8 @@ display_next_steps() {
   echo -e "${GREEN}=== Installation Complete ===${NC}"
   echo ""
   echo "Service: $SERVICE_NAME (port 2054)"
+  echo "Agent version: $RESOLVED_AGENT_VERSION"
+  echo "Xray version: $XRAY_VERSION"
   echo "Auth: $AUTH_TYPE"
   [ "$AUTH_TYPE" = "jwt" ] && echo "JWT token saved to $CONFIG_DIR/agent.jwt"
   [ "$AUTH_TYPE" = "mtls" ] && echo "mTLS certs in $CERT_DIR (agent.crt/key, ca.crt, SAN IP: $AGENT_HOST_IP)"
@@ -346,6 +364,7 @@ main() {
   detect_system
   detect_ip
   install_dependencies
+  stop_existing_service
   download_agent
   create_directories
   ensure_xray_assets
@@ -358,7 +377,9 @@ main() {
 # Run main function
 main
 
-# Enable and start service after installation
-systemctl enable --now $SERVICE_NAME || true
+# Enable and restart service after installation (ensures new binary is picked up)
+systemctl daemon-reload
+systemctl enable $SERVICE_NAME || true
+systemctl restart $SERVICE_NAME || true
 
 exit 0
