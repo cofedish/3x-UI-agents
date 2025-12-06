@@ -285,6 +285,18 @@ func (a *InboundController) addInbound(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
+
+	// Ensure remote host is attached for response so generated links use agent host
+	if server, err := a.serverMgmt.GetServer(serverId); err == nil {
+		if u, err := url.Parse(server.Endpoint); err == nil && u.Host != "" {
+			if host, _, err := net.SplitHostPort(u.Host); err == nil {
+				inbound.ServerAddress = host
+			} else {
+				inbound.ServerAddress = u.Host
+			}
+		}
+	}
+
 	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundCreateSuccess"), inbound, nil)
 }
 

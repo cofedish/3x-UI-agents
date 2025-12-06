@@ -43,6 +43,15 @@ func NewAgentHandlers() *AgentHandlers {
 	}
 }
 
+// ensureXrayRunning returns false and responds 503 if Xray is not running.
+func ensureXrayRunning(c *gin.Context, xs *service.XrayService) bool {
+	if xs != nil && xs.IsXrayRunning() {
+		return true
+	}
+	respondError(c, "XRAY_NOT_RUNNING", "Xray is not running on agent. Start Xray and retry.", http.StatusServiceUnavailable)
+	return false
+}
+
 // StandardResponse is the standard API response format.
 type StandardResponse struct {
 	Success bool        `json:"success"`
@@ -175,6 +184,10 @@ func (h *AgentHandlers) AddInbound(c *gin.Context) {
 		return
 	}
 
+	if !ensureXrayRunning(c, h.xrayService) {
+		return
+	}
+
 	_, _, err := h.inboundService.AddInbound(&inbound)
 	if err != nil {
 		logger.Error("Failed to add inbound:", err)
@@ -202,6 +215,10 @@ func (h *AgentHandlers) UpdateInbound(c *gin.Context) {
 
 	inbound.Id = id
 
+	if !ensureXrayRunning(c, h.xrayService) {
+		return
+	}
+
 	_, _, err = h.inboundService.UpdateInbound(&inbound)
 	if err != nil {
 		logger.Error("Failed to update inbound:", err)
@@ -218,6 +235,10 @@ func (h *AgentHandlers) DeleteInbound(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		respondError(c, "INVALID_ID", "Invalid inbound ID", http.StatusBadRequest)
+		return
+	}
+
+	if !ensureXrayRunning(c, h.xrayService) {
 		return
 	}
 
@@ -246,6 +267,10 @@ func (h *AgentHandlers) AddClient(c *gin.Context) {
 		return
 	}
 
+	if !ensureXrayRunning(c, h.xrayService) {
+		return
+	}
+
 	inbound.Id = id
 
 	_, err = h.inboundService.AddInboundClient(&inbound)
@@ -270,6 +295,10 @@ func (h *AgentHandlers) DeleteClient(c *gin.Context) {
 	email := c.Param("email")
 	if email == "" {
 		respondError(c, "INVALID_EMAIL", "Email is required", http.StatusBadRequest)
+		return
+	}
+
+	if !ensureXrayRunning(c, h.xrayService) {
 		return
 	}
 
