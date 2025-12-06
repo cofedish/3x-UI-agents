@@ -338,6 +338,11 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
+			// Skip local server (id=1) as it's already processed via lastStatus
+			if server.Id == 1 {
+				return
+			}
+
 			// Skip disabled servers
 			if !server.Enabled {
 				mu.Lock()
