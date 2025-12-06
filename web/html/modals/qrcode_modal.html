@@ -151,7 +151,9 @@
     methods: {
       async getStatus() {
         try {
-          const msg = await HttpUtil.get('/panel/api/server/status');
+          // Get serverId from the inbound (multi-server support)
+          const serverId = qrModal.dbInbound.serverId || 1;
+          const msg = await HttpUtil.get('/panel/api/server/status', { server_id: serverId });
           if (msg.success) {
             this.serverStatus = msg.obj;
           }

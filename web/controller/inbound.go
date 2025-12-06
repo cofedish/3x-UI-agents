@@ -59,7 +59,7 @@ func (a *InboundController) initRouter(g *gin.RouterGroup) {
 func (a *InboundController) getServerIdFromRequest(c *gin.Context) int {
 	serverIdStr := c.DefaultQuery("server_id", "1")
 	serverId, err := strconv.Atoi(serverIdStr)
-	if err != nil || serverId < 1 {
+	if err != nil || serverId < 0 {
 		return 1
 	}
 	return serverId
@@ -69,6 +69,41 @@ func (a *InboundController) getServerIdFromRequest(c *gin.Context) int {
 // Supports optional server_id query parameter for multi-server mode.
 func (a *InboundController) getInbounds(c *gin.Context) {
 	serverId := a.getServerIdFromRequest(c)
+
+	// All Servers mode: aggregate inbounds from all servers
+	if serverId == 0 {
+		allInbounds := make([]*model.Inbound, 0)
+
+		// Get local inbounds
+		user := session.GetLoginUser(c)
+		localInbounds, err := a.inboundService.GetInbounds(user.Id)
+		if err == nil {
+			allInbounds = append(allInbounds, localInbounds...)
+		}
+
+		// Get remote inbounds from all servers
+		servers, err := a.serverMgmt.GetAllServers()
+		if err == nil {
+			for _, server := range servers {
+				if !server.Enabled || server.Id == 1 {
+					continue // Skip disabled and local server (already added)
+				}
+
+				connector, err := a.serverMgmt.GetConnector(server.Id)
+				if err != nil {
+					continue // Skip servers we can't connect to
+				}
+
+				remoteInbounds, err := connector.ListInbounds(c.Request.Context())
+				if err == nil {
+					allInbounds = append(allInbounds, remoteInbounds...)
+				}
+			}
+		}
+
+		jsonObj(c, allInbounds, nil)
+		return
+	}
 
 	// For backward compatibility, use local service if server_id=1
 	if serverId == 1 {

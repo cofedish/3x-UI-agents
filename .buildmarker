@@ -1,1 +1,1 @@
-v1.1.37 - Fix agent systemd ReadWritePaths for Xray config
+v1.1.38 - Fix multi-server IP and All Servers inbound aggregation
