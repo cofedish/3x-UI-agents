@@ -358,4 +358,7 @@ main() {
 # Run main function
 main
 
+# Enable and start service after installation
+systemctl enable --now $SERVICE_NAME || true
+
 exit 0

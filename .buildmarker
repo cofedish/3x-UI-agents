@@ -1,1 +1,1 @@
-v1.1.54 - guard inbound delete when xray not running (panic fix)
+v1.1.55 - agent installer starts service; remote inbound links use server host
