@@ -1097,6 +1097,7 @@
           port: inbound.port,
           protocol: inbound.protocol,
           settings: inbound.settings.toString(),
+          serverId: dbInbound.serverId || 1,  // Include serverId in request body
         };
         if (inbound.canEnableStream()) {
           data.streamSettings = inbound.stream.toString();

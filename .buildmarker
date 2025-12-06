@@ -1,1 +1,1 @@
-v1.1.40 - Fix inbound operations + correct server list API route
+v1.1.41 - Fix server selector dropdown to show all servers including local

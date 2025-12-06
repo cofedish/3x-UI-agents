@@ -52,9 +52,20 @@ func (c *ServerManagementController) ListServers(ctx *gin.Context) {
 		return
 	}
 
+	// Always include local server (id=1) in the list
+	localServer := &model.Server{
+		Id:       1,
+		Name:     "Local Server",
+		Endpoint: "local://",
+		Status:   "online",
+		Enabled:  true,
+		AuthType: "local",
+	}
+	allServers := append([]*model.Server{localServer}, servers...)
+
 	// Apply filters (simplified implementation)
 	filtered := make([]*model.Server, 0)
-	for _, server := range servers {
+	for _, server := range allServers {
 		// Status filter
 		if status != "" && server.Status != status {
 			continue
