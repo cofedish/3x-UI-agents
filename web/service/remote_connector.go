@@ -263,9 +263,22 @@ func (c *RemoteConnector) doRequest(ctx context.Context, method, path string, bo
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
+	// Log response for debugging
+	logger.Debug("Agent response:", method, path, "status:", resp.StatusCode, "body:", string(respData))
+
+	// Check for non-200 status codes
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("agent returned status %d: %s", resp.StatusCode, string(respData))
+	}
+
+	// Check for empty response
+	if len(respData) == 0 {
+		return nil, fmt.Errorf("agent returned empty response")
+	}
+
 	var agentResp AgentResponse
 	if err := json.Unmarshal(respData, &agentResp); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
+		return nil, fmt.Errorf("failed to parse response (body: %s): %w", string(respData), err)
 	}
 
 	if !agentResp.Success {
