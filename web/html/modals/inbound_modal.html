@@ -96,9 +96,9 @@
                     if (msg.success && msg.obj && msg.obj.servers) {
                         this.inboundFormServers = msg.obj.servers;
                         console.log('Loaded servers:', this.inboundFormServers);
-                        // Set default to local server if not already set
+                        // Set default to local server if not already set - use Vue.set for reactivity
                         if (!this.dbInbound.serverId) {
-                            this.dbInbound.serverId = 1;
+                            this.$set(this.dbInbound, 'serverId', 1);
                         }
                         console.log('Current serverId:', this.dbInbound.serverId);
                     } else {
@@ -110,7 +110,9 @@
             },
             onServerChange(serverId) {
                 console.log('Server changed to:', serverId);
-                console.log('dbInbound.serverId:', this.dbInbound.serverId);
+                // Ensure reactivity by using Vue.set
+                this.$set(this.dbInbound, 'serverId', serverId);
+                console.log('dbInbound.serverId after Vue.set:', this.dbInbound.serverId);
             },
             streamNetworkChange() {
                 if (!inModal.inbound.canEnableTls()) {
