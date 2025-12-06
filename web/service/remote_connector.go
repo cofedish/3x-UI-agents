@@ -264,7 +264,7 @@ func (c *RemoteConnector) doRequest(ctx context.Context, method, path string, bo
 	}
 
 	// Log response for debugging
-	logger.Debug("Agent response:", method, path, "status:", resp.StatusCode, "body:", string(respData))
+	logger.Error("Agent response:", method, path, "status:", resp.StatusCode, "bodyLen:", len(respData), "body:", string(respData))
 
 	// Check for non-200 status codes
 	if resp.StatusCode != http.StatusOK {
@@ -378,10 +378,13 @@ func (c *RemoteConnector) UpdateInbound(ctx context.Context, inbound *model.Inbo
 // DeleteInbound deletes an inbound via the agent.
 func (c *RemoteConnector) DeleteInbound(ctx context.Context, id int) error {
 	path := fmt.Sprintf("/api/v1/inbounds/%d", id)
-	logger.Info("RemoteConnector.DeleteInbound: serverId=", c.serverId, "id=", id, "endpoint=", c.endpoint, "path=", path)
+	fullURL := c.endpoint + path
+	logger.Error("RemoteConnector.DeleteInbound CALLED: serverId=", c.serverId, "id=", id, "fullURL=", fullURL)
 	_, err := c.doRequest(ctx, "DELETE", path, nil)
 	if err != nil {
-		logger.Error("RemoteConnector.DeleteInbound failed:", err)
+		logger.Error("RemoteConnector.DeleteInbound FAILED:", err)
+	} else {
+		logger.Error("RemoteConnector.DeleteInbound SUCCESS")
 	}
 	return err
 }

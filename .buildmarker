@@ -1,1 +1,1 @@
-v1.1.49 - Add logging to DeleteInbound to trace request flow
+v1.1.50 - Change logs to ERROR level to ensure visibility in production
