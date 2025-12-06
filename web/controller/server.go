@@ -237,8 +237,18 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 
+	// Debug: track which servers contributed to aggregation
+	type ServerDebug struct {
+		ID       int    `json:"id"`
+		Name     string `json:"name"`
+		CPUCores int    `json:"cpuCores"`
+		MemGB    string `json:"memGB"`
+		DiskGB   string `json:"diskGB"`
+	}
+	var debugServers []ServerDebug
+
 	// Helper to aggregate stats
-	aggregateStats := func(stats interface{}, health *service.HealthStatus) {
+	aggregateStats := func(serverID int, serverName string, stats interface{}, health *service.HealthStatus) {
 		mu.Lock()
 		defer mu.Unlock()
 
@@ -254,6 +264,15 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 			aggregated.UsedDisk += status.Disk.Current
 			aggregated.TotalUpload += status.NetTraffic.Sent
 			aggregated.TotalDownload += status.NetTraffic.Recv
+
+			// Debug info
+			debugServers = append(debugServers, ServerDebug{
+				ID:       serverID,
+				Name:     serverName,
+				CPUCores: status.CpuCores,
+				MemGB:    fmt.Sprintf("%.2f", float64(status.Mem.Total)/(1024*1024*1024)),
+				DiskGB:   fmt.Sprintf("%.2f", float64(status.Disk.Total)/(1024*1024*1024)),
+			})
 
 			// Aggregate Xray status
 			switch status.Xray.State {
@@ -279,6 +298,15 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 			// aggregated.TotalUpload += 0
 			// aggregated.TotalDownload += 0
 
+			// Debug info
+			debugServers = append(debugServers, ServerDebug{
+				ID:       serverID,
+				Name:     serverName,
+				CPUCores: sysStats.CPUCores,
+				MemGB:    fmt.Sprintf("%.2f", float64(sysStats.MemTotal)/(1024*1024*1024)),
+				DiskGB:   fmt.Sprintf("%.2f", float64(sysStats.DiskTotal)/(1024*1024*1024)),
+			})
+
 			// Aggregate Xray status from health
 			if health != nil {
 				if health.XrayRunning {
@@ -293,7 +321,7 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 
 	// Collect local server stats
 	if a.lastStatus != nil {
-		aggregateStats(a.lastStatus, nil) // Local status already includes Xray state
+		aggregateStats(1, "Local Server", a.lastStatus, nil) // Local status already includes Xray state
 	} else {
 		aggregated.OfflineServers++
 	}
@@ -339,7 +367,7 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 			// Get health status for Xray state
 			health, _ := connector.GetHealth(ctx)
 
-			aggregateStats(stats, health)
+			aggregateStats(server.Id, server.Name, stats, health)
 		}()
 	}
 
@@ -402,6 +430,7 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 			"xrayRunning":    aggregated.XrayRunning,
 			"xrayStopped":    aggregated.XrayStopped,
 			"xrayError":      aggregated.XrayError,
+			"servers":        debugServers, // Debug: show which servers contributed
 		},
 	}
 
