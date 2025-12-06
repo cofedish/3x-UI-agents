@@ -1,2 +1,1 @@
-v1.1.52 - Add incoming request logging in agent to trace DELETE
-
+v1.1.53 - guard inbound delete when xray not running (panic fix)
