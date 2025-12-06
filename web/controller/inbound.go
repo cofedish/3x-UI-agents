@@ -286,6 +286,12 @@ func (a *InboundController) addInbound(c *gin.Context) {
 		return
 	}
 
+	// Automatically restart Xray on remote server after adding inbound
+	if err := connector.RestartXray(c.Request.Context()); err != nil {
+		logger.Warning("Failed to restart Xray on remote server after adding inbound:", err)
+		// Don't fail the request - inbound was created successfully
+	}
+
 	// Ensure remote host is attached for response so generated links use agent host
 	if server, err := a.serverMgmt.GetServer(serverId); err == nil {
 		if u, err := url.Parse(server.Endpoint); err == nil && u.Host != "" {
@@ -337,6 +343,13 @@ func (a *InboundController) delInbound(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
+
+	// Automatically restart Xray on remote server after deleting inbound
+	if err := connector.RestartXray(c.Request.Context()); err != nil {
+		logger.Warning("Failed to restart Xray on remote server after deleting inbound:", err)
+		// Don't fail the request - inbound was deleted successfully
+	}
+
 	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundDeleteSuccess"), id, nil)
 }
 
@@ -386,6 +399,13 @@ func (a *InboundController) updateInbound(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
+
+	// Automatically restart Xray on remote server after updating inbound
+	if err := connector.RestartXray(c.Request.Context()); err != nil {
+		logger.Warning("Failed to restart Xray on remote server after updating inbound:", err)
+		// Don't fail the request - inbound was updated successfully
+	}
+
 	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundUpdateSuccess"), inbound, nil)
 }
 

@@ -383,6 +383,12 @@ func (h *AgentHandlers) StopXray(c *gin.Context) {
 // RestartXray restarts the Xray service.
 // POST /api/v1/xray/restart
 func (h *AgentHandlers) RestartXray(c *gin.Context) {
+	// Open firewall ports for all inbounds before restarting
+	if err := h.openFirewallPorts(); err != nil {
+		logger.Warning("Failed to open firewall ports (continuing anyway):", err)
+		// Don't fail the request - firewall might not be active or we might not have permissions
+	}
+
 	if err := h.xrayService.RestartXray(false); err != nil {
 		logger.Error("Failed to restart Xray:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to restart Xray: "+err.Error(), http.StatusInternalServerError)
@@ -675,4 +681,60 @@ func (h *AgentHandlers) UpdateGeoFiles(c *gin.Context) {
 	}
 
 	respondSuccess(c, gin.H{"success": true})
+}
+
+// openFirewallPorts opens firewall ports for all configured inbounds.
+// This ensures that when Xray restarts with new inbounds, the firewall allows traffic.
+func (h *AgentHandlers) openFirewallPorts() error {
+	db := database.GetDB()
+	var inbounds []*model.Inbound
+
+	// Get all enabled inbounds
+	if err := db.Where("enable = ?", true).Find(&inbounds).Error; err != nil {
+		return fmt.Errorf("failed to query inbounds: %w", err)
+	}
+
+	if len(inbounds) == 0 {
+		logger.Debug("No enabled inbounds found, skipping firewall configuration")
+		return nil
+	}
+
+	// Check if firewalld is available
+	cmd := exec.Command("firewall-cmd", "--state")
+	if err := cmd.Run(); err != nil {
+		logger.Debug("firewalld not available or not running, skipping firewall configuration")
+		return nil
+	}
+
+	// Open ports for each inbound
+	for _, inbound := range inbounds {
+		protocol := "tcp" // Default to TCP for most VPN protocols
+		portRule := fmt.Sprintf("%d/%s", inbound.Port, protocol)
+
+		// Check if port is already open
+		checkCmd := exec.Command("firewall-cmd", "--query-port="+portRule)
+		if err := checkCmd.Run(); err == nil {
+			// Port already open
+			logger.Debug("Firewall port already open:", portRule)
+			continue
+		}
+
+		// Add port to firewall (permanent)
+		addCmd := exec.Command("firewall-cmd", "--permanent", "--add-port="+portRule)
+		if output, err := addCmd.CombinedOutput(); err != nil {
+			logger.Warning(fmt.Sprintf("Failed to add firewall port %s: %v (output: %s)", portRule, err, string(output)))
+			continue
+		}
+
+		logger.Info("Opened firewall port:", portRule)
+	}
+
+	// Reload firewall to apply changes
+	reloadCmd := exec.Command("firewall-cmd", "--reload")
+	if output, err := reloadCmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to reload firewall: %w (output: %s)", err, string(output))
+	}
+
+	logger.Info("Firewall configuration updated successfully")
+	return nil
 }
