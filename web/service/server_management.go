@@ -181,13 +181,13 @@ func (s *ServerManagementService) GetConnector(serverId int) (ServerConnector, e
 		return nil, err
 	}
 
-	// Check auth type
-	if server.AuthType == "local" {
-		// Local connector
+	// Server ID 1 is always local (backward compatibility)
+	if serverId == 1 {
 		return NewLocalConnector(serverId), nil
 	}
 
-	// Remote connector (mTLS or JWT)
+	// All other servers (ID > 1) are remote, regardless of authType
+	// This handles cases where authType might be incorrectly set
 	connector, err := NewRemoteConnector(server)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create remote connector: %w", err)

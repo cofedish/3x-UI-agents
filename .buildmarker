@@ -1,1 +1,1 @@
-v1.1.46 - Fix All Servers aggregation and server IP in connection links
+v1.1.47 - Fix remote server operations by using serverId instead of authType
