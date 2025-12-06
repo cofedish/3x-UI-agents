@@ -1105,7 +1105,13 @@
         }
         data.sniffing = inbound.sniffing.toString();
 
-        await this.submit('/panel/api/inbounds/add', data, inModal);
+        // Use serverId from form, not from global selector
+        const serverId = dbInbound.serverId || 1;
+        const serverIdParam = serverId > 0 ? `?server_id=${serverId}` : '';
+        const msg = await HttpUtil.postWithModal('/panel/api/inbounds/add' + serverIdParam, data, inModal);
+        if (msg.success) {
+          await this.getDBInbounds();
+        }
       },
       async updateInbound(inbound, dbInbound) {
         const data = {
@@ -1130,7 +1136,13 @@
         }
         data.sniffing = inbound.sniffing.toString();
 
-        await this.submit(`/panel/api/inbounds/update/${dbInbound.id}`, data, inModal);
+        // Use serverId from dbInbound, not from global selector
+        const serverId = dbInbound.serverId || 1;
+        const serverIdParam = serverId > 0 ? `?server_id=${serverId}` : '';
+        const msg = await HttpUtil.postWithModal(`/panel/api/inbounds/update/${dbInbound.id}` + serverIdParam, data, inModal);
+        if (msg.success) {
+          await this.getDBInbounds();
+        }
       },
       openAddClient(dbInboundId) {
         dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
@@ -1211,13 +1223,22 @@
         });
       },
       delInbound(dbInboundId) {
+        const dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
+        const serverId = dbInbound ? (dbInbound.serverId || 1) : 1;
+        const serverIdParam = serverId > 0 ? `?server_id=${serverId}` : '';
+
         this.$confirm({
           title: '{{ i18n "pages.inbounds.deleteInbound"}}' + ' #' + dbInboundId,
           content: '{{ i18n "pages.inbounds.deleteInboundContent"}}',
           class: themeSwitcher.currentTheme,
           okText: '{{ i18n "delete"}}',
           cancelText: '{{ i18n "cancel"}}',
-          onOk: () => this.submit('/panel/api/inbounds/del/' + dbInboundId),
+          onOk: async () => {
+            const msg = await HttpUtil.post('/panel/api/inbounds/del/' + dbInboundId + serverIdParam);
+            if (msg.success) {
+              await this.getDBInbounds();
+            }
+          },
         });
       },
       delClient(dbInboundId, client, confirmation = true) {

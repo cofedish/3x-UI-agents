@@ -1,1 +1,1 @@
-v1.1.39 - Add server selector to inbound creation form
+v1.1.40 - Fix inbound operations to use serverId from inbound, not global selector
