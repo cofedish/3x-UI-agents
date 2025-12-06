@@ -3,6 +3,8 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+	"net/url"
 	"strconv"
 
 	"github.com/cofedish/3x-UI-agents/database/model"
@@ -70,11 +72,28 @@ func (a *InboundController) getServerIdFromRequest(c *gin.Context) int {
 func (a *InboundController) getInbounds(c *gin.Context) {
 	serverId := a.getServerIdFromRequest(c)
 
+	// Helper function to extract hostname from server endpoint
+	getServerHost := func(endpoint string) string {
+		// Extract hostname from endpoint like "https://139.28.223.53:2054"
+		if endpoint == "" || endpoint == "local://" {
+			return ""
+		}
+		// Parse URL
+		if u, err := url.Parse(endpoint); err == nil && u.Host != "" {
+			// Remove port if present
+			if host, _, err := net.SplitHostPort(u.Host); err == nil {
+				return host
+			}
+			return u.Host
+		}
+		return endpoint
+	}
+
 	// All Servers mode: aggregate inbounds from all servers
 	if serverId == 0 {
 		allInbounds := make([]*model.Inbound, 0)
 
-		// Get local inbounds
+		// Get local inbounds - no server address needed (will use location.hostname on frontend)
 		user := session.GetLoginUser(c)
 		localInbounds, err := a.inboundService.GetInbounds(user.Id)
 		if err == nil {
@@ -96,6 +115,11 @@ func (a *InboundController) getInbounds(c *gin.Context) {
 
 				remoteInbounds, err := connector.ListInbounds(c.Request.Context())
 				if err == nil {
+					// Set server address for each remote inbound
+					serverHost := getServerHost(server.Endpoint)
+					for _, inbound := range remoteInbounds {
+						inbound.ServerAddress = serverHost
+					}
 					allInbounds = append(allInbounds, remoteInbounds...)
 				}
 			}
@@ -129,6 +153,18 @@ func (a *InboundController) getInbounds(c *gin.Context) {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}
+
+	// Set server address for remote server inbounds
+	if serverId > 1 {
+		server, err := a.serverMgmt.GetServer(serverId)
+		if err == nil {
+			serverHost := getServerHost(server.Endpoint)
+			for _, inbound := range inbounds {
+				inbound.ServerAddress = serverHost
+			}
+		}
+	}
+
 	jsonObj(c, inbounds, nil)
 }
 

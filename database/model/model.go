@@ -35,6 +35,7 @@ type Inbound struct {
 	Id                   int                  `json:"id" form:"id" gorm:"primaryKey;autoIncrement"`                                                    // Unique identifier
 	UserId               int                  `json:"-"`                                                                                               // Associated user ID
 	ServerId             int                  `json:"serverId" form:"serverId" gorm:"index"`                                                           // Foreign key to Server (for multi-server support)
+	ServerAddress        string               `json:"serverAddress,omitempty" gorm:"-"`                                                                // Server address/hostname (not stored in DB, populated at runtime)
 	Up                   int64                `json:"up" form:"up"`                                                                                    // Upload traffic in bytes
 	Down                 int64                `json:"down" form:"down"`                                                                                // Download traffic in bytes
 	Total                int64                `json:"total" form:"total"`                                                                              // Total traffic limit in bytes

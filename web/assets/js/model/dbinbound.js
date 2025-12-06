@@ -21,7 +21,8 @@ class DBInbound {
         this.tag = "";
         this.sniffing = "";
         this.clientStats = "";
-        this.serverId = 1
+        this.serverId = 1;
+        this.serverAddress = ""
         if (data == null) {
             return;
         }
@@ -65,6 +66,11 @@ class DBInbound {
     }
 
     get address() {
+        // Use server address if available (for remote servers)
+        if (!ObjectUtil.isEmpty(this.serverAddress)) {
+            return this.serverAddress;
+        }
+        // Otherwise use listen address or fall back to current hostname
         let address = location.hostname;
         if (!ObjectUtil.isEmpty(this.listen) && this.listen !== "0.0.0.0") {
             address = this.listen;
@@ -147,6 +153,6 @@ class DBInbound {
 
     genInboundLinks(remarkModel) {
         const inbound = this.toInbound();
-        return inbound.genInboundLinks(this.remark, remarkModel);
+        return inbound.genInboundLinks(this.remark, remarkModel, this.address);
     }
 }

@@ -1,1 +1,1 @@
-v1.1.45 - Fix server selector reactivity using Vue.set for serverId
+v1.1.46 - Fix All Servers aggregation and server IP in connection links

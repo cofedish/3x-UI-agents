@@ -175,7 +175,13 @@ Vue.component('a-server-selector', {
         },
         getServerIdParam() {
             // Returns query parameter for API calls
-            return this.selectedServerId === 0 || this.selectedServerId === 1 ? '' : `?server_id=${this.selectedServerId}`;
+            if (this.selectedServerId === 0) {
+                return '?server_id=0'; // All Servers - aggregate from all
+            }
+            if (this.selectedServerId === 1) {
+                return ''; // Local server (default, backward compatible)
+            }
+            return `?server_id=${this.selectedServerId}`;
         }
     },
     template: `{{template "component/serverSelector/content"}}`,
