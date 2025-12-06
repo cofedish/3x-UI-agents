@@ -1,2 +1,2 @@
-v1.1.51 - Add detailed request/response logging to trace DELETE issue
+v1.1.52 - Add incoming request logging in agent to trace DELETE
 

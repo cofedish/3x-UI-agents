@@ -144,6 +144,14 @@ func TraceID() gin.HandlerFunc {
 // RequestLogger middleware logs all requests.
 func RequestLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Log BEFORE processing to ensure we see the request even if it fails
+		logger.Error(fmt.Sprintf(
+			"[Agent API] INCOMING: %s %s | From: %s",
+			c.Request.Method,
+			c.Request.URL.Path,
+			c.ClientIP(),
+		))
+
 		start := time.Now()
 
 		// Process request
