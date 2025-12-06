@@ -1,1 +1,1 @@
-v1.1.48 - Add debug logging for agent responses to diagnose parse errors
+v1.1.49 - Add logging to DeleteInbound to trace request flow

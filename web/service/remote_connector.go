@@ -377,7 +377,12 @@ func (c *RemoteConnector) UpdateInbound(ctx context.Context, inbound *model.Inbo
 
 // DeleteInbound deletes an inbound via the agent.
 func (c *RemoteConnector) DeleteInbound(ctx context.Context, id int) error {
-	_, err := c.doRequest(ctx, "DELETE", fmt.Sprintf("/api/v1/inbounds/%d", id), nil)
+	path := fmt.Sprintf("/api/v1/inbounds/%d", id)
+	logger.Info("RemoteConnector.DeleteInbound: serverId=", c.serverId, "id=", id, "endpoint=", c.endpoint, "path=", path)
+	_, err := c.doRequest(ctx, "DELETE", path, nil)
+	if err != nil {
+		logger.Error("RemoteConnector.DeleteInbound failed:", err)
+	}
 	return err
 }
 
