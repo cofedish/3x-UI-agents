@@ -92,16 +92,25 @@
             async loadServers() {
                 try {
                     const msg = await HttpUtil.get('/panel/api/servers', { page: 1, limit: 100 });
+                    console.log('Servers API response:', msg);
                     if (msg.success && msg.obj && msg.obj.servers) {
                         this.inboundFormServers = msg.obj.servers;
+                        console.log('Loaded servers:', this.inboundFormServers);
                         // Set default to local server if not already set
                         if (!this.dbInbound.serverId) {
                             this.dbInbound.serverId = 1;
                         }
+                        console.log('Current serverId:', this.dbInbound.serverId);
+                    } else {
+                        console.warn('Invalid server response:', msg);
                     }
                 } catch (e) {
                     console.error('Failed to load servers:', e);
                 }
+            },
+            onServerChange(serverId) {
+                console.log('Server changed to:', serverId);
+                console.log('dbInbound.serverId:', this.dbInbound.serverId);
             },
             streamNetworkChange() {
                 if (!inModal.inbound.canEnableTls()) {

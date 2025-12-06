@@ -1,1 +1,1 @@
-v1.1.43 - Add serverId field to DBInbound class for server selector functionality
+v1.1.44 - Add debug logging for server selector to diagnose selection issues
