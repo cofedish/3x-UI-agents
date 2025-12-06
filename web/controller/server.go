@@ -214,6 +214,12 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 		UsedDisk       uint64  `json:"usedDisk"`    // Total used disk
 		TotalUpload    uint64  `json:"totalUp"`     // Total upload traffic
 		TotalDownload  uint64  `json:"totalDown"`   // Total download traffic
+		NetUpSpeed     int64   `json:"netUpSpeed"`  // Total upload speed (bytes/sec)
+		NetDownSpeed   int64   `json:"netDownSpeed"` // Total download speed (bytes/sec)
+		TotalTCP       int     `json:"totalTCP"`    // Total TCP connections
+		TotalUDP       int     `json:"totalUDP"`    // Total UDP connections
+		PublicIPv4     string  `json:"publicIPv4"`  // First available public IPv4
+		PublicIPv6     string  `json:"publicIPv6"`  // First available public IPv6
 		XrayRunning    int     `json:"xrayRunning"` // Count of servers with Xray running
 		XrayStopped    int     `json:"xrayStopped"` // Count of servers with Xray stopped
 		XrayError      int     `json:"xrayError"`   // Count of servers with Xray errors
@@ -264,6 +270,18 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 			aggregated.UsedDisk += status.Disk.Current
 			aggregated.TotalUpload += status.NetTraffic.Sent
 			aggregated.TotalDownload += status.NetTraffic.Recv
+			aggregated.NetUpSpeed += int64(status.NetIO.Up)
+			aggregated.NetDownSpeed += int64(status.NetIO.Down)
+			aggregated.TotalTCP += status.TcpCount
+			aggregated.TotalUDP += status.UdpCount
+
+			// Collect first available public IPs
+			if aggregated.PublicIPv4 == "" && status.PublicIP.IPv4 != "" && status.PublicIP.IPv4 != "0.0.0.0" {
+				aggregated.PublicIPv4 = status.PublicIP.IPv4
+			}
+			if aggregated.PublicIPv6 == "" && status.PublicIP.IPv6 != "" && status.PublicIP.IPv6 != "::" {
+				aggregated.PublicIPv6 = status.PublicIP.IPv6
+			}
 
 			// Debug info
 			debugServers = append(debugServers, ServerDebug{
@@ -294,9 +312,18 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 			aggregated.UsedMemory += sysStats.MemUsed
 			aggregated.TotalDisk += sysStats.DiskTotal
 			aggregated.UsedDisk += sysStats.DiskUsed
-			// Note: SystemStats doesn't have traffic counters, only current speeds
-			// aggregated.TotalUpload += 0
-			// aggregated.TotalDownload += 0
+			aggregated.NetUpSpeed += sysStats.NetOutSpeed
+			aggregated.NetDownSpeed += sysStats.NetInSpeed
+			aggregated.TotalTCP += sysStats.TCPConnections
+			aggregated.TotalUDP += sysStats.UDPConnections
+
+			// Collect first available public IPs
+			if aggregated.PublicIPv4 == "" && sysStats.PublicIPv4 != "" && sysStats.PublicIPv4 != "0.0.0.0" {
+				aggregated.PublicIPv4 = sysStats.PublicIPv4
+			}
+			if aggregated.PublicIPv6 == "" && sysStats.PublicIPv6 != "" && sysStats.PublicIPv6 != "::" {
+				aggregated.PublicIPv6 = sysStats.PublicIPv6
+			}
 
 			// Debug info
 			debugServers = append(debugServers, ServerDebug{
@@ -408,19 +435,19 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 		},
 		"uptime": uint64(0),
 		"loads":  []float64{0, 0, 0},
-		"tcpCount": 0,
-		"udpCount": 0,
-		"netIO": map[string]uint64{
-			"up":   aggregated.TotalUpload,
-			"down": aggregated.TotalDownload,
+		"tcpCount": aggregated.TotalTCP,
+		"udpCount": aggregated.TotalUDP,
+		"netIO": map[string]int64{
+			"up":   aggregated.NetUpSpeed,
+			"down": aggregated.NetDownSpeed,
 		},
 		"netTraffic": map[string]uint64{
 			"sent": aggregated.TotalUpload,
 			"recv": aggregated.TotalDownload,
 		},
 		"publicIP": map[string]string{
-			"ipv4": "",
-			"ipv6": "",
+			"ipv4": aggregated.PublicIPv4,
+			"ipv6": aggregated.PublicIPv6,
 		},
 		"appStats": map[string]interface{}{
 			"threads": 0,
