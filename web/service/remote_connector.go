@@ -253,7 +253,7 @@ func (c *RemoteConnector) doRequest(ctx context.Context, method, path string, bo
 	}
 
 	// Log request before sending
-	logger.Error("SENDING REQUEST:", method, url, "authType:", c.authType)
+	logger.Debug("SENDING REQUEST:", method, url, "authType:", c.authType)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -262,7 +262,7 @@ func (c *RemoteConnector) doRequest(ctx context.Context, method, path string, bo
 	}
 	defer resp.Body.Close()
 
-	logger.Error("RECEIVED RESPONSE:", method, url, "status:", resp.StatusCode)
+	logger.Debug("RECEIVED RESPONSE:", method, url, "status:", resp.StatusCode)
 
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -270,7 +270,7 @@ func (c *RemoteConnector) doRequest(ctx context.Context, method, path string, bo
 	}
 
 	// Log response for debugging
-	logger.Error("Agent response:", method, path, "status:", resp.StatusCode, "bodyLen:", len(respData), "body:", string(respData))
+	logger.Debug("Agent response:", method, path, "status:", resp.StatusCode, "bodyLen:", len(respData), "body:", string(respData))
 
 	// Check for non-200 status codes
 	if resp.StatusCode != http.StatusOK {

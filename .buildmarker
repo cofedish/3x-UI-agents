@@ -1,1 +1,1 @@
-v1.1.61 - fix build (logger import in inbound controller)
+v1.1.62 - fix logging levels (DEBUG instead of ERROR for normal requests)
