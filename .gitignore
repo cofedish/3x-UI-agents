@@ -38,5 +38,14 @@ x-ui.db
 # Ignore Docker specific files
 docker-compose.override.yml
 
+# Ignore lab artifacts and secrets
+docker/lab/shared/
+docker/lab/panel-data/
+docker/lab/agent-mtls-data/
+docker/lab/agent-jwt-data/
+artifacts/
+test/e2e/node_modules/
+test/e2e/.playwright/
+
 # Ignore .env (Environment Variables) file
 .env
