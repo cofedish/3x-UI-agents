@@ -1,0 +1,13 @@
+[Unit]
+Description=3x-ui Lab Bootstrap (agent)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=-/opt/lab/shared/lab.env
+ExecStart=/usr/local/bin/bootstrap-agent.sh
+
+[Install]
+WantedBy=multi-user.target

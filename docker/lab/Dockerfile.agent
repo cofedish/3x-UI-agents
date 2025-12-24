@@ -1,0 +1,21 @@
+FROM ubuntu:24.04
+ENV container=docker
+ENV DEBIAN_FRONTEND=noninteractive
+STOPSIGNAL SIGRTMIN+3
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    systemd systemd-sysv dbus ca-certificates curl wget openssl \
+    iproute2 iputils-ping jq netcat-traditional \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY docker/lab/bootstrap-agent.sh /usr/local/bin/bootstrap-agent.sh
+COPY docker/lab/systemd/lab-agent-bootstrap.service /etc/systemd/system/lab-agent-bootstrap.service
+COPY . /opt/3x-ui
+
+RUN chmod +x /usr/local/bin/bootstrap-agent.sh \
+  && ln -s /etc/systemd/system/lab-agent-bootstrap.service /etc/systemd/system/multi-user.target.wants/lab-agent-bootstrap.service
+
+VOLUME ["/sys/fs/cgroup"]
+CMD ["/sbin/init"]
