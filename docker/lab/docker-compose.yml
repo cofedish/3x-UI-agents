@@ -5,7 +5,6 @@ services:
       dockerfile: docker/lab/Dockerfile.panel
     container_name: lab-panel
     privileged: true
-    cgroupns: host
     tmpfs:
       - /run
       - /run/lock
@@ -35,7 +34,6 @@ services:
       dockerfile: docker/lab/Dockerfile.agent
     container_name: lab-agent-mtls
     privileged: true
-    cgroupns: host
     tmpfs:
       - /run
       - /run/lock
@@ -62,7 +60,6 @@ services:
       dockerfile: docker/lab/Dockerfile.agent
     container_name: lab-agent-jwt
     privileged: true
-    cgroupns: host
     tmpfs:
       - /run
       - /run/lock
