@@ -1,0 +1,115 @@
+services:
+  panel:
+    build:
+      context: .
+      dockerfile: docker/lab/Dockerfile.panel
+    container_name: lab-panel
+    privileged: true
+    cgroupns: host
+    tmpfs:
+      - /run
+      - /run/lock
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - ./docker/lab/shared:/opt/lab/shared
+      - ./docker/lab/panel-data:/etc/x-ui
+    ports:
+      - "2053:2053"
+    environment:
+      PANEL_PORT: "2053"
+      PANEL_BASE_PATH: "lab"
+      PANEL_USERNAME: "admin"
+      PANEL_PASSWORD: "admin123"
+      PANEL_LISTEN_IP: "0.0.0.0"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:2053/lab/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - labnet
+
+  agent-mtls:
+    build:
+      context: .
+      dockerfile: docker/lab/Dockerfile.agent
+    container_name: lab-agent-mtls
+    privileged: true
+    cgroupns: host
+    tmpfs:
+      - /run
+      - /run/lock
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - ./docker/lab/shared:/opt/lab/shared
+      - ./docker/lab/agent-mtls-data:/etc/x-ui
+    environment:
+      AGENT_AUTH_TYPE: "mtls"
+      AGENT_CERT_NAME: "agent-mtls"
+      AGENT_SERVER_ID: "agent-mtls"
+      AGENT_SERVER_NAME: "Lab Agent mTLS"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --cacert /opt/lab/shared/certs/ca.crt --cert /opt/lab/shared/certs/panel-client.crt --key /opt/lab/shared/certs/panel-client.key https://agent-mtls:2054/api/v1/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - labnet
+
+  agent-jwt:
+    build:
+      context: .
+      dockerfile: docker/lab/Dockerfile.agent
+    container_name: lab-agent-jwt
+    privileged: true
+    cgroupns: host
+    tmpfs:
+      - /run
+      - /run/lock
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      - ./docker/lab/shared:/opt/lab/shared
+      - ./docker/lab/agent-jwt-data:/etc/x-ui
+    environment:
+      AGENT_AUTH_TYPE: "jwt"
+      AGENT_CERT_NAME: "agent-jwt"
+      AGENT_SERVER_ID: "agent-jwt"
+      AGENT_SERVER_NAME: "Lab Agent JWT"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS --cacert /opt/lab/shared/certs/ca.crt https://agent-jwt:2054/api/v1/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks:
+      - labnet
+
+  e2e:
+    build:
+      context: .
+      dockerfile: docker/lab/Dockerfile.e2e
+    container_name: lab-e2e
+    depends_on:
+      panel:
+        condition: service_healthy
+      agent-mtls:
+        condition: service_healthy
+      agent-jwt:
+        condition: service_healthy
+    volumes:
+      - .:/work
+      - ./docker/lab/shared:/opt/lab/shared:ro
+      - ./artifacts/last-run:/artifacts/last-run
+    working_dir: /work
+    environment:
+      PANEL_URL: "http://panel:2053/lab"
+      PANEL_USERNAME: "admin"
+      PANEL_PASSWORD: "admin123"
+      ARTIFACTS_DIR: "/artifacts/last-run"
+      LAB_SHARED: "/opt/lab/shared"
+    entrypoint: ["/bin/bash", "-lc", "/work/docker/lab/scripts/run-e2e.sh"]
+    networks:
+      - labnet
+
+networks:
+  labnet:
+    driver: bridge
