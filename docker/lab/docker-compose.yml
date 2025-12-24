@@ -1,7 +1,7 @@
 services:
   panel:
     build:
-      context: .
+      context: ../..
       dockerfile: docker/lab/Dockerfile.panel
     container_name: lab-panel
     privileged: true
@@ -30,7 +30,7 @@ services:
 
   agent-mtls:
     build:
-      context: .
+      context: ../..
       dockerfile: docker/lab/Dockerfile.agent
     container_name: lab-agent-mtls
     privileged: true
@@ -56,7 +56,7 @@ services:
 
   agent-jwt:
     build:
-      context: .
+      context: ../..
       dockerfile: docker/lab/Dockerfile.agent
     container_name: lab-agent-jwt
     privileged: true
@@ -82,7 +82,7 @@ services:
 
   e2e:
     build:
-      context: .
+      context: ../..
       dockerfile: docker/lab/Dockerfile.e2e
     container_name: lab-e2e
     depends_on:
