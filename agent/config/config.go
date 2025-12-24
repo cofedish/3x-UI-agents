@@ -53,7 +53,7 @@ func LoadConfig() (*AgentConfig, error) {
 		CertFile:              getEnv("AGENT_CERT_FILE", "/etc/x-ui-agent/certs/agent.crt"),
 		KeyFile:               getEnv("AGENT_KEY_FILE", "/etc/x-ui-agent/certs/agent.key"),
 		CAFile:                getEnv("AGENT_CA_FILE", "/etc/x-ui-agent/certs/ca.crt"),
-		JWTSecret:             getEnv("AGENT_JWT_SECRET", ""),
+		JWTSecret:             getEnv("AGENT_JWT_SECRET", getEnv("AGENT_JWT_TOKEN", "")),
 		XrayBinFolder:         getEnv("XRAY_BIN_FOLDER", "/usr/local/x-ui/bin"),
 		XrayConfigFolder:      getEnv("XRAY_CONFIG_FOLDER", "/etc/x-ui"),
 		LogLevel:              getEnv("AGENT_LOG_LEVEL", "info"),
