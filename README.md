@@ -30,6 +30,31 @@ bash <(curl -Ls https://raw.githubusercontent.com/cofedish/3x-UI-agents/master/i
 
 For full documentation, please visit the [project Wiki](https://github.com/cofedish/3x-UI-agents/wiki).
 
+## Docker Lab (E2E)
+
+Local, fully automated lab with panel + mTLS/JWT agents + UI/API tests.
+
+Prereqs:
+- Linux or WSL
+- Docker + `docker compose`
+- `bash` + `openssl`
+
+Run full flow (build, up, test, artifacts, down):
+
+```bash
+make lab-all
+```
+
+Optional steps:
+
+```bash
+make lab-up
+make lab-test
+make lab-down
+```
+
+Artifacts land in `artifacts/last-run/` (report, docker logs, Playwright traces, env summary).
+
 ## A Special Thanks to
 
 - [cofedish](https://github.com/cofedish)
