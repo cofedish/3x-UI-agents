@@ -5,11 +5,12 @@
         <a-switch v-model="dbInbound.enable"></a-switch>
     </a-form-item>
     <a-form-item label='{{ i18n "remark" }}'>
-        <a-input v-model.trim="dbInbound.remark"></a-input>
+        <a-input v-model.trim="dbInbound.remark" data-testid="inbound-remark"></a-input>
     </a-form-item>
 
     <a-form-item v-if="!isEdit" label='{{ i18n "pages.servers.server" }}'>
-        <a-select v-model="dbInbound.serverId" :dropdown-class-name="themeSwitcher.currentTheme" @change="onServerChange">
+        <a-select v-model="dbInbound.serverId" data-testid="inbound-server"
+            :dropdown-class-name="themeSwitcher.currentTheme" @change="onServerChange">
             <a-select-option v-for="server in inboundFormServers" :key="server.id" :value="server.id">
                 [[ server.name ]]
                 <a-badge v-if="server.status === 'online'" status="success" style="margin-left: 8px" />
@@ -38,7 +39,8 @@
     </a-form-item>
 
     <a-form-item label='{{ i18n "pages.inbounds.port" }}'>
-        <a-input-number v-model.number="inbound.port" :min="1" :max="65535"></a-input-number>
+        <a-input-number v-model.number="inbound.port" :min="1" :max="65535"
+            data-testid="inbound-port"></a-input-number>
     </a-form-item>
 
     <a-form-item>

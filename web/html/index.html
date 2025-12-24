@@ -125,7 +125,8 @@
                     </template>
                   </template>
                   <template #actions>
-                    <a-space v-if="app.ipLimitEnable" direction="horizontal" @click="openXrayLogs()" class="jc-center">
+                    <a-space v-if="app.ipLimitEnable" direction="horizontal" @click="openXrayLogs()" class="jc-center"
+                      data-testid="dashboard-xray-logs">
                       <a-icon type="bars"></a-icon>
                       <span v-if="!isMobile">{{ i18n "pages.index.logs" }}</span>
                     </a-space>
@@ -133,7 +134,8 @@
                       <a-icon type="poweroff"></a-icon>
                       <span v-if="!isMobile">{{ i18n "pages.index.stopXray" }}</span>
                     </a-space>
-                    <a-space direction="horizontal" @click="restartXrayService" class="jc-center">
+                    <a-space direction="horizontal" @click="restartXrayService" class="jc-center"
+                      data-testid="dashboard-xray-restart">
                       <a-icon type="reload"></a-icon>
                       <span v-if="!isMobile">{{ i18n "pages.index.restartXray" }}</span>
                     </a-space>
@@ -150,7 +152,8 @@
               <a-col :sm="24" :lg="12">
                 <a-card title='{{ i18n "menu.link" }}' hoverable>
                   <template #actions>
-                    <a-space direction="horizontal" @click="openLogs()" class="jc-center">
+                    <a-space direction="horizontal" @click="openLogs()" class="jc-center"
+                      data-testid="dashboard-logs">
                       <a-icon type="bars"></a-icon>
                       <span v-if="!isMobile">{{ i18n "pages.index.logs" }}</span>
                     </a-space>
@@ -158,7 +161,8 @@
                       <a-icon type="control"></a-icon>
                       <span v-if="!isMobile">{{ i18n "pages.index.config" }}</span>
                     </a-space>
-                    <a-space direction="horizontal" @click="openBackup" class="jc-center">
+                    <a-space direction="horizontal" @click="openBackup" class="jc-center"
+                      data-testid="dashboard-backup">
                       <a-icon type="cloud-server"></a-icon>
                       <span v-if="!isMobile">{{ i18n "pages.index.backup" }}</span>
                     </a-space>
@@ -423,14 +427,14 @@
           <template #title>{{ i18n "pages.index.exportDatabase" }}</template>
           <template #description>{{ i18n "pages.index.exportDatabaseDesc" }}</template>
         </a-list-item-meta>
-        <a-button @click="exportDatabase()" type="primary" icon="download" />
+        <a-button @click="exportDatabase()" type="primary" icon="download" data-testid="backup-export" />
       </a-list-item>
       <a-list-item class="ant-backup-list-item">
         <a-list-item-meta>
           <template #title>{{ i18n "pages.index.importDatabase" }}</template>
           <template #description>{{ i18n "pages.index.importDatabaseDesc" }}</template>
         </a-list-item-meta>
-        <a-button @click="importDatabase()" type="primary" icon="upload" />
+        <a-button @click="importDatabase()" type="primary" icon="upload" data-testid="backup-import" />
       </a-list-item>
     </a-list>
   </a-modal>

@@ -113,7 +113,7 @@
               <a-card hoverable>
                 <template #title>
                   <a-space direction="horizontal">
-                    <a-button type="primary" icon="plus" @click="openAddInbound">
+                    <a-button type="primary" icon="plus" data-testid="inbounds-add" @click="openAddInbound">
                       <template v-if="!isMobile">{{ i18n "pages.inbounds.addInbound" }}</template>
                     </a-button>
                     <a-dropdown :trigger="['click']">

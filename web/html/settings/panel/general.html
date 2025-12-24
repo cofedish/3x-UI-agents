@@ -113,7 +113,8 @@
             <template #title>{{ i18n "pages.settings.externalTrafficInformEnable"}}</template>
             <template #description>{{ i18n "pages.settings.externalTrafficInformEnableDesc"}}</template>
             <template #control>
-                <a-switch v-model="allSetting.externalTrafficInformEnable"></a-switch>
+                <a-switch v-model="allSetting.externalTrafficInformEnable"
+                    data-testid="settings-external-traffic-enable"></a-switch>
             </template>
         </a-setting-list-item>
         <a-setting-list-item paddings="small">

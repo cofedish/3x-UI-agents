@@ -32,7 +32,8 @@
                   <a-row :style="{ display: 'flex', flexWrap: 'wrap', alignItems: 'center' }">
                     <a-col :xs="24" :sm="10" :style="{ padding: '4px' }">
                       <a-space direction="horizontal">
-                        <a-button type="primary" :disabled="saveBtnDisable" @click="updateAllSetting">{{ i18n
+                        <a-button type="primary" :disabled="saveBtnDisable" @click="updateAllSetting"
+                          data-testid="settings-save">{{ i18n
                           "pages.settings.save" }}</a-button>
                         <a-button type="danger" :disabled="!saveBtnDisable" @click="restartPanel">{{ i18n
                           "pages.settings.restartPanel" }}</a-button>
