@@ -228,7 +228,30 @@ ensure_xray_assets() {
   rm -rf "$TMP_DIR"
 }
 
+copy_preseeded_certs() {
+  if [ -n "${AGENT_CERT_FILE:-}" ] && [ -n "${AGENT_KEY_FILE:-}" ]; then
+    if [ -f "$AGENT_CERT_FILE" ] && [ -f "$AGENT_KEY_FILE" ]; then
+      mkdir -p "$CERT_DIR"
+      cp "$AGENT_CERT_FILE" "$CERT_DIR/agent.crt"
+      cp "$AGENT_KEY_FILE" "$CERT_DIR/agent.key"
+      if [ -n "${AGENT_CA_FILE:-}" ] && [ -f "$AGENT_CA_FILE" ]; then
+        cp "$AGENT_CA_FILE" "$CERT_DIR/ca.crt"
+      fi
+      chmod 600 "$CERT_DIR/agent.key"
+      chmod 644 "$CERT_DIR/agent.crt" || true
+      [ -f "$CERT_DIR/ca.crt" ] && chmod 644 "$CERT_DIR/ca.crt"
+      return 0
+    fi
+  fi
+  return 1
+}
+
 generate_mtls_certs() {
+  if copy_preseeded_certs; then
+    echo -e "${GREEN}Using preseeded certificates from environment${NC}"
+    return
+  fi
+
   echo -e "${YELLOW}Generating mTLS certificates...${NC}"
   # CA
   if [ ! -f "$CERT_DIR/ca.crt" ] || [ ! -f "$CERT_DIR/ca.key" ]; then
@@ -254,7 +277,14 @@ generate_mtls_certs() {
 }
 
 generate_jwt_token() {
-  JWT_TOKEN=$(openssl rand -hex 32)
+  if [ -n "${AGENT_JWT_SECRET:-}" ]; then
+    JWT_TOKEN="${AGENT_JWT_SECRET}"
+  elif [ -n "${AGENT_JWT_TOKEN:-}" ]; then
+    JWT_TOKEN="${AGENT_JWT_TOKEN}"
+  fi
+  if [ -z "$JWT_TOKEN" ]; then
+    JWT_TOKEN=$(openssl rand -hex 32)
+  fi
   echo "$JWT_TOKEN" > "$CONFIG_DIR/agent.jwt"
   chmod 600 "$CONFIG_DIR/agent.jwt"
   echo -e "${GREEN}JWT token generated: $JWT_TOKEN${NC}"
@@ -280,10 +310,13 @@ RestartSec=10s
 
 # Environment variables (customize as needed)
 Environment="AGENT_LISTEN_ADDR=0.0.0.0:2054"
+Environment="AGENT_SERVER_ID=${AGENT_SERVER_ID:-}"
+Environment="AGENT_SERVER_NAME=${AGENT_SERVER_NAME:-}"
 Environment="AGENT_AUTH_TYPE=$AUTH_TYPE"
 Environment="AGENT_CERT_FILE=$CERT_DIR/agent.crt"
 Environment="AGENT_KEY_FILE=$CERT_DIR/agent.key"
 Environment="AGENT_CA_FILE=$CERT_DIR/ca.crt"
+Environment="AGENT_JWT_SECRET=$JWT_TOKEN"
 Environment="AGENT_JWT_TOKEN=$JWT_TOKEN"
 Environment="AGENT_LOG_LEVEL=info"
 Environment="AGENT_LOG_FILE=$LOG_DIR/agent.log"
@@ -336,6 +369,7 @@ choose_auth_type() {
       ;;
     2)
       AUTH_TYPE="jwt"
+      generate_mtls_certs
       generate_jwt_token
       ;;
     *)
