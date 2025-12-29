@@ -3,9 +3,11 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"path/filepath"
 	"runtime"
 	"sync"
 
+	"github.com/cofedish/3x-UI-agents/config"
 	"github.com/cofedish/3x-UI-agents/logger"
 	"github.com/cofedish/3x-UI-agents/xray"
 	"github.com/shirou/gopsutil/v4/process"
@@ -134,6 +136,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	ensureXrayLogConfig(xrayConfig)
 
 	s.inboundService.AddTraffic(nil, nil)
 
@@ -224,6 +227,34 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		xrayConfig.InboundConfigs = append(xrayConfig.InboundConfigs, *inboundConfig)
 	}
 	return xrayConfig, nil
+}
+
+func ensureXrayLogConfig(xrayConfig *xray.Config) {
+	if xrayConfig == nil {
+		return
+	}
+	logConfig := map[string]any{}
+	if len(xrayConfig.LogConfig) > 0 {
+		_ = json.Unmarshal(xrayConfig.LogConfig, &logConfig)
+	}
+	if logConfig == nil {
+		logConfig = map[string]any{}
+	}
+
+	accessPath := filepath.Join(config.GetLogFolder(), "xray-access.log")
+	if access, ok := logConfig["access"].(string); !ok || access == "" || access == "none" {
+		logConfig["access"] = accessPath
+	}
+	if errPath, ok := logConfig["error"].(string); !ok || errPath == "" || errPath == "none" {
+		logConfig["error"] = filepath.Join(config.GetLogFolder(), "xray-error.log")
+	}
+	if _, ok := logConfig["loglevel"]; !ok {
+		logConfig["loglevel"] = "warning"
+	}
+
+	if updated, err := json.MarshalIndent(logConfig, "", "  "); err == nil {
+		xrayConfig.LogConfig = updated
+	}
 }
 
 // GetXrayTraffic fetches the current traffic statistics from the running Xray process.

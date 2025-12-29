@@ -58,7 +58,19 @@ func NewAgentHandlers() *AgentHandlers {
 
 // ensureXrayRunning returns false and responds 503 if Xray is not running.
 func ensureXrayRunning(c *gin.Context, xs *service.XrayService) bool {
-	if xs != nil && xs.IsXrayRunning() {
+	if xs == nil {
+		respondError(c, "XRAY_NOT_RUNNING", "Xray service is unavailable on agent.", http.StatusServiceUnavailable)
+		return false
+	}
+	if xs.IsXrayRunning() {
+		return true
+	}
+	if err := xs.RestartXray(true); err != nil {
+		logger.Warning("Failed to auto-start Xray:", err)
+		respondError(c, "XRAY_NOT_RUNNING", "Xray is not running on agent. Start Xray and retry.", http.StatusServiceUnavailable)
+		return false
+	}
+	if xs.IsXrayRunning() {
 		return true
 	}
 	respondError(c, "XRAY_NOT_RUNNING", "Xray is not running on agent. Start Xray and retry.", http.StatusServiceUnavailable)
@@ -399,9 +411,21 @@ func (h *AgentHandlers) RestartXray(c *gin.Context) {
 		// Don't fail the request - firewall might not be active or we might not have permissions
 	}
 
-	if err := h.xrayService.RestartXray(false); err != nil {
+	if err := h.xrayService.RestartXray(true); err != nil {
 		logger.Error("Failed to restart Xray:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to restart Xray: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondSuccess(c, gin.H{"success": true})
+}
+
+// ReloadXray reloads the Xray configuration without forcing a restart.
+// POST /api/v1/xray/reload
+func (h *AgentHandlers) ReloadXray(c *gin.Context) {
+	if err := h.xrayService.RestartXray(false); err != nil {
+		logger.Error("Failed to reload Xray:", err)
+		respondError(c, "OPERATION_FAILED", "Failed to reload Xray: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

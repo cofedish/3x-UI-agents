@@ -3,12 +3,15 @@ package agent
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/cofedish/3x-UI-agents/agent/api"
 	"github.com/cofedish/3x-UI-agents/agent/config"
 	xrayConfig "github.com/cofedish/3x-UI-agents/config"
 	"github.com/cofedish/3x-UI-agents/database"
 	"github.com/cofedish/3x-UI-agents/logger"
+	"github.com/cofedish/3x-UI-agents/web/job"
+	"github.com/cofedish/3x-UI-agents/web/service"
 )
 
 // Run starts the agent in server mode.
@@ -32,6 +35,20 @@ func Run() error {
 	if err := database.InitDB(dbPath); err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
+
+	xrayService := &service.XrayService{}
+	if err := xrayService.RestartXray(true); err != nil {
+		logger.Warning("Failed to start Xray on agent startup:", err)
+	}
+
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		jobRunner := job.NewXrayTrafficJob()
+		for range ticker.C {
+			jobRunner.Run()
+		}
+	}()
 
 	// Setup router
 	router := api.SetupRouter(cfg)

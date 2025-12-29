@@ -82,6 +82,7 @@ func SetupRouter(cfg *config.AgentConfig) *gin.Engine {
 				xrayGroup.POST("/start", handlers.StartXray)
 				xrayGroup.POST("/stop", handlers.StopXray)
 				xrayGroup.POST("/restart", handlers.RestartXray)
+				xrayGroup.POST("/reload", handlers.ReloadXray)
 				xrayGroup.GET("/version", handlers.GetXrayVersion)
 				xrayGroup.GET("/config", handlers.GetXrayConfig)
 				xrayGroup.GET("/logs", handlers.GetXrayLogs)
