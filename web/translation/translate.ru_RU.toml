@@ -892,3 +892,7 @@
 "autoSelectFailed" = "❌ Автовыбор не удался: все серверы недоступны"
 "serverNotAvailable" = "❌ Сервер недоступен"
 "refresh" = "Обновить"
+"serverSelected" = "\u2705 Server selected: {{ .ServerName }}"
+"operationOnServer" = "Operation on server: {{ .ServerName }}"
+"all" = "All"
+"operations" = "Operations"
