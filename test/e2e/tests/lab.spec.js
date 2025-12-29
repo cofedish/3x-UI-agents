@@ -132,6 +132,18 @@ async function confirmPopconfirm(page) {
   await pop.locator('button.ant-btn-primary').click();
 }
 
+async function selectServerAuthType(page, authType) {
+  const select = page.locator('[data-testid="server-auth-type"]');
+  await expect(select).toBeVisible();
+  await select.click();
+  const label = authType === 'jwt' ? 'JWT' : 'mTLS';
+  await page
+    .locator('.ant-select-dropdown .ant-select-item-option')
+    .filter({ hasText: label })
+    .first()
+    .click();
+}
+
 function assertApprox(actual, expected, label, pct = 0.1, abs = 1) {
   if (typeof actual !== 'number' || typeof expected !== 'number') {
     return;
@@ -163,6 +175,16 @@ test.describe.serial('lab e2e', () => {
       expect(response, `${route} response`).not.toBeNull();
       expect(response.status(), `${route} status`).toBeLessThan(400);
       await waitForPageReady(page);
+      const tabs = page.locator('.ant-tabs-tab');
+      const tabCount = await tabs.count();
+      if (tabCount > 0) {
+        for (let i = 0; i < tabCount; i += 1) {
+          await tabs.nth(i).click();
+          await page.waitForTimeout(400);
+          await assertNoMissingTranslations(page);
+          await assertNoBrokenIcons(page);
+        }
+      }
       await assertNoMissingTranslations(page);
       await assertNoBrokenIcons(page);
       expect(monitor.state.consoleErrors, 'console errors').toEqual([]);
@@ -235,6 +257,67 @@ test.describe.serial('lab e2e', () => {
       assertApprox(uiStatus.uptime, apiStatus.uptime, `uptime:${serverId}`, 0.2, 5);
       expect(uiStatus.xray.state).toBe(apiStatus.xray.state);
     }
+  });
+
+  test('remote server add/online/logs/remove', async ({ page }) => {
+    await login(page);
+
+    const serverList = await page.request.get('/panel/api/servers');
+    const serversJson = await serverList.json();
+    const servers = serversJson.obj?.servers || [];
+    const template = servers.find(
+      (server) => server.id && server.id > 1 && server.endpoint && server.authType && server.authData
+    );
+    if (!template) {
+      test.skip(true, 'no remote server template available');
+    }
+
+    await page.goto('/panel/servers');
+    await waitForPageReady(page);
+
+    const name = `lab-ui-${Date.now()}`;
+    await page.locator('[data-testid="servers-add"]').click();
+    await fillByTestId(page, 'server-name', name);
+    await fillByTestId(page, 'server-endpoint', template.endpoint);
+    await selectServerAuthType(page, template.authType);
+    await fillByTestId(page, 'server-auth-data', template.authData);
+    await page.locator('.ant-modal-footer .ant-btn-primary').click();
+    await page.waitForResponse(
+      (resp) => resp.url().includes('/panel/api/servers') && resp.request().method() === 'POST'
+    );
+
+    const row = page.locator('tr', { hasText: name }).first();
+    await expect(row).toBeVisible();
+
+    let created = null;
+    for (let i = 0; i < 20; i += 1) {
+      const resp = await page.request.get('/panel/api/servers');
+      const json = await resp.json();
+      created = (json.obj?.servers || []).find((server) => server.name === name);
+      if (created && created.status === 'online') {
+        break;
+      }
+      await page.waitForTimeout(2000);
+    }
+
+    expect(created, 'created server record').toBeTruthy();
+    expect(created.status, 'created server online').toBe('online');
+
+    const statusResp = await page.request.get(`/panel/api/server/status?server_id=${created.id}`);
+    const statusJson = await statusResp.json();
+    expect(statusJson.success).toBe(true);
+    expect(statusJson.obj?.xray?.state).toBeDefined();
+
+    const logsResp = await page.request.post(`/panel/api/server/xraylogs/10?server_id=${created.id}`, {
+      form: {},
+    });
+    const logsJson = await logsResp.json();
+    expect(logsJson.success).toBe(true);
+    expect(Array.isArray(logsJson.obj)).toBeTruthy();
+
+    await row.locator('.anticon-delete').click();
+    await confirmPopconfirm(page);
+    await expect(page.locator('tr', { hasText: name })).toHaveCount(0);
   });
 
   test('inbounds and clients CRUD', async ({ page }) => {
