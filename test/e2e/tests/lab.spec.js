@@ -318,6 +318,40 @@ test.describe.serial('lab e2e', () => {
     await expect(logModal.locator('.log-container')).not.toHaveText(/No Record/i);
   });
 
+  test('remote xray logs use selected server', async ({ page }) => {
+    await login(page);
+
+    const serverList = await page.request.get('/panel/api/servers');
+    const serversJson = await serverList.json();
+    const servers = serversJson.obj?.servers || [];
+    const remote = servers.find((server) => server.id && server.id > 1);
+    if (!remote) {
+      test.skip(true, 'no remote servers available');
+    }
+
+    await page.evaluate((id) => localStorage.setItem('selectedServerId', String(id)), remote.id);
+    await page.goto('/panel/');
+    await waitForPageReady(page);
+
+    const responsePromise = page.waitForResponse((resp) => {
+      return (
+        resp.url().includes('/panel/api/server/xraylogs/') &&
+        resp.url().includes(`server_id=${remote.id}`) &&
+        resp.status() === 200
+      );
+    });
+    await page.evaluate(() => {
+      const appRef = typeof app !== 'undefined' ? app : window.app;
+      if (appRef && appRef.openXrayLogs) {
+        appRef.openXrayLogs();
+      }
+    });
+    const response = await responsePromise;
+    const payload = await response.json();
+    expect(payload.success).toBe(true);
+    expect(Array.isArray(payload.obj)).toBeTruthy();
+  });
+
   test('settings toggle', async ({ page }) => {
     await login(page);
     await page.goto('/panel/settings');
