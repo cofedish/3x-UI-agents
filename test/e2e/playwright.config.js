@@ -13,6 +13,10 @@ module.exports = defineConfig({
   expect: {
     timeout: 20000,
   },
+  reporter: [
+    ['list'],
+    ['html', { outputFolder: outputDir, open: 'never' }],
+  ],
   use: {
     baseURL,
     headless: true,
@@ -21,5 +25,5 @@ module.exports = defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  outputDir,
+  outputDir: `${outputDir}/output`,
 });

@@ -10,6 +10,7 @@ mkdir -p "$ARTIFACTS_DIR" "$ARTIFACTS_DIR/playwright" "$ARTIFACTS_DIR/docker-log
   echo "Node: $(node -v 2>/dev/null || echo 'not found')"
   echo "NPM: $(npm -v 2>/dev/null || echo 'not found')"
   echo "Playwright: $(npx playwright --version 2>/dev/null || echo 'not found')"
+  echo "Curl: $(curl --version 2>/dev/null | head -n1 || echo 'not found')"
 } > "$ARTIFACTS_DIR/env-summary.txt"
 
 if [ -f "$LAB_SHARED/panel.env" ]; then
@@ -30,9 +31,24 @@ for _ in {1..60}; do
   sleep 2
 done
 
+wait_status="PASS"
+if ! /work/docker/lab/scripts/wait-ready.sh >"$ARTIFACTS_DIR/wait-ready.log" 2>&1; then
+  wait_status="FAIL"
+fi
+
 api_status="PASS"
 if ! /work/docker/lab/scripts/api-smoke.sh >"$ARTIFACTS_DIR/api-smoke.log" 2>&1; then
   api_status="FAIL"
+fi
+
+contract_status="PASS"
+if ! /work/docker/lab/scripts/api-contract.sh >"$ARTIFACTS_DIR/api-contract.log" 2>&1; then
+  contract_status="FAIL"
+fi
+
+probe_status="PASS"
+if ! /work/docker/lab/scripts/protocol-probes.sh >"$ARTIFACTS_DIR/protocol-probes.log" 2>&1; then
+  probe_status="FAIL"
 fi
 
 cd /work/test/e2e
@@ -41,7 +57,7 @@ if [ ! -d node_modules ]; then
 fi
 
 pw_status="PASS"
-if ! npx playwright test --config=playwright.config.js --reporter=list >"$ARTIFACTS_DIR/playwright.log" 2>&1; then
+if ! npx playwright test --config=playwright.config.js --reporter=list,html >"$ARTIFACTS_DIR/playwright.log" 2>&1; then
   pw_status="FAIL"
 fi
 
@@ -49,7 +65,10 @@ cat > "$ARTIFACTS_DIR/report.md" <<EOF
 # Lab Test Report
 
 - Panel URL: $PANEL_URL
+- Wait ready: $wait_status
 - API Smoke: $api_status
+- API Contract: $contract_status
+- Protocol Probes: $probe_status
 - Playwright: $pw_status
 
 ## Checklist
@@ -61,15 +80,25 @@ cat > "$ARTIFACTS_DIR/report.md" <<EOF
 - Settings: safe toggle + revert
 - Xray: restart/reload
 - UI crawl: all routes + no 404/500
+- Protocol probes: vmess/vless/trojan/shadowsocks/mixed/http/tunnel/wireguard
 
 Artifacts:
 - api-smoke.log
+- api-contract.log
 - playwright.log
 - playwright/ (screenshots, traces)
+- protocol-probes.log
+- protocol-probes-summary.md
 - docker-logs/ (container logs)
 - env-summary.txt
 EOF
 
-if [ "$api_status" != "PASS" ] || [ "$pw_status" != "PASS" ]; then
+if [ -f "$ARTIFACTS_DIR/protocol-probes-summary.md" ]; then
+  echo "" >> "$ARTIFACTS_DIR/report.md"
+  echo "## Protocol probe summary" >> "$ARTIFACTS_DIR/report.md"
+  cat "$ARTIFACTS_DIR/protocol-probes-summary.md" >> "$ARTIFACTS_DIR/report.md"
+fi
+
+if [ "$wait_status" != "PASS" ] || [ "$api_status" != "PASS" ] || [ "$contract_status" != "PASS" ] || [ "$probe_status" != "PASS" ] || [ "$pw_status" != "PASS" ]; then
   exit 1
 fi

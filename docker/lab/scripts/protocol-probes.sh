@@ -179,7 +179,7 @@ EOF
   "$XRAY_BIN" run -c "$config" >/dev/null 2>&1 &
   local pid=$!
   sleep 1
-  curl -fsS --socks5-hostname 127.0.0.1:"$local_port" http://echo:8080/ >/dev/null
+  curl -fsS --max-time 15 --socks5-hostname 127.0.0.1:"$local_port" http://echo:8080/ >/dev/null
   kill "$pid" >/dev/null 2>&1 || true
   wait "$pid" >/dev/null 2>&1 || true
 }
@@ -307,7 +307,7 @@ probe_mixed() {
   inbound_id=$(create_inbound "$server_id" "mixed" "$port" "$remark" "$settings" "$stream" "$sniff")
   apply_xray "$server_id"
 
-  curl -fsS --socks5-hostname "$host:$port" http://echo:8080/ >/dev/null
+  curl -fsS --max-time 15 --socks5-hostname "$host:$port" http://echo:8080/ >/dev/null
 
   wait_for_traffic "$server_id" "$inbound_id"
   delete_inbound "$server_id" "$inbound_id"
@@ -332,7 +332,7 @@ probe_http() {
   inbound_id=$(create_inbound "$server_id" "http" "$port" "$remark" "$settings" "$stream" "$sniff")
   apply_xray "$server_id"
 
-  curl -fsS -x "http://$user:$pass@$host:$port" http://echo:8080/ >/dev/null
+  curl -fsS --max-time 15 -x "http://$user:$pass@$host:$port" http://echo:8080/ >/dev/null
 
   wait_for_traffic "$server_id" "$inbound_id"
   delete_inbound "$server_id" "$inbound_id"
@@ -353,7 +353,7 @@ probe_tunnel() {
   inbound_id=$(create_inbound "$server_id" "tunnel" "$port" "$remark" "$settings" "$stream" "$sniff")
   apply_xray "$server_id"
 
-  curl -fsS "http://$host:$port" >/dev/null
+  curl -fsS --max-time 15 "http://$host:$port" >/dev/null
 
   wait_for_traffic "$server_id" "$inbound_id"
   delete_inbound "$server_id" "$inbound_id"
