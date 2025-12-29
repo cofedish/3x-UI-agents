@@ -1,6 +1,9 @@
 FROM mcr.microsoft.com/playwright:v1.49.0-jammy
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends jq \
+  && apt-get install -y --no-install-recommends \
+    ca-certificates curl jq openssl \
+    iproute2 iputils-ping netcat-traditional socat \
+    unzip xz-utils wireguard-tools \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
