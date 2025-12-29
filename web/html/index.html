@@ -1074,7 +1074,8 @@
       },
       async openXrayLogs() {
         xraylogModal.loading = true;
-        const msg = await HttpUtil.post('/panel/api/server/xraylogs/' + xraylogModal.rows, { filter: xraylogModal.filter, showDirect: xraylogModal.showDirect, showBlocked: xraylogModal.showBlocked, showProxy: xraylogModal.showProxy });
+        const serverIdParam = this.getServerIdParam();
+        const msg = await HttpUtil.post('/panel/api/server/xraylogs/' + xraylogModal.rows + serverIdParam, { filter: xraylogModal.filter, showDirect: xraylogModal.showDirect, showBlocked: xraylogModal.showBlocked, showProxy: xraylogModal.showProxy });
         if (!msg.success) {
           return;
         }
