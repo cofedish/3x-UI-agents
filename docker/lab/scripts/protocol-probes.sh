@@ -31,6 +31,10 @@ json_post() {
   curl -fsS -b "$COOKIE_FILE" -H "Content-Type: application/json" -d "$payload" "$PANEL_URL$path"
 }
 
+urlencode() {
+  jq -sRr @uri <<<"$1"
+}
+
 require_success() {
   local resp="$1"
   local label="$2"
@@ -89,6 +93,24 @@ create_inbound() {
   echo "$resp" | jq -r '.obj.id'
 }
 
+update_inbound_port() {
+  local server_id="$1"
+  local inbound_id="$2"
+  local new_port="$3"
+  local new_remark="$4"
+  local inbound_json
+  inbound_json=$(json_get "/panel/api/inbounds/get/$inbound_id?server_id=$server_id")
+  local payload
+  payload=$(echo "$inbound_json" | jq -c \
+    --argjson port "$new_port" \
+    --arg remark "$new_remark" \
+    --arg tag "inbound-$new_port" \
+    '.obj | .port=$port | .remark=$remark | .tag=$tag')
+  local resp
+  resp=$(json_post "/panel/api/inbounds/update/$inbound_id?server_id=$server_id" "$payload")
+  require_success "$resp" "update inbound $inbound_id"
+}
+
 delete_inbound() {
   local server_id="$1"
   local inbound_id="$2"
@@ -101,6 +123,16 @@ get_inbound_traffic() {
   local resp
   resp=$(json_get "/panel/api/inbounds/list?server_id=$server_id")
   echo "$resp" | jq -r --argjson id "$inbound_id" '.obj[]? | select(.id==$id) | (.up + .down)'
+}
+
+get_client_traffic() {
+  local server_id="$1"
+  local email="$2"
+  local encoded
+  encoded=$(urlencode "$email")
+  local resp
+  resp=$(json_get "/panel/api/inbounds/getClientTraffics/$encoded?server_id=$server_id")
+  echo "$resp" | jq -r '.obj | if . == null then 0 else (.up + .down) end'
 }
 
 get_server_traffic() {
@@ -157,11 +189,34 @@ wait_for_server_traffic() {
   done
 }
 
+wait_for_client_traffic() {
+  local server_id="$1"
+  local email="$2"
+  local timeout=30
+  local start
+  start=$(date +%s)
+  while true; do
+    local val
+    val=$(get_client_traffic "$server_id" "$email")
+    if [ -n "$val" ] && [ "$val" -gt 0 ]; then
+      return 0
+    fi
+    if [ $(( $(date +%s) - start )) -ge "$timeout" ]; then
+      return 1
+    fi
+    sleep 2
+  done
+}
+
 probe_wait() {
   local server_id="$1"
   local inbound_id="$2"
   local baseline="$3"
+  local email="$4"
   wait_for_traffic "$server_id" "$inbound_id"
+  if [ -n "$email" ]; then
+    wait_for_client_traffic "$server_id" "$email"
+  fi
   wait_for_server_traffic "$server_id" "$baseline"
 }
 
@@ -233,8 +288,9 @@ probe_vmess() {
   local port="$3"
   local client_id
   client_id=$(cat /proc/sys/kernel/random/uuid)
+  local email="lab-vmess@local"
   local settings
-  settings=$(jq -c -n --arg id "$client_id" --arg email "lab-vmess@local" '{clients:[{id:$id, alterId:0, email:$email, security:"auto"}]}')
+  settings=$(jq -c -n --arg id "$client_id" --arg email "$email" '{clients:[{id:$id, alterId:0, email:$email, security:"auto"}]}')
   local stream
   stream=$(jq -c -n '{network:"tcp", security:"none"}')
   local sniff
@@ -250,7 +306,45 @@ probe_vmess() {
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg id "$client_id" '{protocol:"vmess", settings:{vnext:[{address:$host, port:$port, users:[{id:$id, alterId:0, security:"auto"}]}]}, streamSettings:{network:"tcp", security:"none"}}')
   run_xray_proxy "$outbound" 1081
 
-  probe_wait "$server_id" "$inbound_id" "$baseline"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+  delete_inbound "$server_id" "$inbound_id"
+}
+
+probe_vmess_apply_reload() {
+  local server_id="$1"
+  local host="$2"
+  local port="$3"
+  local client_id
+  client_id=$(cat /proc/sys/kernel/random/uuid)
+  local email="lab-vmess-apply@local"
+  local settings
+  settings=$(jq -c -n --arg id "$client_id" --arg email "$email" '{clients:[{id:$id, alterId:0, email:$email, security:"auto"}]}')
+  local stream
+  stream=$(jq -c -n '{network:"tcp", security:"none"}')
+  local sniff
+  sniff=$(jq -c -n '{enabled:true, destOverride:["http","tls"]}')
+  local remark="lab-apply-vmess-$server_id-$port"
+  local inbound_id
+  inbound_id=$(create_inbound "$server_id" "vmess" "$port" "$remark" "$settings" "$stream" "$sniff")
+  apply_xray "$server_id"
+  local baseline
+  baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
+
+  local outbound
+  outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg id "$client_id" '{protocol:"vmess", settings:{vnext:[{address:$host, port:$port, users:[{id:$id, alterId:0, security:"auto"}]}]}, streamSettings:{network:"tcp", security:"none"}}')
+  run_xray_proxy "$outbound" 1091
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+
+  local updated_port=$((port + 50))
+  local updated_remark="lab-apply-vmess-$server_id-$updated_port"
+  update_inbound_port "$server_id" "$inbound_id" "$updated_port" "$updated_remark"
+  apply_xray "$server_id"
+  baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
+
+  outbound=$(jq -c -n --arg host "$host" --argjson port "$updated_port" --arg id "$client_id" '{protocol:"vmess", settings:{vnext:[{address:$host, port:$port, users:[{id:$id, alterId:0, security:"auto"}]}]}, streamSettings:{network:"tcp", security:"none"}}')
+  run_xray_proxy "$outbound" 1092
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -260,8 +354,9 @@ probe_vless() {
   local port="$3"
   local client_id
   client_id=$(cat /proc/sys/kernel/random/uuid)
+  local email="lab-vless@local"
   local settings
-  settings=$(jq -c -n --arg id "$client_id" --arg email "lab-vless@local" '{clients:[{id:$id, flow:"", email:$email, enable:true}], decryption:"none", encryption:"none"}')
+  settings=$(jq -c -n --arg id "$client_id" --arg email "$email" '{clients:[{id:$id, flow:"", email:$email, enable:true}], decryption:"none", encryption:"none"}')
   local stream
   stream=$(jq -c -n '{network:"tcp", security:"none"}')
   local sniff
@@ -277,7 +372,7 @@ probe_vless() {
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg id "$client_id" '{protocol:"vless", settings:{vnext:[{address:$host, port:$port, users:[{id:$id, encryption:"none"}]}]}, streamSettings:{network:"tcp", security:"none"}}')
   run_xray_proxy "$outbound" 1082
 
-  probe_wait "$server_id" "$inbound_id" "$baseline"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -287,8 +382,9 @@ probe_trojan() {
   local port="$3"
   local password
   password=$(openssl rand -hex 8)
+  local email="lab-trojan@local"
   local settings
-  settings=$(jq -c -n --arg password "$password" --arg email "lab-trojan@local" '{clients:[{password:$password, email:$email, enable:true}], fallbacks:[]}')
+  settings=$(jq -c -n --arg password "$password" --arg email "$email" '{clients:[{password:$password, email:$email, enable:true}], fallbacks:[]}')
   local stream
   stream=$(jq -c -n '{network:"tcp", security:"none"}')
   local sniff
@@ -304,7 +400,7 @@ probe_trojan() {
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg password "$password" '{protocol:"trojan", settings:{servers:[{address:$host, port:$port, password:$password}]}, streamSettings:{network:"tcp", security:"none"}}')
   run_xray_proxy "$outbound" 1083
 
-  probe_wait "$server_id" "$inbound_id" "$baseline"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -315,8 +411,9 @@ probe_shadowsocks() {
   local password
   password=$(openssl rand -hex 8)
   local method="chacha20-ietf-poly1305"
+  local email="lab-ss@local"
   local settings
-  settings=$(jq -c -n --arg method "$method" --arg password "$password" --arg email "lab-ss@local" '{method:$method, password:$password, network:"tcp", clients:[{method:$method, password:$password, email:$email, enable:true}]}')
+  settings=$(jq -c -n --arg method "$method" --arg password "$password" --arg email "$email" '{method:$method, password:$password, network:"tcp", clients:[{method:$method, password:$password, email:$email, enable:true}]}')
   local stream
   stream=$(jq -c -n '{network:"tcp", security:"none"}')
   local sniff
@@ -332,7 +429,7 @@ probe_shadowsocks() {
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg password "$password" --arg method "$method" '{protocol:"shadowsocks", settings:{servers:[{address:$host, port:$port, method:$method, password:$password}]}}')
   run_xray_proxy "$outbound" 1084
 
-  probe_wait "$server_id" "$inbound_id" "$baseline"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -340,6 +437,7 @@ probe_mixed() {
   local server_id="$1"
   local host="$2"
   local port="$3"
+  local email=""
   local settings
   settings=$(jq -c -n '{auth:"noauth", accounts:[], udp:false, ip:"127.0.0.1"}')
   local stream
@@ -355,7 +453,7 @@ probe_mixed() {
 
   curl -fsS --max-time 15 --socks5-hostname "$host:$port" http://echo:8080/ >/dev/null
 
-  probe_wait "$server_id" "$inbound_id" "$baseline"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -367,6 +465,7 @@ probe_http() {
   local pass
   user="labuser"
   pass="labpass"
+  local email=""
   local settings
   settings=$(jq -c -n --arg user "$user" --arg pass "$pass" '{accounts:[{user:$user, pass:$pass}], allowTransparent:false}')
   local stream
@@ -382,7 +481,7 @@ probe_http() {
 
   curl -fsS --max-time 15 -x "http://$user:$pass@$host:$port" http://echo:8080/ >/dev/null
 
-  probe_wait "$server_id" "$inbound_id" "$baseline"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -390,6 +489,7 @@ probe_tunnel() {
   local server_id="$1"
   local host="$2"
   local port="$3"
+  local email=""
   local settings
   settings=$(jq -c -n '{address:"echo", port:8080, portMap:[], network:"tcp", followRedirect:false}')
   local stream
@@ -405,7 +505,7 @@ probe_tunnel() {
 
   curl -fsS --max-time 15 "http://$host:$port" >/dev/null
 
-  probe_wait "$server_id" "$inbound_id" "$baseline"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -418,6 +518,7 @@ probe_wireguard() {
   server_pub=$(echo "$server_priv" | wg pubkey)
   client_priv=$(wg genkey)
   client_pub=$(echo "$client_priv" | wg pubkey)
+  local email=""
 
   local settings
   settings=$(jq -c -n \
@@ -445,7 +546,7 @@ probe_wireguard() {
     '{protocol:"wireguard", settings:{secretKey:$secretKey, address:["10.0.0.2/32"], peers:[{publicKey:$serverPub, allowedIPs:["0.0.0.0/0","::/0"], endpoint:$endpoint, keepAlive:5}], noKernelTun:true}}')
   run_xray_proxy "$outbound" 1085
 
-  probe_wait "$server_id" "$inbound_id" "$baseline"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -473,6 +574,7 @@ for server_id in $SERVER_IDS; do
   port_base=$((20000 + server_id * 100))
 
   if probe_vmess "$server_id" "$host" $((port_base + 1)); then probe_result "$server_id" "vmess" "PASS"; else probe_result "$server_id" "vmess" "FAIL"; exit 1; fi
+  if probe_vmess_apply_reload "$server_id" "$host" $((port_base + 20)); then probe_result "$server_id" "vmess-apply" "PASS"; else probe_result "$server_id" "vmess-apply" "FAIL"; exit 1; fi
   if probe_vless "$server_id" "$host" $((port_base + 2)); then probe_result "$server_id" "vless" "PASS"; else probe_result "$server_id" "vless" "FAIL"; exit 1; fi
   if probe_trojan "$server_id" "$host" $((port_base + 3)); then probe_result "$server_id" "trojan" "PASS"; else probe_result "$server_id" "trojan" "FAIL"; exit 1; fi
   if probe_shadowsocks "$server_id" "$host" $((port_base + 4)); then probe_result "$server_id" "shadowsocks" "PASS"; else probe_result "$server_id" "shadowsocks" "FAIL"; exit 1; fi

@@ -41,14 +41,14 @@ if ! /work/docker/lab/scripts/api-smoke.sh >"$ARTIFACTS_DIR/api-smoke.log" 2>&1;
   api_status="FAIL"
 fi
 
-contract_status="PASS"
-if ! /work/docker/lab/scripts/api-contract.sh >"$ARTIFACTS_DIR/api-contract.log" 2>&1; then
-  contract_status="FAIL"
-fi
-
 probe_status="PASS"
 if ! /work/docker/lab/scripts/protocol-probes.sh >"$ARTIFACTS_DIR/protocol-probes.log" 2>&1; then
   probe_status="FAIL"
+fi
+
+contract_status="PASS"
+if ! /work/docker/lab/scripts/api-contract.sh >"$ARTIFACTS_DIR/api-contract.log" 2>&1; then
+  contract_status="FAIL"
 fi
 
 cd /work/test/e2e
@@ -57,9 +57,15 @@ if [ ! -d node_modules ]; then
 fi
 
 pw_status="PASS"
-if ! npx playwright test --config=playwright.config.js --reporter=list,html >"$ARTIFACTS_DIR/playwright.log" 2>&1; then
+if ! npx playwright test --config=playwright.config.js >"$ARTIFACTS_DIR/playwright.log" 2>&1; then
   pw_status="FAIL"
 fi
+
+dashboard_fix="$contract_status"
+connections_fix="$probe_status"
+remote_xray_fix="$probe_status"
+translations_fix="$pw_status"
+servers_icon_fix="$pw_status"
 
 cat > "$ARTIFACTS_DIR/report.md" <<EOF
 # Lab Test Report
@@ -71,6 +77,13 @@ cat > "$ARTIFACTS_DIR/report.md" <<EOF
 - Protocol Probes: $probe_status
 - Playwright: $pw_status
 
+## Known bugs
+- Dashboard metrics/logs/xray uptime: $dashboard_fix
+- Connections traffic non-zero: $connections_fix
+- Remote Xray apply/reload: $remote_xray_fix
+- Translations completeness: $translations_fix
+- Servers tab icon: $servers_icon_fix
+
 ## Checklist
 - Dashboard: status cards + xray controls
 - Servers: both agents online
@@ -80,7 +93,7 @@ cat > "$ARTIFACTS_DIR/report.md" <<EOF
 - Settings: safe toggle + revert
 - Xray: restart/reload
 - UI crawl: all routes + no 404/500
-- Protocol probes: vmess/vless/trojan/shadowsocks/mixed/http/tunnel/wireguard
+- Protocol probes: vmess/vmess-apply/vless/trojan/shadowsocks/mixed/http/tunnel/wireguard
 
 Artifacts:
 - api-smoke.log

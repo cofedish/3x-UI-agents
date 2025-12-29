@@ -58,8 +58,8 @@ for server_id in $server_ids; do
   require_field "$status_json" '.obj.netTraffic.sent >= 0 and .obj.netTraffic.recv >= 0' "netTraffic ($server_id)"
   require_field "$status_json" '.obj.appStats.threads >= 0' "appStats.threads ($server_id)"
   require_field "$status_json" '.obj.appStats.mem >= 0' "appStats.mem ($server_id)"
-  require_field "$status_json" '.obj.appStats.uptime >= 0' "appStats.uptime ($server_id)"
-  require_field "$status_json" '.obj.xray.state != null' "xray.state ($server_id)"
+  require_field "$status_json" '.obj.appStats.uptime > 0' "appStats.uptime ($server_id)"
+  require_field "$status_json" '.obj.xray.state == "running"' "xray.state ($server_id)"
 
   logs_resp=$(json_post "/panel/api/server/logs/50?server_id=$server_id" "{}")
   if ! echo "$logs_resp" | jq -e '.success == true' >/dev/null; then
