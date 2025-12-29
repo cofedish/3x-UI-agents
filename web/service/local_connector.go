@@ -272,6 +272,11 @@ func (c *LocalConnector) StopXray(ctx context.Context) error {
 
 // RestartXray restarts the local Xray process.
 func (c *LocalConnector) RestartXray(ctx context.Context) error {
+	return c.xrayService.RestartXray(true)
+}
+
+// ReloadXray reloads Xray configuration without forcing a restart.
+func (c *LocalConnector) ReloadXray(ctx context.Context) error {
 	return c.xrayService.RestartXray(false)
 }
 

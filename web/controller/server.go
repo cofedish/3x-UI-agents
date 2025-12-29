@@ -653,7 +653,7 @@ func (a *ServerController) reloadXrayService(c *gin.Context) {
 		return
 	}
 
-	err = connector.RestartXray(c.Request.Context())
+	err = connector.ReloadXray(c.Request.Context())
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.xray.restartError"), err)
 		return

@@ -38,6 +38,7 @@ type ServerConnector interface {
 	StartXray(ctx context.Context) error
 	StopXray(ctx context.Context) error
 	RestartXray(ctx context.Context) error
+	ReloadXray(ctx context.Context) error
 	GetXrayVersion(ctx context.Context) (string, error)
 	GetXrayConfig(ctx context.Context) (string, error)
 

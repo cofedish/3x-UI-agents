@@ -498,6 +498,12 @@ func (c *RemoteConnector) RestartXray(ctx context.Context) error {
 	return err
 }
 
+// ReloadXray reloads Xray on the agent without forcing a restart.
+func (c *RemoteConnector) ReloadXray(ctx context.Context) error {
+	_, err := c.doRequest(ctx, "POST", "/api/v1/xray/reload", nil)
+	return err
+}
+
 // GetXrayVersion retrieves Xray version from the agent.
 func (c *RemoteConnector) GetXrayVersion(ctx context.Context) (string, error) {
 	resp, err := c.doRequest(ctx, "GET", "/api/v1/xray/version", nil)

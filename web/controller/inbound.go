@@ -11,6 +11,7 @@ import (
 	"github.com/cofedish/3x-UI-agents/logger"
 	"github.com/cofedish/3x-UI-agents/web/service"
 	"github.com/cofedish/3x-UI-agents/web/session"
+	"github.com/cofedish/3x-UI-agents/xray"
 
 	"github.com/gin-gonic/gin"
 )
@@ -219,23 +220,152 @@ func (a *InboundController) getInbound(c *gin.Context) {
 // getClientTraffics retrieves client traffic information by email.
 func (a *InboundController) getClientTraffics(c *gin.Context) {
 	email := c.Param("email")
-	clientTraffics, err := a.inboundService.GetClientTrafficByEmail(email)
+	serverId := a.getServerIdFromRequest(c)
+
+	if serverId == 1 {
+		clientTraffics, err := a.inboundService.GetClientTrafficByEmail(email)
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.trafficGetError"), err)
+			return
+		}
+		jsonObj(c, clientTraffics, nil)
+		return
+	}
+
+	if serverId == 0 {
+		if clientTraffics, err := a.inboundService.GetClientTrafficByEmail(email); err == nil && clientTraffics != nil {
+			jsonObj(c, clientTraffics, nil)
+			return
+		}
+		servers, err := a.serverMgmt.GetAllServers()
+		if err != nil {
+			jsonMsg(c, "Failed to get servers", err)
+			return
+		}
+		for _, server := range servers {
+			if !server.Enabled || server.Id == 1 {
+				continue
+			}
+			connector, err := a.serverMgmt.GetConnector(server.Id)
+			if err != nil {
+				continue
+			}
+			traffics, err := connector.GetClientTraffics(c.Request.Context())
+			if err != nil {
+				continue
+			}
+			for _, traffic := range traffics {
+				if traffic.Email == email {
+					jsonObj(c, traffic, nil)
+					return
+				}
+			}
+		}
+		jsonObj(c, nil, nil)
+		return
+	}
+
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+	traffics, err := connector.GetClientTraffics(c.Request.Context())
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.trafficGetError"), err)
 		return
 	}
-	jsonObj(c, clientTraffics, nil)
+	for _, traffic := range traffics {
+		if traffic.Email == email {
+			jsonObj(c, traffic, nil)
+			return
+		}
+	}
+	jsonObj(c, nil, nil)
 }
 
 // getClientTrafficsById retrieves client traffic information by inbound ID.
 func (a *InboundController) getClientTrafficsById(c *gin.Context) {
 	id := c.Param("id")
-	clientTraffics, err := a.inboundService.GetClientTrafficByID(id)
+	serverId := a.getServerIdFromRequest(c)
+
+	if serverId == 1 {
+		clientTraffics, err := a.inboundService.GetClientTrafficByID(id)
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.trafficGetError"), err)
+			return
+		}
+		jsonObj(c, clientTraffics, nil)
+		return
+	}
+
+	resolveRemoteClientTraffics := func(serverId int) ([]xray.ClientTraffic, error) {
+		connector, err := a.serverMgmt.GetConnector(serverId)
+		if err != nil {
+			return nil, err
+		}
+		inbounds, err := connector.ListInbounds(c.Request.Context())
+		if err != nil {
+			return nil, err
+		}
+		emails := map[string]struct{}{}
+		for _, inbound := range inbounds {
+			clients, err := a.inboundService.GetClients(inbound)
+			if err != nil {
+				continue
+			}
+			for _, client := range clients {
+				if client.ID == id && client.Email != "" {
+					emails[client.Email] = struct{}{}
+				}
+			}
+		}
+		if len(emails) == 0 {
+			return []xray.ClientTraffic{}, nil
+		}
+		traffics, err := connector.GetClientTraffics(c.Request.Context())
+		if err != nil {
+			return nil, err
+		}
+		filtered := make([]xray.ClientTraffic, 0, len(traffics))
+		for _, traffic := range traffics {
+			if _, ok := emails[traffic.Email]; ok {
+				filtered = append(filtered, *traffic)
+			}
+		}
+		return filtered, nil
+	}
+
+	if serverId == 0 {
+		all := make([]xray.ClientTraffic, 0)
+		if local, err := a.inboundService.GetClientTrafficByID(id); err == nil {
+			all = append(all, local...)
+		}
+		servers, err := a.serverMgmt.GetAllServers()
+		if err != nil {
+			jsonMsg(c, "Failed to get servers", err)
+			return
+		}
+		for _, server := range servers {
+			if !server.Enabled || server.Id == 1 {
+				continue
+			}
+			remote, err := resolveRemoteClientTraffics(server.Id)
+			if err != nil {
+				continue
+			}
+			all = append(all, remote...)
+		}
+		jsonObj(c, all, nil)
+		return
+	}
+
+	remote, err := resolveRemoteClientTraffics(serverId)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.trafficGetError"), err)
 		return
 	}
-	jsonObj(c, clientTraffics, nil)
+	jsonObj(c, remote, nil)
 }
 
 // addInbound creates a new inbound configuration.
@@ -287,9 +417,9 @@ func (a *InboundController) addInbound(c *gin.Context) {
 		return
 	}
 
-	// Automatically restart Xray on remote server after adding inbound
-	if err := connector.RestartXray(c.Request.Context()); err != nil {
-		logger.Warning("Failed to restart Xray on remote server after adding inbound:", err)
+	// Automatically reload Xray on remote server after adding inbound
+	if err := connector.ReloadXray(c.Request.Context()); err != nil {
+		logger.Warning("Failed to reload Xray on remote server after adding inbound:", err)
 		// Don't fail the request - inbound was created successfully
 	}
 
@@ -345,9 +475,9 @@ func (a *InboundController) delInbound(c *gin.Context) {
 		return
 	}
 
-	// Automatically restart Xray on remote server after deleting inbound
-	if err := connector.RestartXray(c.Request.Context()); err != nil {
-		logger.Warning("Failed to restart Xray on remote server after deleting inbound:", err)
+	// Automatically reload Xray on remote server after deleting inbound
+	if err := connector.ReloadXray(c.Request.Context()); err != nil {
+		logger.Warning("Failed to reload Xray on remote server after deleting inbound:", err)
 		// Don't fail the request - inbound was deleted successfully
 	}
 
@@ -401,9 +531,9 @@ func (a *InboundController) updateInbound(c *gin.Context) {
 		return
 	}
 
-	// Automatically restart Xray on remote server after updating inbound
-	if err := connector.RestartXray(c.Request.Context()); err != nil {
-		logger.Warning("Failed to restart Xray on remote server after updating inbound:", err)
+	// Automatically reload Xray on remote server after updating inbound
+	if err := connector.ReloadXray(c.Request.Context()); err != nil {
+		logger.Warning("Failed to reload Xray on remote server after updating inbound:", err)
 		// Don't fail the request - inbound was updated successfully
 	}
 
@@ -667,13 +797,101 @@ func (a *InboundController) delDepletedClients(c *gin.Context) {
 
 // onlines retrieves the list of currently online clients.
 func (a *InboundController) onlines(c *gin.Context) {
-	jsonObj(c, a.inboundService.GetOnlineClients(), nil)
+	serverId := a.getServerIdFromRequest(c)
+	if serverId == 1 {
+		jsonObj(c, a.inboundService.GetOnlineClients(), nil)
+		return
+	}
+	if serverId == 0 {
+		combined := a.inboundService.GetOnlineClients()
+		servers, err := a.serverMgmt.GetAllServers()
+		if err != nil {
+			jsonMsg(c, "Failed to get servers", err)
+			return
+		}
+		for _, server := range servers {
+			if !server.Enabled || server.Id == 1 {
+				continue
+			}
+			connector, err := a.serverMgmt.GetConnector(server.Id)
+			if err != nil {
+				continue
+			}
+			remote, err := connector.GetOnlineClients(c.Request.Context())
+			if err != nil {
+				continue
+			}
+			combined = append(combined, remote...)
+		}
+		jsonObj(c, combined, nil)
+		return
+	}
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+	emails, err := connector.GetOnlineClients(c.Request.Context())
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.trafficGetError"), err)
+		return
+	}
+	jsonObj(c, emails, nil)
 }
 
 // lastOnline retrieves the last online timestamps for clients.
 func (a *InboundController) lastOnline(c *gin.Context) {
-	data, err := a.inboundService.GetClientsLastOnline()
-	jsonObj(c, data, err)
+	serverId := a.getServerIdFromRequest(c)
+	if serverId == 1 {
+		data, err := a.inboundService.GetClientsLastOnline()
+		jsonObj(c, data, err)
+		return
+	}
+	if serverId == 0 {
+		data, err := a.inboundService.GetClientsLastOnline()
+		if err != nil {
+			jsonObj(c, data, err)
+			return
+		}
+		servers, err := a.serverMgmt.GetAllServers()
+		if err != nil {
+			jsonMsg(c, "Failed to get servers", err)
+			return
+		}
+		for _, server := range servers {
+			if !server.Enabled || server.Id == 1 {
+				continue
+			}
+			connector, err := a.serverMgmt.GetConnector(server.Id)
+			if err != nil {
+				continue
+			}
+			traffics, err := connector.GetClientTraffics(c.Request.Context())
+			if err != nil {
+				continue
+			}
+			for _, traffic := range traffics {
+				data[traffic.Email] = traffic.LastOnline
+			}
+		}
+		jsonObj(c, data, nil)
+		return
+	}
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+	traffics, err := connector.GetClientTraffics(c.Request.Context())
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.trafficGetError"), err)
+		return
+	}
+	data := make(map[string]int64, len(traffics))
+	for _, traffic := range traffics {
+		data[traffic.Email] = traffic.LastOnline
+	}
+	jsonObj(c, data, nil)
 }
 
 // updateClientTraffic updates the traffic statistics for a client by email.
