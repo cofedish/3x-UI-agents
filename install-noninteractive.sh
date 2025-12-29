@@ -106,7 +106,17 @@ install_agent() {
   if [ "$AGENT_AUTH_TYPE" = "jwt" ]; then
     auth_choice="2"
   fi
+  set +e
   printf "2\n%s\n" "$auth_choice" | bash ./install.sh
+  local status=$?
+  set -e
+  if [ "$status" -ne 0 ]; then
+    if [ -x /usr/local/x-ui-agent/x-ui ] || [ -x /usr/local/bin/x-ui-agent ]; then
+      echo "[install-ci] Agent binary present despite installer exit code $status; continuing"
+    else
+      return "$status"
+    fi
+  fi
 }
 
 case "$MODE" in
