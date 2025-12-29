@@ -100,8 +100,10 @@ type SystemStats struct {
 	DiskUsage float64 `json:"diskUsage"` // Percentage (0-100)
 
 	// Network
-	NetInSpeed  int64 `json:"netInSpeed"`  // Bytes/sec
-	NetOutSpeed int64 `json:"netOutSpeed"` // Bytes/sec
+	NetInSpeed     int64  `json:"netInSpeed"`     // Bytes/sec
+	NetOutSpeed    int64  `json:"netOutSpeed"`    // Bytes/sec
+	NetTrafficSent uint64 `json:"netTrafficSent"` // Bytes
+	NetTrafficRecv uint64 `json:"netTrafficRecv"` // Bytes
 
 	// System
 	Uptime          int64  `json:"uptime"`          // Seconds
@@ -111,6 +113,9 @@ type SystemStats struct {
 	XrayConnections int    `json:"xrayConnections"` // Active Xray client connections
 	PublicIPv4      string `json:"publicIPv4"`
 	PublicIPv6      string `json:"publicIPv6"`
+	XrayMem         uint64 `json:"xrayMem"`     // Bytes
+	XrayThreads     uint32 `json:"xrayThreads"` // Count
+	XrayUptime      uint64 `json:"xrayUptime"`  // Seconds
 }
 
 // CertInfo contains SSL/TLS certificate information.

@@ -137,19 +137,19 @@ func convertSystemStatsToStatus(stats *service.SystemStats, health *service.Heal
 			"down": stats.NetInSpeed,
 		},
 		"netTraffic": map[string]uint64{
-			"sent": 0, // Not available from agent stats
-			"recv": 0, // Not available from agent stats
+			"sent": stats.NetTrafficSent,
+			"recv": stats.NetTrafficRecv,
 		},
 		"publicIP": map[string]string{
 			"ipv4": stats.PublicIPv4,
 			"ipv6": stats.PublicIPv6,
 		},
 		"uptime":    stats.Uptime,
-		"appUptime": 0, // Not available from agent
+		"appUptime": stats.XrayUptime,
 		"appStats": map[string]interface{}{
-			"threads": 0,
-			"mem":     0,
-			"uptime":  0,
+			"threads": stats.XrayThreads,
+			"mem":     stats.XrayMem,
+			"uptime":  stats.XrayUptime,
 		},
 		"loads":    loads,
 		"tcpCount": stats.TCPConnections,
@@ -312,6 +312,8 @@ func (a *ServerController) aggregatedStatus(c *gin.Context) {
 			aggregated.UsedMemory += sysStats.MemUsed
 			aggregated.TotalDisk += sysStats.DiskTotal
 			aggregated.UsedDisk += sysStats.DiskUsed
+			aggregated.TotalUpload += sysStats.NetTrafficSent
+			aggregated.TotalDownload += sysStats.NetTrafficRecv
 			aggregated.NetUpSpeed += sysStats.NetOutSpeed
 			aggregated.NetDownSpeed += sysStats.NetInSpeed
 			aggregated.TotalTCP += sysStats.TCPConnections

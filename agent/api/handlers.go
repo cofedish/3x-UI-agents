@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"sync"
 	"time"
 
 	"github.com/cofedish/3x-UI-agents/config"
@@ -35,6 +36,15 @@ type AgentHandlers struct {
 	inboundService *service.InboundService
 	xrayService    *service.XrayService
 	serverService  *service.ServerService
+	netMu          sync.Mutex
+	lastNetSample  netSample
+	hasNetSample   bool
+}
+
+type netSample struct {
+	ts   time.Time
+	sent uint64
+	recv uint64
 }
 
 // NewAgentHandlers creates a new AgentHandlers instance.
@@ -481,9 +491,37 @@ func (h *AgentHandlers) GetSystemStats(c *gin.Context) {
 		stats["diskUsage"] = 0
 	}
 
-	// Network (placeholder: cumulative, speeds not calculated here)
-	stats["netInSpeed"] = 0
-	stats["netOutSpeed"] = 0
+	// Network totals + speed
+	var bytesSent uint64
+	var bytesRecv uint64
+	if ioStats, err := psnet.IOCounters(false); err == nil && len(ioStats) > 0 {
+		bytesSent = ioStats[0].BytesSent
+		bytesRecv = ioStats[0].BytesRecv
+	}
+	stats["netTrafficSent"] = bytesSent
+	stats["netTrafficRecv"] = bytesRecv
+
+	netInSpeed := int64(0)
+	netOutSpeed := int64(0)
+	now := time.Now()
+	h.netMu.Lock()
+	if h.hasNetSample {
+		elapsed := now.Sub(h.lastNetSample.ts).Seconds()
+		if elapsed > 0 {
+			if bytesRecv >= h.lastNetSample.recv {
+				netInSpeed = int64(float64(bytesRecv-h.lastNetSample.recv) / elapsed)
+			}
+			if bytesSent >= h.lastNetSample.sent {
+				netOutSpeed = int64(float64(bytesSent-h.lastNetSample.sent) / elapsed)
+			}
+		}
+	}
+	h.lastNetSample = netSample{ts: now, sent: bytesSent, recv: bytesRecv}
+	h.hasNetSample = true
+	h.netMu.Unlock()
+
+	stats["netInSpeed"] = netInSpeed
+	stats["netOutSpeed"] = netOutSpeed
 
 	// Connections count
 	tcpCount, udpCount := 0, 0
@@ -544,6 +582,15 @@ func (h *AgentHandlers) GetSystemStats(c *gin.Context) {
 		stats["loadAverage"] = "0, 0, 0"
 	}
 
+	if xrayStats, ok := h.xrayService.GetXrayProcessStats(); ok {
+		stats["xrayMem"] = xrayStats.Mem
+		stats["xrayThreads"] = xrayStats.Threads
+		stats["xrayUptime"] = xrayStats.Uptime
+	} else {
+		stats["xrayMem"] = 0
+		stats["xrayThreads"] = 0
+		stats["xrayUptime"] = 0
+	}
 	stats["xrayConnections"] = 0
 
 	respondSuccess(c, stats)
