@@ -110,6 +110,15 @@ get_server_traffic() {
   echo "$resp" | jq -r '.obj.netTraffic.sent + .obj.netTraffic.recv'
 }
 
+normalize_traffic() {
+  local val="$1"
+  if [ -z "$val" ] || [ "$val" = "null" ]; then
+    echo 0
+    return
+  fi
+  echo "$val"
+}
+
 wait_for_traffic() {
   local server_id="$1"
   local inbound_id="$2"
@@ -127,6 +136,33 @@ wait_for_traffic() {
     fi
     sleep 2
   done
+}
+
+wait_for_server_traffic() {
+  local server_id="$1"
+  local baseline="$2"
+  local timeout=30
+  local start
+  start=$(date +%s)
+  while true; do
+    local val
+    val=$(normalize_traffic "$(get_server_traffic "$server_id")")
+    if [ -n "$val" ] && [ "$val" -gt "$baseline" ]; then
+      return 0
+    fi
+    if [ $(( $(date +%s) - start )) -ge "$timeout" ]; then
+      return 1
+    fi
+    sleep 2
+  done
+}
+
+probe_wait() {
+  local server_id="$1"
+  local inbound_id="$2"
+  local baseline="$3"
+  wait_for_traffic "$server_id" "$inbound_id"
+  wait_for_server_traffic "$server_id" "$baseline"
 }
 
 ensure_xray() {
@@ -207,12 +243,14 @@ probe_vmess() {
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "vmess" "$port" "$remark" "$settings" "$stream" "$sniff")
   apply_xray "$server_id"
+  local baseline
+  baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   local outbound
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg id "$client_id" '{protocol:"vmess", settings:{vnext:[{address:$host, port:$port, users:[{id:$id, alterId:0, security:"auto"}]}]}, streamSettings:{network:"tcp", security:"none"}}')
   run_xray_proxy "$outbound" 1081
 
-  wait_for_traffic "$server_id" "$inbound_id"
+  probe_wait "$server_id" "$inbound_id" "$baseline"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -232,12 +270,14 @@ probe_vless() {
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "vless" "$port" "$remark" "$settings" "$stream" "$sniff")
   apply_xray "$server_id"
+  local baseline
+  baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   local outbound
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg id "$client_id" '{protocol:"vless", settings:{vnext:[{address:$host, port:$port, users:[{id:$id, encryption:"none"}]}]}, streamSettings:{network:"tcp", security:"none"}}')
   run_xray_proxy "$outbound" 1082
 
-  wait_for_traffic "$server_id" "$inbound_id"
+  probe_wait "$server_id" "$inbound_id" "$baseline"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -257,12 +297,14 @@ probe_trojan() {
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "trojan" "$port" "$remark" "$settings" "$stream" "$sniff")
   apply_xray "$server_id"
+  local baseline
+  baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   local outbound
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg password "$password" '{protocol:"trojan", settings:{servers:[{address:$host, port:$port, password:$password}]}, streamSettings:{network:"tcp", security:"none"}}')
   run_xray_proxy "$outbound" 1083
 
-  wait_for_traffic "$server_id" "$inbound_id"
+  probe_wait "$server_id" "$inbound_id" "$baseline"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -283,12 +325,14 @@ probe_shadowsocks() {
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "shadowsocks" "$port" "$remark" "$settings" "$stream" "$sniff")
   apply_xray "$server_id"
+  local baseline
+  baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   local outbound
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg password "$password" --arg method "$method" '{protocol:"shadowsocks", settings:{servers:[{address:$host, port:$port, method:$method, password:$password}]}}')
   run_xray_proxy "$outbound" 1084
 
-  wait_for_traffic "$server_id" "$inbound_id"
+  probe_wait "$server_id" "$inbound_id" "$baseline"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -306,10 +350,12 @@ probe_mixed() {
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "mixed" "$port" "$remark" "$settings" "$stream" "$sniff")
   apply_xray "$server_id"
+  local baseline
+  baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   curl -fsS --max-time 15 --socks5-hostname "$host:$port" http://echo:8080/ >/dev/null
 
-  wait_for_traffic "$server_id" "$inbound_id"
+  probe_wait "$server_id" "$inbound_id" "$baseline"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -331,10 +377,12 @@ probe_http() {
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "http" "$port" "$remark" "$settings" "$stream" "$sniff")
   apply_xray "$server_id"
+  local baseline
+  baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   curl -fsS --max-time 15 -x "http://$user:$pass@$host:$port" http://echo:8080/ >/dev/null
 
-  wait_for_traffic "$server_id" "$inbound_id"
+  probe_wait "$server_id" "$inbound_id" "$baseline"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -352,10 +400,12 @@ probe_tunnel() {
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "tunnel" "$port" "$remark" "$settings" "$stream" "$sniff")
   apply_xray "$server_id"
+  local baseline
+  baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   curl -fsS --max-time 15 "http://$host:$port" >/dev/null
 
-  wait_for_traffic "$server_id" "$inbound_id"
+  probe_wait "$server_id" "$inbound_id" "$baseline"
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -384,6 +434,8 @@ probe_wireguard() {
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "wireguard" "$port" "$remark" "$settings" "$stream" "$sniff")
   apply_xray "$server_id"
+  local baseline
+  baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   local outbound
   outbound=$(jq -c -n \
@@ -393,7 +445,7 @@ probe_wireguard() {
     '{protocol:"wireguard", settings:{secretKey:$secretKey, address:["10.0.0.2/32"], peers:[{publicKey:$serverPub, allowedIPs:["0.0.0.0/0","::/0"], endpoint:$endpoint, keepAlive:5}], noKernelTun:true}}')
   run_xray_proxy "$outbound" 1085
 
-  wait_for_traffic "$server_id" "$inbound_id"
+  probe_wait "$server_id" "$inbound_id" "$baseline"
   delete_inbound "$server_id" "$inbound_id"
 }
 
