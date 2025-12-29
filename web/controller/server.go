@@ -57,6 +57,7 @@ func (a *ServerController) initRouter(g *gin.RouterGroup) {
 	g.GET("/getNewVlessEnc", a.getNewVlessEnc)
 
 	g.POST("/stopXrayService", a.stopXrayService)
+	g.POST("/reloadXrayService", a.reloadXrayService)
 	g.POST("/restartXrayService", a.restartXrayService)
 	g.POST("/installXray/:version", a.installXray)
 	g.POST("/updateGeofile", a.updateGeofile)
@@ -611,6 +612,37 @@ func (a *ServerController) restartXrayService(c *gin.Context) {
 			return
 		}
 		jsonMsg(c, I18nWeb(c, "pages.xray.restartSuccess"), err)
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	err = connector.RestartXray(c.Request.Context())
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "pages.xray.restartError"), err)
+		return
+	}
+	jsonMsg(c, I18nWeb(c, "pages.xray.restartSuccess"), nil)
+}
+
+// reloadXrayService reloads Xray configuration without forcing a restart.
+// Supports optional server_id query parameter for multi-server mode.
+func (a *ServerController) reloadXrayService(c *gin.Context) {
+	serverId := a.getServerIdFromRequest(c)
+
+	// For backward compatibility, use local service if server_id=1
+	if serverId == 1 {
+		err := a.serverService.ReloadXrayService()
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "pages.xray.restartError"), err)
+			return
+		}
+		jsonMsg(c, I18nWeb(c, "pages.xray.restartSuccess"), nil)
 		return
 	}
 

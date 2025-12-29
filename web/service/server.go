@@ -580,6 +580,15 @@ func (s *ServerService) RestartXrayService() error {
 	return nil
 }
 
+func (s *ServerService) ReloadXrayService() error {
+	err := s.xrayService.RestartXray(false)
+	if err != nil {
+		logger.Error("reload xray failed:", err)
+		return err
+	}
+	return nil
+}
+
 func (s *ServerService) downloadXRay(version string) (string, error) {
 	osName := runtime.GOOS
 	arch := runtime.GOARCH
