@@ -14,7 +14,9 @@ COPY docker/lab/bootstrap-agent.sh /usr/local/bin/bootstrap-agent.sh
 COPY docker/lab/systemd/lab-agent-bootstrap.service /etc/systemd/system/lab-agent-bootstrap.service
 COPY . /opt/3x-ui
 
-RUN chmod +x /usr/local/bin/bootstrap-agent.sh \
+RUN sed -i 's/\r$//' /opt/3x-ui/install.sh /opt/3x-ui/install-noninteractive.sh \
+  /usr/local/bin/bootstrap-agent.sh \
+  && chmod +x /usr/local/bin/bootstrap-agent.sh \
   && ln -s /etc/systemd/system/lab-agent-bootstrap.service /etc/systemd/system/multi-user.target.wants/lab-agent-bootstrap.service
 
 VOLUME ["/sys/fs/cgroup"]

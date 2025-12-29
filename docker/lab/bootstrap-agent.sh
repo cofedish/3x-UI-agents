@@ -5,6 +5,20 @@ log() {
   echo "[lab-agent] $*"
 }
 
+load_container_env() {
+  local env_file="/proc/1/environ"
+  [ -r "$env_file" ] || return 0
+  while IFS= read -r -d '' entry; do
+    case "$entry" in
+      LAB_SHARED=*|AGENT_AUTH_TYPE=*|AGENT_CERT_NAME=*|AGENT_HOST_IP=*|AGENT_SERVER_ID=*|AGENT_SERVER_NAME=*)
+        export "$entry"
+        ;;
+    esac
+  done < "$env_file"
+}
+
+load_container_env
+
 LAB_SHARED="${LAB_SHARED:-/opt/lab/shared}"
 AGENT_AUTH_TYPE="${AGENT_AUTH_TYPE:-mtls}"
 AGENT_CERT_NAME="${AGENT_CERT_NAME:-agent-mtls}"

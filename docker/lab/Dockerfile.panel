@@ -15,7 +15,9 @@ COPY docker/lab/scripts/register-agents.sh /usr/local/bin/register-agents.sh
 COPY docker/lab/systemd/lab-panel-bootstrap.service /etc/systemd/system/lab-panel-bootstrap.service
 COPY . /opt/3x-ui
 
-RUN chmod +x /usr/local/bin/bootstrap-panel.sh /usr/local/bin/register-agents.sh \
+RUN sed -i 's/\r$//' /opt/3x-ui/install.sh /opt/3x-ui/install-noninteractive.sh \
+  /usr/local/bin/bootstrap-panel.sh /usr/local/bin/register-agents.sh \
+  && chmod +x /usr/local/bin/bootstrap-panel.sh /usr/local/bin/register-agents.sh \
   && ln -s /etc/systemd/system/lab-panel-bootstrap.service /etc/systemd/system/multi-user.target.wants/lab-panel-bootstrap.service
 
 VOLUME ["/sys/fs/cgroup"]

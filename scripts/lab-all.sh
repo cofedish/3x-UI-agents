@@ -5,12 +5,42 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 COMPOSE_FILE="$ROOT/docker/lab/docker-compose.yml"
 ARTIFACTS_DIR="$ROOT/artifacts/last-run"
 LOG_DIR="$ARTIFACTS_DIR/docker-logs"
+DOCKER_BIN=""
+
+resolve_docker() {
+  if command -v docker >/dev/null 2>&1; then
+    if docker compose version >/dev/null 2>&1; then
+      DOCKER_BIN="docker"
+    fi
+  fi
+
+  if [ -z "$DOCKER_BIN" ]; then
+    if command -v docker.exe >/dev/null 2>&1; then
+      DOCKER_BIN="docker.exe"
+    elif [ -x "/mnt/host/c/Program Files/Docker/Docker/resources/bin/docker.exe" ]; then
+      DOCKER_BIN="/mnt/host/c/Program Files/Docker/Docker/resources/bin/docker.exe"
+    elif [ -x "/mnt/c/Program Files/Docker/Docker/resources/bin/docker.exe" ]; then
+      DOCKER_BIN="/mnt/c/Program Files/Docker/Docker/resources/bin/docker.exe"
+    else
+      echo "docker not found"
+      exit 1
+    fi
+  fi
+
+  if [ "$DOCKER_BIN" != "docker" ] && command -v wslpath >/dev/null 2>&1; then
+    COMPOSE_FILE="$(wslpath -w "$COMPOSE_FILE")"
+  fi
+}
+
+resolve_docker
 
 compose() {
-  if docker compose version >/dev/null 2>&1; then
-    docker compose -f "$COMPOSE_FILE" "$@"
+  if "$DOCKER_BIN" compose version >/dev/null 2>&1; then
+    "$DOCKER_BIN" compose -f "$COMPOSE_FILE" "$@"
   elif command -v docker-compose >/dev/null 2>&1; then
     docker-compose -f "$COMPOSE_FILE" "$@"
+  elif command -v docker-compose.exe >/dev/null 2>&1; then
+    docker-compose.exe -f "$COMPOSE_FILE" "$@"
   else
     echo "docker compose not found"
     exit 1
@@ -42,11 +72,13 @@ done
 
 {
   echo "Host OS: $(uname -a 2>/dev/null || ver)"
-  echo "Docker: $(docker --version 2>/dev/null || echo 'not found')"
-  if docker compose version >/dev/null 2>&1; then
-    docker compose version
+  echo "Docker: $("$DOCKER_BIN" --version 2>/dev/null || echo 'not found')"
+  if "$DOCKER_BIN" compose version >/dev/null 2>&1; then
+    "$DOCKER_BIN" compose version
   elif command -v docker-compose >/dev/null 2>&1; then
     docker-compose version
+  elif command -v docker-compose.exe >/dev/null 2>&1; then
+    docker-compose.exe version
   else
     echo "Compose: not found"
   fi
