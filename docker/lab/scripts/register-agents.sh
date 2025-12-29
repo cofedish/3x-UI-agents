@@ -36,11 +36,26 @@ ensure_server() {
 
   local servers_json
   servers_json=$(get_servers)
-  local existing_id
-  existing_id=$(echo "$servers_json" | jq -r --arg endpoint "$endpoint" '.obj.servers[]? | select(.endpoint==$endpoint) | .id' | head -n1)
+  local existing
+  existing=$(echo "$servers_json" | jq -c --arg endpoint "$endpoint" '.obj.servers[]? | select(.endpoint==$endpoint)' | head -n1)
 
-  if [ -n "$existing_id" ] && [ "$existing_id" != "null" ]; then
-    log "Server already exists: $endpoint (id=$existing_id)"
+  if [ -n "$existing" ] && [ "$existing" != "null" ]; then
+    local existing_id
+    existing_id=$(echo "$existing" | jq -r '.id')
+    local payload
+    payload=$(echo "$existing" | jq \
+      --arg name "$name" \
+      --arg endpoint "$endpoint" \
+      --arg authType "$auth_type" \
+      --arg authData "$auth_data" \
+      --arg tags "$tags" \
+      --argjson enabled true \
+      '.name=$name | .endpoint=$endpoint | .authType=$authType | .authData=$authData | .tags=$tags | .enabled=$enabled')
+
+    curl -sS -b "$COOKIE_FILE" -H "Content-Type: application/json" \
+      -X PUT -d "$payload" "$BASE_URL/panel/api/servers/$existing_id" >/dev/null
+
+    log "Updated server: $endpoint (id=$existing_id)"
     return
   fi
 
@@ -99,6 +114,10 @@ for _ in {1..30}; do
   fi
   sleep 2
 done
+if ! get_servers | jq -e '.success == true' >/dev/null 2>&1; then
+  log "Login failed"
+  exit 1
+fi
 
 mtls_auth_json=$(jq -n \
   --arg cert "$(cat "$CERT_DIR/panel-client.crt")" \
