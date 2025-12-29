@@ -403,14 +403,14 @@ func (s *ServerService) GetStatus(lastStatus *Status) *Status {
 	}
 	status.Xray.Version = s.xrayService.GetXrayVersion()
 
-	// Application stats
-	var rtm runtime.MemStats
-	runtime.ReadMemStats(&rtm)
-	status.AppStats.Mem = rtm.Sys
-	status.AppStats.Threads = uint32(runtime.NumGoroutine())
-	if p != nil && p.IsRunning() {
-		status.AppStats.Uptime = p.GetUptime()
+	// Xray process stats
+	if xrayStats, ok := s.xrayService.GetXrayProcessStats(); ok {
+		status.AppStats.Mem = xrayStats.Mem
+		status.AppStats.Threads = xrayStats.Threads
+		status.AppStats.Uptime = xrayStats.Uptime
 	} else {
+		status.AppStats.Mem = 0
+		status.AppStats.Threads = 0
 		status.AppStats.Uptime = 0
 	}
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/cofedish/3x-UI-agents/logger"
 	"github.com/cofedish/3x-UI-agents/xray"
+	"github.com/shirou/gopsutil/v4/process"
 
 	"go.uber.org/atomic"
 )
@@ -26,6 +27,13 @@ type XrayService struct {
 	inboundService InboundService
 	settingService SettingService
 	xrayAPI        xray.XrayAPI
+}
+
+// XrayProcessStats represents runtime stats for the Xray process.
+type XrayProcessStats struct {
+	Mem     uint64
+	Threads uint32
+	Uptime  uint64
 }
 
 // IsXrayRunning checks if the Xray process is currently running.
@@ -79,6 +87,33 @@ func (s *XrayService) GetXrayVersion() string {
 		return "Unknown"
 	}
 	return p.GetVersion()
+}
+
+// GetXrayProcessStats returns memory, thread count, and uptime for the Xray process.
+func (s *XrayService) GetXrayProcessStats() (XrayProcessStats, bool) {
+	if p == nil || !p.IsRunning() {
+		return XrayProcessStats{}, false
+	}
+
+	stats := XrayProcessStats{Uptime: p.GetUptime()}
+	pid := p.GetPID()
+	if pid <= 0 {
+		return stats, true
+	}
+
+	proc, err := process.NewProcess(int32(pid))
+	if err != nil {
+		return stats, true
+	}
+
+	if memInfo, err := proc.MemoryInfo(); err == nil && memInfo != nil {
+		stats.Mem = memInfo.RSS
+	}
+	if threads, err := proc.NumThreads(); err == nil {
+		stats.Threads = uint32(threads)
+	}
+
+	return stats, true
 }
 
 // RemoveIndex removes an element at the specified index from a slice.

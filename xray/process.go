@@ -168,6 +168,14 @@ func (p *Process) GetAPIPort() int {
 	return p.apiPort
 }
 
+// GetPID returns the OS process ID for the running Xray process.
+func (p *Process) GetPID() int {
+	if p == nil || p.cmd == nil || p.cmd.Process == nil {
+		return 0
+	}
+	return p.cmd.Process.Pid
+}
+
 // GetConfig returns the configuration used by the Xray process.
 func (p *Process) GetConfig() *Config {
 	return p.config
