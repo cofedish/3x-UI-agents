@@ -27,7 +27,7 @@ if [ ! -x /usr/local/bin/x-ui-agent ] && [ ! -x /usr/local/x-ui-agent/x-ui ]; th
     AGENT_KEY_FILE="$CERT_DIR/${AGENT_CERT_NAME}.key" \
     AGENT_CA_FILE="$CERT_DIR/ca.crt" \
     AGENT_JWT_SECRET="$(cat "$JWT_TOKEN_FILE" 2>/dev/null || true)" \
-    (cd /opt/3x-ui && bash ./install-noninteractive.sh)
+    bash -lc "cd /opt/3x-ui && bash ./install-noninteractive.sh"
 else
   log "Agent already installed"
 fi
