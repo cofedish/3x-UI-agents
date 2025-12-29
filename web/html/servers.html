@@ -15,7 +15,7 @@
         </a-col>
         <a-col>
           <a-space>
-            <a-button type="primary" icon="plus" @click="showAddModal">
+            <a-button type="primary" icon="plus" @click="showAddModal" data-testid="servers-add">
               {{ i18n "pages.servers.addServer" }}
             </a-button>
             <a-button icon="reload" @click="loadServers">
@@ -202,16 +202,16 @@
         >
           <a-form-model ref="serverForm" :model="currentServer" :rules="rules" :label-col="{ span: 6 }" :wrapper-col="{ span: 18 }">
             <a-form-model-item label='{{ i18n "pages.servers.form.name" }}' prop="name">
-              <a-input v-model="currentServer.name" :placeholder="'{{ i18n "pages.servers.form.namePlaceholder" }}'" />
+              <a-input v-model="currentServer.name" data-testid="server-name" :placeholder="'{{ i18n "pages.servers.form.namePlaceholder" }}'" />
             </a-form-model-item>
 
             <a-form-model-item label='{{ i18n "pages.servers.form.endpoint" }}' prop="endpoint">
-              <a-input v-model="currentServer.endpoint" :placeholder="'{{ i18n "pages.servers.form.endpointPlaceholder" }}'" />
+              <a-input v-model="currentServer.endpoint" data-testid="server-endpoint" :placeholder="'{{ i18n "pages.servers.form.endpointPlaceholder" }}'" />
               <small style="color: #999;">{{ i18n "pages.servers.form.endpointHint" }}</small>
             </a-form-model-item>
 
             <a-form-model-item label='{{ i18n "pages.servers.form.authType" }}' prop="authType">
-              <a-select v-model="currentServer.authType">
+              <a-select v-model="currentServer.authType" data-testid="server-auth-type">
                 <a-select-option value="mtls">{{ i18n "pages.servers.form.authTypeMtls" }}</a-select-option>
                 <a-select-option value="jwt">{{ i18n "pages.servers.form.authTypeJwt" }}</a-select-option>
               </a-select>
@@ -220,6 +220,7 @@
             <a-form-model-item label='{{ i18n "pages.servers.form.authData" }}' prop="authData" v-if="currentServer.authType === 'mtls'">
               <a-textarea
                 v-model="currentServer.authData"
+                data-testid="server-auth-data"
                 :rows="6"
                 :placeholder="'{{ i18n "pages.servers.form.authDataPlaceholder" }}'"
               />
@@ -227,20 +228,21 @@
             </a-form-model-item>
 
             <a-form-model-item label='{{ i18n "pages.servers.form.authData" }}' prop="authData" v-if="currentServer.authType === 'jwt'">
-              <a-input v-model="currentServer.authData" type="password" :placeholder="'{{ i18n "pages.servers.form.jwtTokenPlaceholder" }}'" />
+              <a-input v-model="currentServer.authData" data-testid="server-auth-data" type="password" :placeholder="'{{ i18n "pages.servers.form.jwtTokenPlaceholder" }}'" />
             </a-form-model-item>
 
             <a-form-model-item label='{{ i18n "pages.servers.form.tags" }}'>
               <a-select
                 mode="tags"
                 v-model="currentServer.tagsArray"
+                data-testid="server-tags"
                 :placeholder="'{{ i18n "pages.servers.form.tagsPlaceholder" }}'"
                 style="width: 100%"
               ></a-select>
             </a-form-model-item>
 
             <a-form-model-item label='{{ i18n "enabled" }}'>
-              <a-switch v-model="currentServer.enabled" />
+              <a-switch v-model="currentServer.enabled" data-testid="server-enabled" />
             </a-form-model-item>
           </a-form-model>
         </a-modal>
