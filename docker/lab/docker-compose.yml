@@ -10,8 +10,8 @@ services:
       - /run/lock
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
-      - ./docker/lab/shared:/opt/lab/shared
-      - ./docker/lab/panel-data:/etc/x-ui
+      - ./shared:/opt/lab/shared
+      - ./panel-data:/etc/x-ui
     ports:
       - "2053:2053"
     environment:
@@ -39,8 +39,8 @@ services:
       - /run/lock
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
-      - ./docker/lab/shared:/opt/lab/shared
-      - ./docker/lab/agent-mtls-data:/etc/x-ui
+      - ./shared:/opt/lab/shared
+      - ./agent-mtls-data:/etc/x-ui
     environment:
       AGENT_AUTH_TYPE: "mtls"
       AGENT_CERT_NAME: "agent-mtls"
@@ -65,8 +65,8 @@ services:
       - /run/lock
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:rw
-      - ./docker/lab/shared:/opt/lab/shared
-      - ./docker/lab/agent-jwt-data:/etc/x-ui
+      - ./shared:/opt/lab/shared
+      - ./agent-jwt-data:/etc/x-ui
     environment:
       AGENT_AUTH_TYPE: "jwt"
       AGENT_CERT_NAME: "agent-jwt"
@@ -93,9 +93,9 @@ services:
       agent-jwt:
         condition: service_healthy
     volumes:
-      - .:/work
-      - ./docker/lab/shared:/opt/lab/shared:ro
-      - ./artifacts/last-run:/artifacts/last-run
+      - ../..:/work
+      - ./shared:/opt/lab/shared:ro
+      - ../../artifacts/last-run:/artifacts/last-run
     working_dir: /work
     environment:
       PANEL_URL: "http://panel:2053/lab"
@@ -104,6 +104,12 @@ services:
       ARTIFACTS_DIR: "/artifacts/last-run"
       LAB_SHARED: "/opt/lab/shared"
     entrypoint: ["/bin/bash", "-lc", "/work/docker/lab/scripts/run-e2e.sh"]
+    networks:
+      - labnet
+  echo:
+    image: hashicorp/http-echo:0.2.3
+    container_name: lab-echo
+    command: ["-listen=:8080", "-text=lab-echo"]
     networks:
       - labnet
 
