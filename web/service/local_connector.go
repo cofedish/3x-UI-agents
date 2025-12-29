@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/mem"
+	"github.com/shirou/gopsutil/v4/net"
 )
 
 // LocalConnector implements ServerConnector for the local Xray instance.
@@ -332,6 +334,13 @@ func (c *LocalConnector) GetSystemStats(ctx context.Context) (*SystemStats, erro
 		stats.DiskUsage = diskStat.UsedPercent
 	}
 
+	// Network totals
+	ioStats, err := net.IOCounters(false)
+	if err == nil && len(ioStats) > 0 {
+		stats.NetTrafficSent = ioStats[0].BytesSent
+		stats.NetTrafficRecv = ioStats[0].BytesRecv
+	}
+
 	// System uptime
 	hostInfo, err := host.Info()
 	if err == nil {
@@ -355,6 +364,13 @@ func (c *LocalConnector) GetSystemStats(ctx context.Context) (*SystemStats, erro
 	// Public IPs - TODO: implement GetPublicIP in ServerService
 	stats.PublicIPv4 = ""
 	stats.PublicIPv6 = ""
+
+	// Xray process stats
+	if xrayStats, ok := c.xrayService.GetXrayProcessStats(); ok {
+		stats.XrayMem = xrayStats.Mem
+		stats.XrayThreads = xrayStats.Threads
+		stats.XrayUptime = xrayStats.Uptime
+	}
 
 	return stats, nil
 }
@@ -382,6 +398,61 @@ func (c *LocalConnector) GetLogs(ctx context.Context, count int) ([]string, erro
 	}
 
 	return lines[start:], nil
+}
+
+// GetXrayLogs retrieves the last N parsed Xray access log entries.
+func (c *LocalConnector) GetXrayLogs(ctx context.Context, count int, filter string, showDirect bool, showBlocked bool, showProxy bool) ([]LogEntry, error) {
+	freedoms := []string{}
+	blackholes := []string{}
+
+	settingService := &SettingService{}
+	config, err := settingService.GetDefaultXrayConfig()
+	if err == nil && config != nil {
+		if cfgMap, ok := config.(map[string]interface{}); ok {
+			if outbounds, ok := cfgMap["outbounds"].([]interface{}); ok {
+				for _, outbound := range outbounds {
+					if obMap, ok := outbound.(map[string]interface{}); ok {
+						switch obMap["protocol"] {
+						case "freedom":
+							if tag, ok := obMap["tag"].(string); ok {
+								freedoms = append(freedoms, tag)
+							}
+						case "blackhole":
+							if tag, ok := obMap["tag"].(string); ok {
+								blackholes = append(blackholes, tag)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if len(freedoms) == 0 {
+		freedoms = []string{"direct"}
+	}
+	if len(blackholes) == 0 {
+		blackholes = []string{"blocked"}
+	}
+
+	logs := c.serverService.GetXrayLogs(
+		strconv.Itoa(count),
+		filter,
+		boolToStr(showDirect),
+		boolToStr(showBlocked),
+		boolToStr(showProxy),
+		freedoms,
+		blackholes,
+	)
+
+	return logs, nil
+}
+
+func boolToStr(v bool) string {
+	if v {
+		return "true"
+	}
+	return "false"
 }
 
 // UpdateGeoFiles updates Xray geo files (geoip.dat, geosite.dat).

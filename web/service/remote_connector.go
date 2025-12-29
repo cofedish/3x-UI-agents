@@ -12,7 +12,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/cofedish/3x-UI-agents/database/model"
@@ -551,6 +553,31 @@ func (c *RemoteConnector) GetLogs(ctx context.Context, count int) ([]string, err
 	var logs []string
 	if err := json.Unmarshal(resp.Data, &logs); err != nil {
 		return nil, fmt.Errorf("failed to parse logs: %w", err)
+	}
+
+	return logs, nil
+}
+
+// GetXrayLogs retrieves parsed Xray access logs from the agent.
+func (c *RemoteConnector) GetXrayLogs(ctx context.Context, count int, filter string, showDirect bool, showBlocked bool, showProxy bool) ([]LogEntry, error) {
+	values := url.Values{}
+	values.Set("count", strconv.Itoa(count))
+	if filter != "" {
+		values.Set("filter", filter)
+	}
+	values.Set("showDirect", strconv.FormatBool(showDirect))
+	values.Set("showBlocked", strconv.FormatBool(showBlocked))
+	values.Set("showProxy", strconv.FormatBool(showProxy))
+
+	path := "/api/v1/xray/logs?" + values.Encode()
+	resp, err := c.doRequest(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var logs []LogEntry
+	if err := json.Unmarshal(resp.Data, &logs); err != nil {
+		return nil, fmt.Errorf("failed to parse xray logs: %w", err)
 	}
 
 	return logs, nil

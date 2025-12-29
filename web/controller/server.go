@@ -672,6 +672,36 @@ func (a *ServerController) getXrayLogs(c *gin.Context) {
 	showDirect := c.PostForm("showDirect")
 	showBlocked := c.PostForm("showBlocked")
 	showProxy := c.PostForm("showProxy")
+	serverId := a.getServerIdFromRequest(c)
+
+	if serverId != 1 {
+		connector, err := a.serverMgmt.GetConnector(serverId)
+		if err != nil {
+			jsonMsg(c, "Failed to connect to server", err)
+			return
+		}
+
+		countInt, err := strconv.Atoi(count)
+		if err != nil {
+			countInt = 100
+		}
+
+		logs, err := connector.GetXrayLogs(
+			c.Request.Context(),
+			countInt,
+			filter,
+			showDirect != "false",
+			showBlocked != "false",
+			showProxy != "false",
+		)
+		if err != nil {
+			jsonMsg(c, "Failed to get xray logs", err)
+			return
+		}
+
+		jsonObj(c, logs, nil)
+		return
+	}
 
 	var freedoms []string
 	var blackholes []string

@@ -44,6 +44,7 @@ type ServerConnector interface {
 	// System Operations
 	GetSystemStats(ctx context.Context) (*SystemStats, error)
 	GetLogs(ctx context.Context, count int) ([]string, error)
+	GetXrayLogs(ctx context.Context, count int, filter string, showDirect bool, showBlocked bool, showProxy bool) ([]LogEntry, error)
 	UpdateGeoFiles(ctx context.Context) error
 	InstallXray(ctx context.Context, version string) error
 

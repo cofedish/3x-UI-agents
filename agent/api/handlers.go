@@ -626,12 +626,58 @@ func (h *AgentHandlers) GetLogs(c *gin.Context) {
 	respondSuccess(c, logs)
 }
 
+// GetXrayLogs returns parsed Xray access log entries.
+// GET /api/v1/xray/logs
+func (h *AgentHandlers) GetXrayLogs(c *gin.Context) {
+	count := c.DefaultQuery("count", "100")
+	filter := c.Query("filter")
+	showDirect := c.DefaultQuery("showDirect", "true")
+	showBlocked := c.DefaultQuery("showBlocked", "true")
+	showProxy := c.DefaultQuery("showProxy", "true")
+
+	freedoms := []string{}
+	blackholes := []string{}
+
+	settingService := &service.SettingService{}
+	config, err := settingService.GetDefaultXrayConfig()
+	if err == nil && config != nil {
+		if cfgMap, ok := config.(map[string]interface{}); ok {
+			if outbounds, ok := cfgMap["outbounds"].([]interface{}); ok {
+				for _, outbound := range outbounds {
+					if obMap, ok := outbound.(map[string]interface{}); ok {
+						switch obMap["protocol"] {
+						case "freedom":
+							if tag, ok := obMap["tag"].(string); ok {
+								freedoms = append(freedoms, tag)
+							}
+						case "blackhole":
+							if tag, ok := obMap["tag"].(string); ok {
+								blackholes = append(blackholes, tag)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if len(freedoms) == 0 {
+		freedoms = []string{"direct"}
+	}
+	if len(blackholes) == 0 {
+		blackholes = []string{"blocked"}
+	}
+
+	logs := h.serverService.GetXrayLogs(count, filter, showDirect, showBlocked, showProxy, freedoms, blackholes)
+	respondSuccess(c, logs)
+}
+
 // readLogFile securely reads the last N lines from the agent log file.
 // Only reads from the configured log file path to prevent path traversal attacks.
 func (h *AgentHandlers) readLogFile(count int) ([]string, error) {
 	logFile := os.Getenv("AGENT_LOG_FILE")
 	if logFile == "" {
-		logFile = "/var/log/x-ui-agent/agent.log"
+		logFile = filepath.Join(config.GetLogFolder(), "3xui.log")
 	}
 
 	// Security: Use filepath.Clean to prevent path traversal
@@ -644,6 +690,7 @@ func (h *AgentHandlers) readLogFile(count int) ([]string, error) {
 		"/var/log/3x-ui-agent/",
 		"/tmp/x-ui-agent/",
 		"./logs/",
+		config.GetLogFolder(),
 	}
 
 	allowed := false
