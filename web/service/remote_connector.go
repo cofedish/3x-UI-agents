@@ -448,12 +448,16 @@ func (c *RemoteConnector) GetTraffic(ctx context.Context, reset bool) (*xray.Tra
 		return nil, err
 	}
 
-	var traffic xray.Traffic
-	if err := json.Unmarshal(resp.Data, &traffic); err != nil {
+	var payload struct {
+		Traffics []*xray.Traffic `json:"traffics"`
+	}
+	if err := json.Unmarshal(resp.Data, &payload); err != nil {
 		return nil, fmt.Errorf("failed to parse traffic: %w", err)
 	}
-
-	return &traffic, nil
+	if len(payload.Traffics) > 0 {
+		return payload.Traffics[0], nil
+	}
+	return &xray.Traffic{}, nil
 }
 
 // GetClientTraffics retrieves client traffic statistics from the agent.
