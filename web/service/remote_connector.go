@@ -221,18 +221,10 @@ func createJWTClient(server *model.Server) (*http.Client, string, error) {
 		return nil, "", fmt.Errorf("JWT token is required in auth data")
 	}
 
-	// Create HTTPS client with TLS config
-	// For JWT auth, we skip TLS verification since agents typically use self-signed certificates
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true, // Skip certificate verification for self-signed certs
-		MinVersion:         tls.VersionTLS13,
-	}
-
+	// Create HTTP client (no TLS for JWT mode)
+	// JWT Bearer token provides authentication, TLS not needed
 	client := &http.Client{
 		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConfig,
-		},
 	}
 
 	return client, token, nil

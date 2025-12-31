@@ -114,12 +114,18 @@ func StartServer(cfg *config.AgentConfig, router *gin.Engine) error {
 	logger.Info(fmt.Sprintf("Auth type: %s", cfg.AuthType))
 
 	if cfg.AuthType == "mtls" {
-		// Start with mTLS
+		// Start with mTLS (HTTPS)
 		return startTLSServer(cfg, router)
 	}
 
-	// Start with regular HTTPS (JWT auth)
-	return startHTTPSServer(cfg, router)
+	// JWT mode - use plain HTTP (no TLS)
+	// JWT Bearer token provides authentication, TLS not needed
+	logger.Info("Starting HTTP server (JWT mode - no TLS)")
+	server := &http.Server{
+		Addr:    cfg.ListenAddr,
+		Handler: router,
+	}
+	return server.ListenAndServe()
 }
 
 // startTLSServer starts server with mTLS.
