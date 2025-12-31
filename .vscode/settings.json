@@ -1,0 +1,8 @@
+{
+  "gopls.directoryFilters": [
+    "-go-local"
+  ],
+  "files.exclude": {
+    "go-local": true
+  }
+}

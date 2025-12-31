@@ -1,6 +1,8 @@
 # Ignore editor and IDE settings
 .idea/
 .vscode/
+!.vscode/
+!.vscode/settings.json
 .cache/
 .sync*
 deploy/certs/
