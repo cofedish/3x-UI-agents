@@ -52,7 +52,11 @@ if [ "${LAB_BUILD_FROM_SOURCE:-1}" = "1" ]; then
     mkdir -p /usr/local/x-ui-agent
     export GOPATH="${GOPATH:-/root/go}"
     export GOMODCACHE="${GOMODCACHE:-$GOPATH/pkg/mod}"
+    export HOME="${HOME:-/root}"
+    export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+    export GOCACHE="${GOCACHE:-$XDG_CACHE_HOME/go-build}"
     mkdir -p "$GOMODCACHE"
+    mkdir -p "$GOCACHE"
     (cd /opt/3x-ui && go build -o /usr/local/x-ui-agent/x-ui ./main.go)
     systemctl restart x-ui-agent || true
   else
