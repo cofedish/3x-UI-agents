@@ -34,47 +34,35 @@ finalize() {
   # Disable strict error handling for cleanup
   set +e
 
-  echo "[DEBUG finalize] Starting finalize..." >&2
-
   # If systemd unit exists, attempt to start the service
   if systemctl list-unit-files --no-pager 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
-    echo "[DEBUG finalize] Unit file exists" >&2
     systemctl daemon-reload 2>/dev/null
     systemctl reset-failed "${SERVICE_NAME}" 2>/dev/null
 
     # If not active, try to start
     if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
       echo -e "${YELLOW}[finalize] Attempting to start ${SERVICE_NAME}...${NC}"
-      echo "[DEBUG finalize] Running systemctl start..." >&2
 
-      # More aggressive start with explicit output
+      # Start service with explicit error handling
       if systemctl start "${SERVICE_NAME}"; then
-        echo "[DEBUG finalize] systemctl start succeeded" >&2
+        sleep 2
       else
-        echo "[DEBUG finalize] systemctl start FAILED with exit code $?" >&2
+        echo -e "${RED}ERROR: Failed to start ${SERVICE_NAME}${NC}" >&2
         systemctl status "${SERVICE_NAME}" --no-pager -l >&2 || true
       fi
-      sleep 2
-    else
-      echo "[DEBUG finalize] Service already active" >&2
     fi
-  else
-    echo "[DEBUG finalize] Unit file NOT found" >&2
   fi
 
-  # Warn if service still not running
+  # Final status check and report
   if systemctl list-unit-files --no-pager 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
     if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
-      echo -e "${RED}WARNING: ${SERVICE_NAME} is still not active after finalize()${NC}"
-      echo "[DEBUG finalize] Showing status and logs..." >&2
-      systemctl status "${SERVICE_NAME}" --no-pager -l 2>&1 | tail -n 50 || true
-      journalctl -u "${SERVICE_NAME}" -n 80 --no-pager 2>&1 || true
+      echo -e "${RED}WARNING: ${SERVICE_NAME} is not active after installation${NC}"
+      echo "Please check service status: sudo systemctl status ${SERVICE_NAME}"
+      echo "View logs: sudo journalctl -u ${SERVICE_NAME} -n 50"
     else
-      echo -e "${GREEN}[finalize] Service ${SERVICE_NAME} is active${NC}"
+      echo -e "${GREEN}✓ Service ${SERVICE_NAME} is active and running${NC}"
     fi
   fi
-
-  echo "[DEBUG finalize] Finalize complete" >&2
 }
 
 trap finalize EXIT
