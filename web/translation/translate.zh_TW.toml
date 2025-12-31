@@ -911,7 +911,7 @@
 "serverNowOnline" = "\u2705 Server {{ .ServerName }} is now online"
 "serverNowOffline" = "\u274c Server {{ .ServerName }} is now offline"
 "autoSelected" = "\u26a1 Auto-selected"
-"searchServer" = "\ud83d\udd0d Search server..."
+"searchServer" = "\\U0001F50D Search server..."
 "filterOnline" = "\u2705 Online only"
 "filterOffline" = "\u274c Offline only"
 "prevPage" = "\u2b05\ufe0f Previous"
