@@ -105,11 +105,22 @@ install_dependencies() {
 
 # Stop running service if present (for upgrades)
 stop_existing_service() {
-  if systemctl list-units --type=service --all 2>/dev/null | grep -q "^$SERVICE_NAME.service"; then
-    if systemctl is-active --quiet "$SERVICE_NAME"; then
-      echo -e "${YELLOW}Stopping existing $SERVICE_NAME service...${NC}"
-      systemctl stop "$SERVICE_NAME" || true
+  # Check if service exists and is running
+  if systemctl list-units --full --all --no-pager 2>/dev/null | grep -qw "$SERVICE_NAME.service"; then
+    echo -e "${YELLOW}Found existing $SERVICE_NAME service${NC}"
+    if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
+      echo -e "${YELLOW}Stopping $SERVICE_NAME service...${NC}"
+      systemctl stop "$SERVICE_NAME" || {
+        echo -e "${RED}Warning: Failed to stop service, forcing kill...${NC}"
+        systemctl kill "$SERVICE_NAME" 2>/dev/null || true
+        sleep 2
+      }
+      echo -e "${GREEN}Service stopped${NC}"
+    else
+      echo -e "${YELLOW}Service exists but not running${NC}"
     fi
+  else
+    echo -e "${YELLOW}No existing $SERVICE_NAME service found${NC}"
   fi
 }
 
@@ -150,8 +161,18 @@ download_agent() {
     exit 1
   }
 
-  # Move full app (with bin/xray) to APP_DIR
-  rm -rf "$APP_DIR"
+  # Remove old installation completely (service already stopped)
+  if [ -d "$APP_DIR" ]; then
+    echo -e "${YELLOW}Removing old installation at $APP_DIR...${NC}"
+    rm -rf "$APP_DIR"
+    # Double-check removal
+    if [ -d "$APP_DIR" ]; then
+      echo -e "${RED}Warning: Failed to remove old directory, trying with force...${NC}"
+      rm -rf "$APP_DIR" 2>/dev/null || true
+    fi
+  fi
+
+  # Create fresh directory
   mkdir -p "$APP_DIR"
 
   if [ -d "$TMP_DIR/x-ui" ]; then
@@ -174,11 +195,21 @@ download_agent() {
   # Symlink CLI entrypoint for convenience
   ln -sf "$APP_DIR/x-ui" "$INSTALL_DIR/x-ui-agent"
 
+  # Verify installation
+  if [ ! -f "$APP_DIR/x-ui" ]; then
+    echo -e "${RED}Error: Binary not found at $APP_DIR/x-ui after installation${NC}"
+    rm -rf "$TMP_DIR"
+    exit 1
+  fi
+
+  # Check installed version
+  INSTALLED_VERSION=$("$APP_DIR/x-ui" version 2>/dev/null || echo "unknown")
+  echo -e "${GREEN}Agent installed to $APP_DIR (binary: $APP_DIR/x-ui)${NC}"
+  echo -e "${GREEN}Expected version: $RESOLVED_AGENT_VERSION${NC}"
+  echo -e "${GREEN}Installed version: $INSTALLED_VERSION${NC}"
+
   # Cleanup
   rm -rf "$TMP_DIR"
-
-  echo -e "${GREEN}Agent installed to $APP_DIR (binary: $APP_DIR/x-ui)${NC}"
-  echo -e "${GREEN}Agent version: $RESOLVED_AGENT_VERSION${NC}"
 }
 
 # Create directories
