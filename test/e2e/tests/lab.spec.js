@@ -71,7 +71,8 @@ async function login(page) {
     await page.locator('input[name="password"]').fill(password);
     await page.locator('button[type="submit"]').click();
   }
-  await page.waitForURL(/\/panel\/?$/);
+  const expectedPath = `${basePath}/panel`.replace(/\/$/, '');
+  await page.waitForURL((url) => url.pathname.replace(/\/$/, '') === expectedPath);
 }
 
 async function waitForPageReady(page) {
