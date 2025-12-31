@@ -89,12 +89,9 @@ services:
       dockerfile: docker/lab/Dockerfile.e2e
     container_name: lab-e2e
     depends_on:
-      panel:
-        condition: service_healthy
-      agent-mtls:
-        condition: service_healthy
-      agent-jwt:
-        condition: service_healthy
+      - panel
+      - agent-mtls
+      - agent-jwt
     volumes:
       - ../..:/work
       - ./shared:/opt/lab/shared:ro
