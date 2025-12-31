@@ -268,7 +268,13 @@ ensure_xray() {
     local ver="$1"
     local url="https://github.com/XTLS/Xray-core/releases/download/${ver}/${asset}"
     log "Downloading xray $ver"
-    curl -fsSLo "$TMP_DIR/xray.zip" "$url"
+    curl -fSL \
+      --retry 3 \
+      --retry-delay 2 \
+      --retry-all-errors \
+      --connect-timeout 10 \
+      --max-time 120 \
+      -o "$TMP_DIR/xray.zip" "$url"
   }
 
   if ! download_xray "$version"; then
