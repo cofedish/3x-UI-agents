@@ -172,6 +172,8 @@ jobs:
       - name: Build 3X-UI for Windows
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
+
           Write-Host "Current directory: $(Get-Location)"
           Write-Host "Listing files before build:"
           Get-ChildItem | Format-Table Name
@@ -181,16 +183,34 @@ jobs:
           $env:GOARCH="amd64"
 
           Write-Host "Starting Go build..."
-          go build -ldflags "-w -s" -o xui-release.exe -v main.go
+          Write-Host "Go version:"
+          go version
+          Write-Host "Go env:"
+          go env GOOS GOARCH CGO_ENABLED
 
-          Write-Host "Build exit code: $LASTEXITCODE"
+          Write-Host "`nBuilding main.go..."
+          go build -ldflags "-w -s" -o xui-release.exe -v main.go 2>&1 | Tee-Object -Variable buildOutput
+          $buildExitCode = $LASTEXITCODE
+
+          Write-Host "`nBuild exit code: $buildExitCode"
+
+          if ($buildExitCode -ne 0) {
+            Write-Host "`n=== BUILD FAILED ==="
+            Write-Host "Output:"
+            Write-Host $buildOutput
+            Write-Error "Go build failed with exit code $buildExitCode"
+            exit $buildExitCode
+          }
+
           Write-Host "Listing files after build:"
           Get-ChildItem | Format-Table Name
 
           if (-not (Test-Path xui-release.exe)) {
-            Write-Error "Build failed: xui-release.exe not found in $(Get-Location)"
+            Write-Error "Build succeeded but xui-release.exe not found in $(Get-Location)"
             exit 1
           }
+
+          Write-Host "Build successful, xui-release.exe created"
 
           Write-Host "Creating x-ui directory..."
           New-Item -ItemType Directory -Force -Path x-ui
