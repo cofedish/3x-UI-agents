@@ -277,7 +277,12 @@ func InitDB(dbPath string) error {
 		return err
 	}
 
-	return runMultiserverMigration()
+	if err := runMultiserverMigration(); err != nil {
+		return err
+	}
+
+	// Migrate JWT endpoints from https:// to http://
+	return MigrateJWTEndpoints()
 }
 
 // CloseDB closes the database connection if it exists.
