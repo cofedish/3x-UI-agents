@@ -491,16 +491,23 @@ main() {
   configure_firewall
   display_next_steps
 
-  # Enable and restart service after installation (ensures new binary is picked up)
+  # Enable and start service after installation
   echo -e "${YELLOW}Starting $SERVICE_NAME service...${NC}"
   systemctl daemon-reload
   systemctl enable $SERVICE_NAME || {
     echo -e "${RED}Warning: Failed to enable service${NC}"
   }
 
-  systemctl restart $SERVICE_NAME || {
+  # Stop if running (from stop_existing_service), then start fresh
+  systemctl stop $SERVICE_NAME 2>/dev/null || true
+  sleep 1
+
+  systemctl start $SERVICE_NAME || {
     echo -e "${RED}ERROR: Failed to start $SERVICE_NAME service!${NC}"
-    echo -e "${YELLOW}Check logs with: journalctl -u $SERVICE_NAME -n 50${NC}"
+    echo -e "${YELLOW}Showing systemd logs:${NC}"
+    journalctl -u $SERVICE_NAME -n 30 --no-pager
+    echo ""
+    echo -e "${YELLOW}Try manually: sudo systemctl start $SERVICE_NAME${NC}"
     exit 1
   }
 
@@ -509,10 +516,9 @@ main() {
   if systemctl is-active --quiet $SERVICE_NAME; then
     echo -e "${GREEN}✓ Service started successfully${NC}"
   else
-    echo -e "${RED}ERROR: Service failed to start!${NC}"
-    echo -e "${YELLOW}Logs:${NC}"
-    journalctl -u $SERVICE_NAME -n 20 --no-pager
-    exit 1
+    echo -e "${RED}WARNING: Service may not have started properly${NC}"
+    echo -e "${YELLOW}Check with: sudo systemctl status $SERVICE_NAME${NC}"
+    # Don't exit - let user check manually
   fi
 }
 
