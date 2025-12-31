@@ -11,6 +11,7 @@ PANEL_BASE_PATH="${PANEL_BASE_PATH:-lab}"
 PANEL_USERNAME="${PANEL_USERNAME:-admin}"
 PANEL_PASSWORD="${PANEL_PASSWORD:-admin123}"
 PANEL_LISTEN_IP="${PANEL_LISTEN_IP:-0.0.0.0}"
+PANEL_HOST="${PANEL_HOST:-panel}"
 CERT_DIR="$LAB_SHARED/certs"
 
 mkdir -p "$LAB_SHARED"
@@ -36,6 +37,7 @@ if [ -f "$CERT_DIR/ca.crt" ]; then
 fi
 
 BASE_URL="http://127.0.0.1:${PANEL_PORT}/${PANEL_BASE_PATH}"
+PANEL_URL="http://${PANEL_HOST}:${PANEL_PORT}/${PANEL_BASE_PATH}"
 log "Waiting for panel at $BASE_URL"
 for _ in {1..60}; do
   if curl -fsS "$BASE_URL/" >/dev/null 2>&1; then
@@ -47,7 +49,7 @@ done
 /usr/local/bin/register-agents.sh
 
 cat > "$LAB_SHARED/panel.env" <<EOF
-PANEL_URL=${BASE_URL}
+PANEL_URL=${PANEL_URL}
 PANEL_USERNAME=${PANEL_USERNAME}
 PANEL_PASSWORD=${PANEL_PASSWORD}
 PANEL_BASE_PATH=${PANEL_BASE_PATH}
