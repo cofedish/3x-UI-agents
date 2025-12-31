@@ -89,8 +89,17 @@ create_inbound() {
 
   local resp
   resp=$(json_post "/panel/api/inbounds/add?server_id=$server_id" "$payload")
-  require_success "$resp" "create inbound $protocol"
-  echo "$resp" | jq -r '.obj.id'
+  if ! require_success "$resp" "create inbound $protocol"; then
+    return 1
+  fi
+  local inbound_id
+  inbound_id=$(echo "$resp" | jq -r '.obj.id')
+  if [ -z "$inbound_id" ] || [ "$inbound_id" = "null" ]; then
+    log "create inbound $protocol missing id"
+    echo "$resp"
+    return 1
+  fi
+  echo "$inbound_id"
 }
 
 update_inbound_port() {
@@ -100,6 +109,9 @@ update_inbound_port() {
   local new_remark="$4"
   local inbound_json
   inbound_json=$(json_get "/panel/api/inbounds/get/$inbound_id?server_id=$server_id")
+  if ! require_success "$inbound_json" "get inbound $inbound_id"; then
+    return 1
+  fi
   local payload
   payload=$(echo "$inbound_json" | jq -c \
     --argjson port "$new_port" \
@@ -243,9 +255,24 @@ ensure_xray() {
     x86_64|amd64) asset="Xray-linux-64.zip" ;;
   esac
 
-  local url="https://github.com/XTLS/Xray-core/releases/download/${version}/${asset}"
-  log "Downloading xray $version"
-  curl -fsSLo "$TMP_DIR/xray.zip" "$url"
+  download_xray() {
+    local ver="$1"
+    local url="https://github.com/XTLS/Xray-core/releases/download/${ver}/${asset}"
+    log "Downloading xray $ver"
+    curl -fsSLo "$TMP_DIR/xray.zip" "$url"
+  }
+
+  if ! download_xray "$version"; then
+    local latest
+    latest=$(curl -fsS https://api.github.com/repos/XTLS/Xray-core/releases/latest \
+      | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || true
+    if [ -z "$latest" ] || [ "$latest" = "null" ] || [ "$latest" = "$version" ]; then
+      log "Failed to download xray $version"
+      exit 1
+    fi
+    download_xray "$latest"
+    version="$latest"
+  fi
   mkdir -p "$TMP_DIR/xray"
   unzip -q "$TMP_DIR/xray.zip" -d "$TMP_DIR/xray"
   XRAY_BIN="$TMP_DIR/xray/xray"
