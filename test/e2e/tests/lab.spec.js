@@ -3,7 +3,14 @@ const { test, expect } = require('@playwright/test');
 const panelUrl = process.env.PANEL_URL || 'http://panel:2053/lab';
 const username = process.env.PANEL_USERNAME || 'admin';
 const password = process.env.PANEL_PASSWORD || 'admin123';
-const origin = new URL(panelUrl).origin;
+const normalizedPanelUrl = panelUrl.replace(/\/$/, '');
+const origin = new URL(normalizedPanelUrl).origin;
+const basePath = new URL(normalizedPanelUrl).pathname.replace(/\/$/, '');
+
+function panelPath(path) {
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  return `${origin}${basePath}${normalized}`;
+}
 
 async function setEnglishCookie(page) {
   await page.context().addCookies([
@@ -57,7 +64,7 @@ function createMonitor(page) {
 
 async function login(page) {
   await setEnglishCookie(page);
-  await page.goto('/login');
+  await page.goto(panelPath('/login'));
   const usernameInput = page.locator('input[name="username"]');
   if (await usernameInput.isVisible()) {
     await usernameInput.fill(username);
@@ -171,7 +178,7 @@ test.describe.serial('lab e2e', () => {
 
     for (const route of routes) {
       monitor.reset();
-      const response = await page.goto(route);
+      const response = await page.goto(panelPath(route));
       expect(response, `${route} response`).not.toBeNull();
       expect(response.status(), `${route} status`).toBeLessThan(400);
       await waitForPageReady(page);
@@ -195,7 +202,7 @@ test.describe.serial('lab e2e', () => {
 
   test('servers online and dashboard metrics align', async ({ page }) => {
     await login(page);
-    await page.goto('/panel/servers');
+    await page.goto(panelPath('/panel/servers'));
     await waitForPageReady(page);
 
     const mtlsRow = page.locator('tr', { hasText: 'https://agent-mtls:2054' }).first();
@@ -205,7 +212,7 @@ test.describe.serial('lab e2e', () => {
     await expect(mtlsRow.locator('.ant-badge-status-success')).toBeVisible();
     await expect(jwtRow.locator('.ant-badge-status-success')).toBeVisible();
 
-    const serverList = await page.request.get('/panel/api/servers');
+    const serverList = await page.request.get(panelPath('/panel/api/servers'));
     const serversJson = await serverList.json();
     const servers = serversJson.obj?.servers || [];
     const serverIds = Array.from(new Set([1, ...servers.map((s) => s.id)])).filter(
@@ -214,7 +221,7 @@ test.describe.serial('lab e2e', () => {
 
     for (const serverId of serverIds) {
       await page.evaluate((id) => localStorage.setItem('selectedServerId', String(id)), serverId);
-      await page.goto('/panel/');
+      await page.goto(panelPath('/panel/'));
       await page.waitForFunction(() => {
         const appRef = typeof app !== 'undefined' ? app : window.app;
         return appRef && appRef.status && appRef.status.cpu;
@@ -239,7 +246,9 @@ test.describe.serial('lab e2e', () => {
         };
       });
 
-      const apiResp = await page.request.get(`/panel/api/server/status?server_id=${serverId}`);
+      const apiResp = await page.request.get(
+        panelPath(`/panel/api/server/status?server_id=${serverId}`)
+      );
       const apiJson = await apiResp.json();
       const apiStatus = apiJson.obj;
 
@@ -262,7 +271,7 @@ test.describe.serial('lab e2e', () => {
   test('remote server add/online/logs/remove', async ({ page }) => {
     await login(page);
 
-    const serverList = await page.request.get('/panel/api/servers');
+    const serverList = await page.request.get(panelPath('/panel/api/servers'));
     const serversJson = await serverList.json();
     const servers = serversJson.obj?.servers || [];
     const template = servers.find(
@@ -272,7 +281,7 @@ test.describe.serial('lab e2e', () => {
       test.skip(true, 'no remote server template available');
     }
 
-    await page.goto('/panel/servers');
+    await page.goto(panelPath('/panel/servers'));
     await waitForPageReady(page);
 
     const name = `lab-ui-${Date.now()}`;
@@ -291,7 +300,7 @@ test.describe.serial('lab e2e', () => {
 
     let created = null;
     for (let i = 0; i < 20; i += 1) {
-      const resp = await page.request.get('/panel/api/servers');
+      const resp = await page.request.get(panelPath('/panel/api/servers'));
       const json = await resp.json();
       created = (json.obj?.servers || []).find((server) => server.name === name);
       if (created && created.status === 'online') {
@@ -303,14 +312,17 @@ test.describe.serial('lab e2e', () => {
     expect(created, 'created server record').toBeTruthy();
     expect(created.status, 'created server online').toBe('online');
 
-    const statusResp = await page.request.get(`/panel/api/server/status?server_id=${created.id}`);
+    const statusResp = await page.request.get(
+      panelPath(`/panel/api/server/status?server_id=${created.id}`)
+    );
     const statusJson = await statusResp.json();
     expect(statusJson.success).toBe(true);
     expect(statusJson.obj?.xray?.state).toBeDefined();
 
-    const logsResp = await page.request.post(`/panel/api/server/xraylogs/10?server_id=${created.id}`, {
-      form: {},
-    });
+    const logsResp = await page.request.post(
+      panelPath(`/panel/api/server/xraylogs/10?server_id=${created.id}`),
+      { form: {} }
+    );
     const logsJson = await logsResp.json();
     expect(logsJson.success).toBe(true);
     expect(Array.isArray(logsJson.obj)).toBeTruthy();
@@ -322,7 +334,7 @@ test.describe.serial('lab e2e', () => {
 
   test('inbounds and clients CRUD', async ({ page }) => {
     await login(page);
-    await page.goto('/panel/inbounds');
+    await page.goto(panelPath('/panel/inbounds'));
     await waitForPageReady(page);
 
     const remark = `lab-inbound-${Date.now()}`;
@@ -386,7 +398,7 @@ test.describe.serial('lab e2e', () => {
 
   test('xray controls and logs', async ({ page }) => {
     await login(page);
-    await page.goto('/panel/');
+    await page.goto(panelPath('/panel/'));
     await waitForPageReady(page);
 
     const restartPromise = page.waitForResponse((resp) =>
@@ -404,7 +416,7 @@ test.describe.serial('lab e2e', () => {
   test('remote xray logs use selected server', async ({ page }) => {
     await login(page);
 
-    const serverList = await page.request.get('/panel/api/servers');
+    const serverList = await page.request.get(panelPath('/panel/api/servers'));
     const serversJson = await serverList.json();
     const servers = serversJson.obj?.servers || [];
     const remote = servers.find((server) => server.id && server.id > 1);
@@ -413,7 +425,7 @@ test.describe.serial('lab e2e', () => {
     }
 
     await page.evaluate((id) => localStorage.setItem('selectedServerId', String(id)), remote.id);
-    await page.goto('/panel/');
+    await page.goto(panelPath('/panel/'));
     await waitForPageReady(page);
 
     const responsePromise = page.waitForResponse((resp) => {
@@ -437,7 +449,7 @@ test.describe.serial('lab e2e', () => {
 
   test('settings toggle', async ({ page }) => {
     await login(page);
-    await page.goto('/panel/settings');
+    await page.goto(panelPath('/panel/settings'));
     await waitForPageReady(page);
 
     const toggle = page.locator('[data-testid="settings-external-traffic-enable"]');
@@ -459,7 +471,7 @@ test.describe.serial('lab e2e', () => {
 
   test('backup export/import', async ({ page }, testInfo) => {
     await login(page);
-    await page.goto('/panel/');
+    await page.goto(panelPath('/panel/'));
     await waitForPageReady(page);
 
     await page.locator('[data-testid="dashboard-backup"]').click();
@@ -484,7 +496,7 @@ test.describe.serial('lab e2e', () => {
         await login(page);
       }
     }
-    await page.goto('/panel/');
+    await page.goto(panelPath('/panel/'));
     await waitForPageReady(page);
   });
 });
