@@ -7,7 +7,7 @@
 
   <a-layout id="content-layout">
     <a-layout-header
-      style="padding: 16px 24px; background: var(--color-bg); border-bottom: 1px solid var(--color-border);"
+      style="padding: 12px 16px; background: var(--color-bg); border-bottom: 1px solid var(--color-border);"
     >
       <a-row type="flex" align="middle" justify="space-between">
         <a-col>
@@ -18,10 +18,16 @@
         </a-col>
         <a-col>
           <a-space>
-            <a-button type="primary" icon="plus" @click="showAddModal" data-testid="servers-add">
+            <a-button
+              type="primary"
+              icon="plus"
+              @click="showAddModal"
+              data-testid="servers-add"
+              style="border-radius: 10px;"
+            >
               {{ i18n "pages.servers.addServer" }}
             </a-button>
-            <a-button icon="reload" @click="loadServers">
+            <a-button icon="reload" @click="loadServers" style="border-radius: 10px;">
               {{ i18n "refresh" }}
             </a-button>
           </a-space>
@@ -29,18 +35,22 @@
       </a-row>
     </a-layout-header>
 
-    <a-layout-content style="padding: 16px 24px 24px;">
+    <a-layout-content style="padding: 12px 16px 16px;">
       <div style="max-width: 1400px; margin: 0 auto;">
         <a-spin :spinning="loading">
-          <a-card style="border-radius: 12px;">
+          <a-card
+            style="border-radius: 18px;"
+            :bodyStyle="{ padding: '14px' }"
+          >
             <!-- Filters -->
-            <a-row :gutter="16" style="margin-bottom: 16px;">
+            <a-row :gutter="12" style="margin-bottom: 12px;">
               <a-col :sm="24" :md="8">
                 <a-input-search
                   v-model="filters.search"
                   :placeholder="'{{ i18n "pages.servers.searchPlaceholder" }}'"
                   @search="applyFilters"
                   allow-clear
+                  style="border-radius: 10px;"
                 >
                   <a-icon slot="prefix" type="search" />
                 </a-input-search>
@@ -49,7 +59,7 @@
                 <a-select
                   v-model="filters.status"
                   :placeholder="'{{ i18n "pages.servers.filterByStatus" }}'"
-                  style="width: 100%"
+                  style="width: 100%; border-radius: 10px;"
                   @change="applyFilters"
                   allow-clear
                 >
@@ -66,6 +76,7 @@
                   :placeholder="'{{ i18n "pages.servers.filterByTags" }}'"
                   @pressEnter="applyFilters"
                   allow-clear
+                  style="border-radius: 10px;"
                 >
                   <a-icon slot="prefix" type="tags" />
                 </a-input>
@@ -73,7 +84,7 @@
             </a-row>
 
             <!-- Stats -->
-            <a-row :gutter="16" style="margin-bottom: 16px;">
+            <a-row :gutter="12" style="margin-bottom: 12px;">
               <a-col :span="6">
                 <a-statistic
                   :title="'{{ i18n "pages.servers.stats.total" }}'"
@@ -112,88 +123,94 @@
               </a-col>
             </a-row>
 
-            <!-- Table -->
-            <a-table
-              style="margin-top: 8px;"
-              :columns="columns"
-              :data-source="servers"
-              :pagination="pagination"
-              :loading="loading"
-              @change="handleTableChange"
-              row-key="id"
-              :scroll="{ x: true }"
-            >
-              <template #name="text, record">
-                <strong>[[ record.name ]]</strong>
-                <br />
-                <small style="color: #999;">[[ record.endpoint ]]</small>
-              </template>
+            <!-- Table wrapper for rounded corners -->
+            <div style="border-radius: 18px; overflow: hidden; border: 1px solid var(--color-border);">
+              <a-table
+                style="margin-top: 6px;"
+                :columns="columns"
+                :data-source="servers"
+                :pagination="pagination"
+                :loading="loading"
+                @change="handleTableChange"
+                row-key="id"
+                :scroll="{ x: true }"
+              >
+                <template #name="text, record">
+                  <strong>[[ record.name ]]</strong>
+                  <br />
+                  <small style="color: #999;">[[ record.endpoint ]]</small>
+                </template>
 
-              <template #status="text, record">
-                <a-badge :status="getStatusBadge(record.status)" :text="getStatusText(record.status)" />
-                <div v-if="record.last_seen" style="font-size: 12px; color: #999; margin-top: 4px;">
-                  {{ i18n "lastSeenLabel" }}: [[ formatTimestamp(record.last_seen) ]]
-                </div>
-              </template>
+                <template #status="text, record">
+                  <a-badge :status="getStatusBadge(record.status)" :text="getStatusText(record.status)" />
+                  <div v-if="record.last_seen" style="font-size: 12px; color: #999; margin-top: 4px;">
+                    {{ i18n "lastSeenLabel" }}: [[ formatTimestamp(record.last_seen) ]]
+                  </div>
+                </template>
 
-              <template #auth="text, record">
-                <a-tag :color="getAuthColor(record.authType)">
-                  [[ record.authType.toUpperCase() ]]
-                </a-tag>
-              </template>
-
-              <template #version="text, record">
-                <div v-if="record.version">
-                  <div>{{ i18n "panelVersionLabel" }}: v[[ record.version ]]</div>
-                  <div v-if="record.xrayVersion">{{ i18n "xrayVersionLabel" }}: v[[ record.xrayVersion ]]</div>
-                </div>
-                <span v-else style="color: #999;">—</span>
-              </template>
-
-              <template #tags="text, record">
-                <span v-if="record.tags">
-                  <a-tag v-for="tag in parseTags(record.tags)" :key="tag" color="blue">
-                    [[ tag ]]
+                <template #auth="text, record">
+                  <a-tag :color="getAuthColor(record.authType)" style="border-radius: 10px;">
+                    [[ record.authType.toUpperCase() ]]
                   </a-tag>
-                </span>
-                <span v-else style="color: #999;">—</span>
-              </template>
+                </template>
 
-              <template #actions="text, record">
-                <a-space>
-                  <a-tooltip title='{{ i18n "pages.servers.testHealth" }}'>
-                    <a-button
-                      size="small"
-                      icon="heart"
-                      @click="testHealth(record)"
-                      :loading="healthChecking[record.id]"
-                    ></a-button>
-                  </a-tooltip>
-                  <a-tooltip title='{{ i18n "pages.servers.restartXray" }}' v-if="record.id !== 1">
-                    <a-button
-                      size="small"
-                      icon="reload"
-                      @click="restartXray(record)"
-                    ></a-button>
-                  </a-tooltip>
-                  <a-tooltip title='{{ i18n "edit" }}'>
-                    <a-button
-                      size="small"
-                      icon="edit"
-                      @click="showEditModal(record)"
-                    ></a-button>
-                  </a-tooltip>
-                  <a-tooltip title='{{ i18n "delete" }}' v-if="record.id !== 1">
-                    <a-button
-                      size="small"
-                      type="danger"
-                      icon="delete"
-                      @click="showDeleteConfirm(record)"
-                    ></a-button>
-                  </a-tooltip>
-                </a-space>
-              </template>
-            </a-table>
+                <template #version="text, record">
+                  <div v-if="record.version">
+                    <div>{{ i18n "panelVersionLabel" }}: v[[ record.version ]]</div>
+                    <div v-if="record.xrayVersion">{{ i18n "xrayVersionLabel" }}: v[[ record.xrayVersion ]]</div>
+                  </div>
+                  <span v-else style="color: #999;">—</span>
+                </template>
+
+                <template #tags="text, record">
+                  <span v-if="record.tags">
+                    <a-tag v-for="tag in parseTags(record.tags)" :key="tag" color="blue" style="border-radius: 10px;">
+                      [[ tag ]]
+                    </a-tag>
+                  </span>
+                  <span v-else style="color: #999;">—</span>
+                </template>
+
+                <template #actions="text, record">
+                  <a-space>
+                    <a-tooltip title='{{ i18n "pages.servers.testHealth" }}'>
+                      <a-button
+                        size="small"
+                        icon="heart"
+                        @click="testHealth(record)"
+                        :loading="healthChecking[record.id]"
+                        style="border-radius: 10px;"
+                      ></a-button>
+                    </a-tooltip>
+                    <a-tooltip title='{{ i18n "pages.servers.restartXray" }}' v-if="record.id !== 1">
+                      <a-button
+                        size="small"
+                        icon="reload"
+                        @click="restartXray(record)"
+                        style="border-radius: 10px;"
+                      ></a-button>
+                    </a-tooltip>
+                    <a-tooltip title='{{ i18n "edit" }}'>
+                      <a-button
+                        size="small"
+                        icon="edit"
+                        @click="showEditModal(record)"
+                        style="border-radius: 10px;"
+                      ></a-button>
+                    </a-tooltip>
+                    <a-tooltip title='{{ i18n "delete" }}' v-if="record.id !== 1">
+                      <a-button
+                        size="small"
+                        type="danger"
+                        icon="delete"
+                        @click="showDeleteConfirm(record)"
+                        style="border-radius: 10px;"
+                      ></a-button>
+                    </a-tooltip>
+                  </a-space>
+                </template>
+              </a-table>
+            </div>
           </a-card>
 
           <!-- Add/Edit Modal -->
@@ -217,6 +234,7 @@
                   v-model="currentServer.name"
                   data-testid="server-name"
                   :placeholder="'{{ i18n "pages.servers.form.namePlaceholder" }}'"
+                  style="border-radius: 10px;"
                 />
               </a-form-model-item>
 
@@ -225,12 +243,13 @@
                   v-model="currentServer.endpoint"
                   data-testid="server-endpoint"
                   :placeholder="'{{ i18n "pages.servers.form.endpointPlaceholder" }}'"
+                  style="border-radius: 10px;"
                 />
                 <small style="color: #999;">{{ i18n "pages.servers.form.endpointHint" }}</small>
               </a-form-model-item>
 
               <a-form-model-item label='{{ i18n "pages.servers.form.authType" }}' prop="authType">
-                <a-select v-model="currentServer.authType" data-testid="server-auth-type">
+                <a-select v-model="currentServer.authType" data-testid="server-auth-type" style="width: 100%; border-radius: 10px;">
                   <a-select-option value="mtls">{{ i18n "pages.servers.form.authTypeMtls" }}</a-select-option>
                   <a-select-option value="jwt">{{ i18n "pages.servers.form.authTypeJwt" }}</a-select-option>
                 </a-select>
@@ -246,6 +265,7 @@
                   data-testid="server-auth-data"
                   :rows="6"
                   :placeholder="'{{ i18n "pages.servers.form.authDataPlaceholder" }}'"
+                  style="border-radius: 10px;"
                 />
                 <small style="color: #999;">{{ i18n "pages.servers.form.authDataHint" }}</small>
               </a-form-model-item>
@@ -260,6 +280,7 @@
                   data-testid="server-auth-data"
                   type="password"
                   :placeholder="'{{ i18n "pages.servers.form.jwtTokenPlaceholder" }}'"
+                  style="border-radius: 10px;"
                 />
               </a-form-model-item>
 
@@ -269,7 +290,7 @@
                   v-model="currentServer.tagsArray"
                   data-testid="server-tags"
                   :placeholder="'{{ i18n "pages.servers.form.tagsPlaceholder" }}'"
-                  style="width: 100%"
+                  style="width: 100%; border-radius: 10px;"
                 ></a-select>
               </a-form-model-item>
 
@@ -416,11 +437,11 @@ new Vue({
 
           const res = (response && response.data) ? response.data : response;
           if (res && res.success) {
-            if (this.modalMode === 'add') {
-              this.$message.success('{{ i18n "pages.servers.addSuccess" }}');
-            } else {
-              this.$message.success('{{ i18n "pages.servers.updateSuccess" }}');
-            }
+            this.$message.success(
+              this.modalMode === 'add'
+                ? '{{ i18n "pages.servers.addSuccess" }}'
+                : '{{ i18n "pages.servers.updateSuccess" }}'
+            );
             this.modalVisible = false;
             this.loadServers();
             this.loadStats();
