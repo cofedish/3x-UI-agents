@@ -416,6 +416,33 @@ configure_firewall() {
 }
 
 choose_auth_type() {
+  # Check if auth type already configured (upgrade scenario)
+  if [ -f "/etc/systemd/system/$SERVICE_NAME.service" ]; then
+    EXISTING_AUTH=$(systemctl cat $SERVICE_NAME 2>/dev/null | grep "^Environment=\"AGENT_AUTH_TYPE=" | cut -d'=' -f3 | tr -d '"')
+    if [ -n "$EXISTING_AUTH" ]; then
+      echo -e "${YELLOW}Found existing auth type: $EXISTING_AUTH${NC}"
+      AUTH_TYPE="$EXISTING_AUTH"
+
+      # Regenerate credentials only if they don't exist
+      if [ "$AUTH_TYPE" = "jwt" ]; then
+        if [ -f "$CONFIG_DIR/agent.jwt" ]; then
+          JWT_TOKEN=$(cat "$CONFIG_DIR/agent.jwt")
+          echo -e "${GREEN}Using existing JWT token${NC}"
+        else
+          generate_jwt_token
+        fi
+      elif [ "$AUTH_TYPE" = "mtls" ]; then
+        if [ -f "$CERT_DIR/agent.crt" ] && [ -f "$CERT_DIR/agent.key" ] && [ -f "$CERT_DIR/ca.crt" ]; then
+          echo -e "${GREEN}Using existing mTLS certificates${NC}"
+        else
+          generate_mtls_certs
+        fi
+      fi
+      return
+    fi
+  fi
+
+  # First-time installation - ask user
   echo -e "${YELLOW}Select authentication method for agent:${NC}"
   echo "1) mTLS (certs will be generated automatically)"
   echo "2) JWT (random token will be generated)"
@@ -430,9 +457,9 @@ choose_auth_type() {
       generate_jwt_token
       ;;
     *)
-      echo -e "${RED}Invalid choice, defaulting to mTLS${NC}"
-      AUTH_TYPE="mtls"
-      generate_mtls_certs
+      echo -e "${RED}Invalid choice, defaulting to JWT${NC}"
+      AUTH_TYPE="jwt"
+      generate_jwt_token
       ;;
   esac
 }
