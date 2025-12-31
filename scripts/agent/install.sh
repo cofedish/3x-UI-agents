@@ -31,41 +31,63 @@ DEFAULT_XRAY_VERSION="v25.12.8"
 
 # Fail-safe finalization: always attempt to start service on exit
 finalize() {
+  echo "" # Blank line for readability
+  echo -e "${YELLOW}[finalize] Starting finalization...${NC}"
+
   # Disable strict error handling for cleanup
   set +e
 
-  # If systemd unit exists, attempt to start the service
-  if systemctl list-unit-files --no-pager 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
-    systemctl daemon-reload 2>/dev/null
-    systemctl reset-failed "${SERVICE_NAME}" 2>/dev/null
+  # Check if systemd unit exists
+  if ! systemctl list-unit-files --no-pager 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
+    echo -e "${YELLOW}[finalize] No systemd unit found for ${SERVICE_NAME}, skipping${NC}"
+    return 0
+  fi
 
-    # If not active, try to start
-    if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
-      echo -e "${YELLOW}[finalize] Attempting to start ${SERVICE_NAME}...${NC}"
+  echo -e "${YELLOW}[finalize] Systemd unit exists, proceeding...${NC}"
 
-      # Start service with explicit error handling
-      if systemctl start "${SERVICE_NAME}"; then
-        sleep 2
+  # Reload systemd and reset failed state
+  systemctl daemon-reload 2>/dev/null
+  systemctl reset-failed "${SERVICE_NAME}" 2>/dev/null
+
+  # Check current service status
+  if systemctl is-active --quiet "${SERVICE_NAME}"; then
+    echo -e "${GREEN}[finalize] Service ${SERVICE_NAME} is already active${NC}"
+  else
+    echo -e "${YELLOW}[finalize] Service ${SERVICE_NAME} is not active, attempting to start...${NC}"
+
+    # Try to start the service
+    if systemctl start "${SERVICE_NAME}" 2>&1; then
+      echo -e "${YELLOW}[finalize] Start command completed, waiting 2 seconds...${NC}"
+      sleep 2
+
+      # Verify it started
+      if systemctl is-active --quiet "${SERVICE_NAME}"; then
+        echo -e "${GREEN}[finalize] Service ${SERVICE_NAME} started successfully${NC}"
       else
-        echo -e "${RED}ERROR: Failed to start ${SERVICE_NAME}${NC}" >&2
-        systemctl status "${SERVICE_NAME}" --no-pager -l >&2 || true
+        echo -e "${RED}[finalize] Service start command succeeded but service is not active!${NC}"
+        echo -e "${YELLOW}[finalize] Checking service status...${NC}"
+        systemctl status "${SERVICE_NAME}" --no-pager -l || true
       fi
+    else
+      echo -e "${RED}[finalize] Failed to start ${SERVICE_NAME}${NC}"
+      echo -e "${YELLOW}[finalize] Service status:${NC}"
+      systemctl status "${SERVICE_NAME}" --no-pager -l || true
+      echo -e "${YELLOW}[finalize] Recent logs:${NC}"
+      journalctl -u "${SERVICE_NAME}" -n 30 --no-pager || true
     fi
   fi
 
   # Final status check and report
-  if systemctl list-unit-files --no-pager 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
-    if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
-      echo -e "${RED}WARNING: ${SERVICE_NAME} is not active after installation${NC}"
-      echo "Please check service status: sudo systemctl status ${SERVICE_NAME}"
-      echo "View logs: sudo journalctl -u ${SERVICE_NAME} -n 50"
-    else
-      echo -e "${GREEN}✓ Service ${SERVICE_NAME} is active and running${NC}"
-    fi
+  echo "" # Blank line
+  if systemctl is-active --quiet "${SERVICE_NAME}"; then
+    echo -e "${GREEN}✓ Service ${SERVICE_NAME} is active and running${NC}"
+  else
+    echo -e "${RED}WARNING: ${SERVICE_NAME} is not active after installation${NC}"
+    echo "Please check service status: sudo systemctl status ${SERVICE_NAME}"
+    echo "View logs: sudo journalctl -u ${SERVICE_NAME} -n 50"
   fi
 
   # Always return success - we've done our best to start the service
-  # The warnings above will inform the user if something went wrong
   return 0
 }
 
