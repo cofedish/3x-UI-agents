@@ -1,0 +1,8 @@
+artifacts/
+docker/lab/shared/
+docker/lab/panel-data/
+docker/lab/agent-mtls-data/
+docker/lab/agent-jwt-data/
+node_modules/
+test/e2e/node_modules/
+test/e2e/.playwright/
