@@ -37,13 +37,13 @@ finalize() {
   # Disable strict error handling for cleanup
   set +e
 
-  # Check if systemd unit exists
-  if ! systemctl list-unit-files --no-pager 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
-    echo -e "${YELLOW}[finalize] No systemd unit found for ${SERVICE_NAME}, skipping${NC}"
+  # Check if systemd unit file exists (more reliable than list-unit-files)
+  if [ ! -f "/etc/systemd/system/${SERVICE_NAME}.service" ]; then
+    echo -e "${YELLOW}[finalize] No systemd unit file found at /etc/systemd/system/${SERVICE_NAME}.service, skipping${NC}"
     return 0
   fi
 
-  echo -e "${YELLOW}[finalize] Systemd unit exists, proceeding...${NC}"
+  echo -e "${YELLOW}[finalize] Systemd unit file exists, proceeding...${NC}"
 
   # Reload systemd and reset failed state
   systemctl daemon-reload 2>/dev/null
