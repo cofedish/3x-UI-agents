@@ -172,13 +172,31 @@ jobs:
       - name: Build 3X-UI for Windows
         shell: pwsh
         run: |
+          Write-Host "Current directory: $(Get-Location)"
+          Write-Host "Listing files before build:"
+          Get-ChildItem | Format-Table Name
+
           $env:CGO_ENABLED="1"
           $env:GOOS="windows"
           $env:GOARCH="amd64"
+
+          Write-Host "Starting Go build..."
           go build -ldflags "-w -s" -o xui-release.exe -v main.go
-          
-          mkdir x-ui
-          Copy-Item xui-release.exe x-ui\
+
+          Write-Host "Build exit code: $LASTEXITCODE"
+          Write-Host "Listing files after build:"
+          Get-ChildItem | Format-Table Name
+
+          if (-not (Test-Path xui-release.exe)) {
+            Write-Error "Build failed: xui-release.exe not found in $(Get-Location)"
+            exit 1
+          }
+
+          Write-Host "Creating x-ui directory..."
+          New-Item -ItemType Directory -Force -Path x-ui
+
+          Write-Host "Copying xui-release.exe to x-ui\x-ui.exe..."
+          Copy-Item xui-release.exe x-ui\x-ui.exe
           mkdir x-ui\bin
           cd x-ui\bin
           
