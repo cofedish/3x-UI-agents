@@ -1,16 +1,19 @@
 {
   "gopls.directoryFilters": [
-    "-go-local",
-    "-**/go-local/**",
+    "-go-local/test",
+    "-go-local/test/**",
+    "-go-local/src/**/testdata",
+    "-go-local/src/**/testdata/**",
     "-**/node_modules"
   ],
   "files.exclude": {
-    "go-local": true
+    "go-local/test": true
   },
   "search.exclude": {
-    "go-local": true
+    "go-local/test": true
   },
   "files.watcherExclude": {
-    "**/go-local/**": true
+    "go-local/test/**": true,
+    "**/node_modules/**": true
   }
 }
