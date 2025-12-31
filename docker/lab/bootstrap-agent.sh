@@ -55,6 +55,7 @@ if [ "${LAB_BUILD_FROM_SOURCE:-1}" = "1" ]; then
     export HOME="${HOME:-/root}"
     export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
     export GOCACHE="${GOCACHE:-$XDG_CACHE_HOME/go-build}"
+    export CGO_ENABLED=1
     mkdir -p "$GOMODCACHE"
     mkdir -p "$GOCACHE"
     (cd /opt/3x-ui && go build -o /usr/local/x-ui-agent/x-ui ./main.go)
