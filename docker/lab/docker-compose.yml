@@ -24,7 +24,8 @@ services:
       test: ["CMD-SHELL", "curl -fsS http://localhost:2053/lab/ >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 30
+      retries: 60
+      start_period: 5m
     networks:
       - labnet
 
@@ -50,7 +51,8 @@ services:
       test: ["CMD-SHELL", "curl -fsS --cacert /opt/lab/shared/certs/ca.crt --cert /opt/lab/shared/certs/panel-client.crt --key /opt/lab/shared/certs/panel-client.key https://agent-mtls:2054/api/v1/health >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 30
+      retries: 60
+      start_period: 5m
     networks:
       - labnet
 
@@ -76,7 +78,8 @@ services:
       test: ["CMD-SHELL", "curl -fsS --cacert /opt/lab/shared/certs/ca.crt https://agent-jwt:2054/api/v1/health >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 30
+      retries: 60
+      start_period: 5m
     networks:
       - labnet
 

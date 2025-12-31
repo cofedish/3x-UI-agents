@@ -33,6 +33,7 @@ fi
 if [ "${LAB_BUILD_FROM_SOURCE:-1}" = "1" ]; then
   if command -v go >/dev/null 2>&1; then
     log "Rebuilding panel from source"
+    systemctl stop x-ui || true
     mkdir -p /usr/local/x-ui
     export GOPATH="${GOPATH:-/root/go}"
     export GOMODCACHE="${GOMODCACHE:-$GOPATH/pkg/mod}"
