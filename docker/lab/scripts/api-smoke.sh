@@ -198,18 +198,26 @@ fi
 
 inbounds_list=$(json_get "/panel/api/inbounds/list?server_id=1")
 export_payload=$(echo "$inbounds_list" | jq -c '.obj[0]')
+delete_inbound_resp=$(json_post "/panel/api/inbounds/del/$inbound_id?server_id=1" "{}")
+if ! echo "$delete_inbound_resp" | jq -e '.success == true' >/dev/null; then
+  log "Inbound delete failed"
+  exit 1
+fi
+
 if [ -n "$export_payload" ] && [ "$export_payload" != "null" ]; then
   import_resp=$(curl -sS -b "$COOKIE_FILE" -F "data=$export_payload" "$PANEL_URL/panel/api/inbounds/import")
   if ! echo "$import_resp" | jq -e '.success == true' >/dev/null; then
     log "Inbound import failed"
     exit 1
   fi
-fi
-
-delete_inbound_resp=$(json_post "/panel/api/inbounds/del/$inbound_id?server_id=1" "{}")
-if ! echo "$delete_inbound_resp" | jq -e '.success == true' >/dev/null; then
-  log "Inbound delete failed"
-  exit 1
+  import_id=$(echo "$import_resp" | jq -r '.obj.id')
+  if [ -n "$import_id" ] && [ "$import_id" != "null" ]; then
+    import_delete=$(json_post "/panel/api/inbounds/del/$import_id?server_id=1" "{}")
+    if ! echo "$import_delete" | jq -e '.success == true' >/dev/null; then
+      log "Imported inbound delete failed"
+      exit 1
+    fi
+  fi
 fi
 
 db_file=$(mktemp)
