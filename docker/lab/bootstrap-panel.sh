@@ -30,6 +30,17 @@ else
   log "Panel already installed"
 fi
 
+if [ "${LAB_BUILD_FROM_SOURCE:-1}" = "1" ]; then
+  if command -v go >/dev/null 2>&1; then
+    log "Rebuilding panel from source"
+    mkdir -p /usr/local/x-ui
+    (cd /opt/3x-ui && go build -o /usr/local/x-ui/x-ui ./main.go)
+    systemctl restart x-ui || true
+  else
+    log "Go toolchain missing; skipping source rebuild"
+  fi
+fi
+
 if [ -f "$CERT_DIR/ca.crt" ]; then
   log "Installing lab CA into trust store"
   cp "$CERT_DIR/ca.crt" /usr/local/share/ca-certificates/lab-ca.crt

@@ -46,6 +46,17 @@ else
   log "Agent already installed"
 fi
 
+if [ "${LAB_BUILD_FROM_SOURCE:-1}" = "1" ]; then
+  if command -v go >/dev/null 2>&1; then
+    log "Rebuilding agent from source"
+    mkdir -p /usr/local/x-ui-agent
+    (cd /opt/3x-ui && go build -o /usr/local/x-ui-agent/x-ui ./main.go)
+    systemctl restart x-ui-agent || true
+  else
+    log "Go toolchain missing; skipping source rebuild"
+  fi
+fi
+
 if [ -d /etc/x-ui-agent/certs ]; then
   cp "$CERT_DIR/${AGENT_CERT_NAME}.crt" /etc/x-ui-agent/certs/agent.crt
   cp "$CERT_DIR/${AGENT_CERT_NAME}.key" /etc/x-ui-agent/certs/agent.key

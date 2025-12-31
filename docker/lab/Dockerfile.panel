@@ -7,6 +7,7 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     systemd systemd-sysv dbus ca-certificates curl wget openssl \
     iproute2 iputils-ping jq netcat-traditional \
+    git golang-go \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
