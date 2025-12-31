@@ -448,6 +448,22 @@ configure_firewall() {
 }
 
 choose_auth_type() {
+  # Check environment variable first (non-interactive installation)
+  if [ -n "${AGENT_AUTH_TYPE:-}" ]; then
+    echo -e "${YELLOW}Using auth type from environment: $AGENT_AUTH_TYPE${NC}"
+    AUTH_TYPE="$AGENT_AUTH_TYPE"
+
+    if [ "$AUTH_TYPE" = "jwt" ]; then
+      generate_jwt_token
+    elif [ "$AUTH_TYPE" = "mtls" ]; then
+      generate_mtls_certs
+    else
+      echo -e "${RED}Invalid AGENT_AUTH_TYPE: $AGENT_AUTH_TYPE (must be 'jwt' or 'mtls')${NC}"
+      exit 1
+    fi
+    return
+  fi
+
   # Check if auth type already configured (upgrade scenario)
   if [ -f "/etc/systemd/system/$SERVICE_NAME.service" ]; then
     EXISTING_AUTH=$(systemctl cat $SERVICE_NAME 2>/dev/null | grep "^Environment=\"AGENT_AUTH_TYPE=" | cut -d'=' -f3 | tr -d '"')
@@ -503,7 +519,7 @@ display_next_steps() {
   echo ""
   echo "Service: $SERVICE_NAME (port 2054)"
   echo "Agent version: $RESOLVED_AGENT_VERSION"
-  echo "Xray version: $XRAY_VERSION"
+  echo "Xray version: ${XRAY_VERSION:-not set}"
   echo "Auth: $AUTH_TYPE"
   [ "$AUTH_TYPE" = "jwt" ] && echo "JWT token saved to $CONFIG_DIR/agent.jwt"
   [ "$AUTH_TYPE" = "mtls" ] && echo "mTLS certs in $CERT_DIR (agent.crt/key, ca.crt, SAN IP: $AGENT_HOST_IP)"
@@ -525,48 +541,18 @@ main() {
 
   create_service
   configure_firewall
-  display_next_steps
 
-  # Enable and start service after installation
-  echo -e "${YELLOW}Enabling and starting $SERVICE_NAME service...${NC}"
+  # Enable service (will be started by finalize() on exit)
+  echo -e "${YELLOW}Enabling $SERVICE_NAME service...${NC}"
   systemctl daemon-reload
   systemctl enable "$SERVICE_NAME" || {
-    echo -e "${RED}Warning: Failed to enable service${NC}"
+    echo -e "${YELLOW}Warning: Failed to enable service${NC}"
   }
 
-  # Properly stop and reset service state before starting
-  systemctl reset-failed "$SERVICE_NAME" 2>/dev/null || true
-  systemctl stop "$SERVICE_NAME" 2>/dev/null || true
+  display_next_steps
 
-  # Wait for service to reach inactive state
-  for i in {1..20}; do
-    systemctl is-active --quiet "$SERVICE_NAME" || break
-    sleep 0.5
-  done
-
-  # Start the service
-  if ! systemctl start "$SERVICE_NAME"; then
-    echo -e "${RED}ERROR: Failed to start $SERVICE_NAME${NC}"
-    systemctl status "$SERVICE_NAME" --no-pager -l || true
-    journalctl -u "$SERVICE_NAME" -n 200 --no-pager || true
-    exit 1
-  fi
-
-  # Wait for service to reach active state
-  for i in {1..20}; do
-    systemctl is-active --quiet "$SERVICE_NAME" && break
-    sleep 0.5
-  done
-
-  # Final verification
-  if ! systemctl is-active --quiet "$SERVICE_NAME"; then
-    echo -e "${RED}ERROR: Service failed to become active${NC}"
-    systemctl status "$SERVICE_NAME" --no-pager -l || true
-    journalctl -u "$SERVICE_NAME" -n 200 --no-pager || true
-    exit 1
-  fi
-
-  echo -e "${GREEN}✓ Service started successfully and is running${NC}"
+  # Service will be started by finalize() trap on exit
+  # This ensures service starts even if script fails after this point
 }
 
 # Run main function
