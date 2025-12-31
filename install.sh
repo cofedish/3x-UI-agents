@@ -313,12 +313,22 @@ show_install_menu() {
         2)
             echo -e "${green}Installing Agent...${plain}"
             if [ -f "./scripts/agent/install.sh" ]; then
-                bash ./scripts/agent/install.sh
+                bash ./scripts/agent/install.sh || {
+                    echo -e "${red}Agent installation failed!${plain}"
+                    exit 1
+                }
             else
                 echo -e "${yellow}Downloading agent installer...${plain}"
-                wget --inet4-only -O /tmp/install-agent.sh https://raw.githubusercontent.com/cofedish/3x-UI-agents/main/scripts/agent/install.sh
+                wget --inet4-only -O /tmp/install-agent.sh https://raw.githubusercontent.com/cofedish/3x-UI-agents/main/scripts/agent/install.sh || {
+                    echo -e "${red}Failed to download agent installer!${plain}"
+                    exit 1
+                }
                 chmod +x /tmp/install-agent.sh
-                bash /tmp/install-agent.sh
+                bash /tmp/install-agent.sh || {
+                    echo -e "${red}Agent installation failed!${plain}"
+                    rm -f /tmp/install-agent.sh
+                    exit 1
+                }
                 rm -f /tmp/install-agent.sh
             fi
             ;;
