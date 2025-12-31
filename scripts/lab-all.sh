@@ -54,6 +54,11 @@ log() {
 rm -rf "$ARTIFACTS_DIR"
 mkdir -p "$LOG_DIR"
 
+for dir in "$ROOT/docker/lab/panel-data" "$ROOT/docker/lab/agent-mtls-data" "$ROOT/docker/lab/agent-jwt-data"; do
+  rm -rf "$dir"
+  mkdir -p "$dir"
+done
+
 log "Generating secrets"
 "$ROOT/docker/lab/scripts/gen-secrets.sh"
 
