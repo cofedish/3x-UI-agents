@@ -396,7 +396,6 @@ choose_auth_type() {
       ;;
     2)
       AUTH_TYPE="jwt"
-      generate_mtls_certs
       generate_jwt_token
       ;;
     *)
