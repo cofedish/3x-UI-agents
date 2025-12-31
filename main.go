@@ -451,6 +451,7 @@ func main() {
 		fmt.Println("    agent          run as agent (for remote VPN servers)")
 		fmt.Println("    migrate        migrate form other/old x-ui")
 		fmt.Println("    setting        set settings")
+		fmt.Println("    version        show version")
 	}
 
 	flag.Parse()
@@ -514,6 +515,8 @@ func main() {
 		} else {
 			updateCert(webCertFile, webKeyFile)
 		}
+	case "version":
+		fmt.Println(config.GetVersion())
 	default:
 		fmt.Println("Invalid subcommands")
 		fmt.Println()
