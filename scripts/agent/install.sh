@@ -26,7 +26,8 @@ SERVICE_NAME="x-ui-agent"
 AUTH_TYPE=""
 JWT_TOKEN=""
 AGENT_HOST_IP="${AGENT_HOST_IP:-}"
-XRAY_VERSION="${XRAY_VERSION:-v25.10.15}"
+XRAY_VERSION="${XRAY_VERSION:-}"
+DEFAULT_XRAY_VERSION="v25.12.8"
 
 echo -e "${GREEN}=== 3x-ui Agent Installer ===${NC}"
 echo ""
@@ -69,6 +70,21 @@ detect_ip() {
     exit 1
   fi
   echo -e "${GREEN}Detected IP: $AGENT_HOST_IP${NC}"
+}
+
+resolve_xray_version() {
+  if [ -n "$XRAY_VERSION" ]; then
+    echo "$XRAY_VERSION"
+    return
+  fi
+  local latest=""
+  latest=$(curl -fsS https://api.github.com/repos/XTLS/Xray-core/releases/latest \
+    | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') || true
+  if [ -n "$latest" ]; then
+    echo "$latest"
+    return
+  fi
+  echo "$DEFAULT_XRAY_VERSION"
 }
 
 # Install dependencies
@@ -193,7 +209,9 @@ ensure_xray_assets() {
   fi
 
   echo -e "${YELLOW}Xray core not found, downloading...${NC}"
-  local base_url="https://github.com/XTLS/Xray-core/releases/download/${XRAY_VERSION}/"
+  local version
+  version=$(resolve_xray_version)
+  local base_url="https://github.com/XTLS/Xray-core/releases/download/${version}/"
   local pkg=""
   case "$ARCH" in
     amd64) pkg="Xray-linux-64.zip" ;;
@@ -207,11 +225,20 @@ ensure_xray_assets() {
   esac
 
   TMP_DIR=$(mktemp -d)
-  wget -q -O "$TMP_DIR/xray.zip" "${base_url}${pkg}" || {
-    echo -e "${RED}Failed to download Xray package${NC}"
-    rm -rf "$TMP_DIR"
-    return
-  }
+  if ! wget -q -O "$TMP_DIR/xray.zip" "${base_url}${pkg}"; then
+    if [ -n "$XRAY_VERSION" ] || [ "$version" = "$DEFAULT_XRAY_VERSION" ]; then
+      echo -e "${RED}Failed to download Xray package${NC}"
+      rm -rf "$TMP_DIR"
+      return
+    fi
+    echo -e "${YELLOW}Falling back to Xray ${DEFAULT_XRAY_VERSION}...${NC}"
+    base_url="https://github.com/XTLS/Xray-core/releases/download/${DEFAULT_XRAY_VERSION}/"
+    if ! wget -q -O "$TMP_DIR/xray.zip" "${base_url}${pkg}"; then
+      echo -e "${RED}Failed to download Xray package${NC}"
+      rm -rf "$TMP_DIR"
+      return
+    fi
+  fi
   unzip -q "$TMP_DIR/xray.zip" -d "$TMP_DIR/xray" || {
     echo -e "${RED}Failed to extract Xray package${NC}"
     rm -rf "$TMP_DIR"
