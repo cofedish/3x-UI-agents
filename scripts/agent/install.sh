@@ -5,7 +5,7 @@
 # Installs and configures 3x-ui agent on remote VPN servers
 #================================================================
 
-set -e
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -492,53 +492,46 @@ main() {
   display_next_steps
 
   # Enable and start service after installation
-  echo -e "${YELLOW}Starting $SERVICE_NAME service...${NC}"
+  echo -e "${YELLOW}Enabling and starting $SERVICE_NAME service...${NC}"
   systemctl daemon-reload
-  systemctl enable $SERVICE_NAME || {
+  systemctl enable "$SERVICE_NAME" || {
     echo -e "${RED}Warning: Failed to enable service${NC}"
   }
 
-  # Stop if running (from stop_existing_service), then start fresh
-  echo -e "${YELLOW}Stopping service if running...${NC}"
-  systemctl stop $SERVICE_NAME 2>/dev/null || true
-  sleep 2
+  # Properly stop and reset service state before starting
+  systemctl reset-failed "$SERVICE_NAME" 2>/dev/null || true
+  systemctl stop "$SERVICE_NAME" 2>/dev/null || true
 
-  echo -e "${YELLOW}Starting service...${NC}"
-  if systemctl start $SERVICE_NAME 2>&1 | tee /tmp/systemctl-start.log; then
-    echo -e "${GREEN}systemctl start command succeeded${NC}"
-  else
-    echo -e "${RED}systemctl start command FAILED${NC}"
-    echo -e "${YELLOW}Exit code: $?${NC}"
-    echo -e "${YELLOW}Output:${NC}"
-    cat /tmp/systemctl-start.log
-    echo ""
-    echo -e "${YELLOW}Systemd status:${NC}"
-    systemctl status $SERVICE_NAME --no-pager || true
-    echo ""
-    echo -e "${YELLOW}Journal logs (last 50):${NC}"
-    journalctl -u $SERVICE_NAME -n 50 --no-pager || true
+  # Wait for service to reach inactive state
+  for i in {1..20}; do
+    systemctl is-active --quiet "$SERVICE_NAME" || break
+    sleep 0.5
+  done
+
+  # Start the service
+  if ! systemctl start "$SERVICE_NAME"; then
+    echo -e "${RED}ERROR: Failed to start $SERVICE_NAME${NC}"
+    systemctl status "$SERVICE_NAME" --no-pager -l || true
+    journalctl -u "$SERVICE_NAME" -n 200 --no-pager || true
+    exit 1
   fi
 
-  # Verify service is running
-  echo -e "${YELLOW}Waiting 3 seconds for service to start...${NC}"
-  sleep 3
+  # Wait for service to reach active state
+  for i in {1..20}; do
+    systemctl is-active --quiet "$SERVICE_NAME" && break
+    sleep 0.5
+  done
 
-  if systemctl is-active --quiet $SERVICE_NAME; then
-    echo -e "${GREEN}✓ Service started successfully and is running${NC}"
-  else
-    echo -e "${RED}WARNING: Service is NOT running after start attempt${NC}"
-    echo -e "${YELLOW}Service status:${NC}"
-    systemctl status $SERVICE_NAME --no-pager || true
-    echo ""
-    echo -e "${YELLOW}Please start manually: sudo systemctl start $SERVICE_NAME${NC}"
-    echo -e "${YELLOW}Then check logs: sudo journalctl -u $SERVICE_NAME -n 50${NC}"
+  # Final verification
+  if ! systemctl is-active --quiet "$SERVICE_NAME"; then
+    echo -e "${RED}ERROR: Service failed to become active${NC}"
+    systemctl status "$SERVICE_NAME" --no-pager -l || true
+    journalctl -u "$SERVICE_NAME" -n 200 --no-pager || true
+    exit 1
   fi
 
-  # Ensure we return success even if service didn't start
-  true
+  echo -e "${GREEN}✓ Service started successfully and is running${NC}"
 }
 
 # Run main function
 main
-
-exit 0
