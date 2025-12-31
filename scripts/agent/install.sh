@@ -34,29 +34,47 @@ finalize() {
   # Disable strict error handling for cleanup
   set +e
 
+  echo "[DEBUG finalize] Starting finalize..." >&2
+
   # If systemd unit exists, attempt to start the service
   if systemctl list-unit-files --no-pager 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
+    echo "[DEBUG finalize] Unit file exists" >&2
     systemctl daemon-reload 2>/dev/null
     systemctl reset-failed "${SERVICE_NAME}" 2>/dev/null
 
     # If not active, try to start
     if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
-      echo -e "${YELLOW}[finalize] Attempting to start ${SERVICE_NAME}...${NC}" >&2
-      systemctl start "${SERVICE_NAME}" 2>/dev/null || true
+      echo -e "${YELLOW}[finalize] Attempting to start ${SERVICE_NAME}...${NC}"
+      echo "[DEBUG finalize] Running systemctl start..." >&2
+
+      # More aggressive start with explicit output
+      if systemctl start "${SERVICE_NAME}"; then
+        echo "[DEBUG finalize] systemctl start succeeded" >&2
+      else
+        echo "[DEBUG finalize] systemctl start FAILED with exit code $?" >&2
+        systemctl status "${SERVICE_NAME}" --no-pager -l >&2 || true
+      fi
       sleep 2
+    else
+      echo "[DEBUG finalize] Service already active" >&2
     fi
+  else
+    echo "[DEBUG finalize] Unit file NOT found" >&2
   fi
 
   # Warn if service still not running
   if systemctl list-unit-files --no-pager 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
     if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
-      echo -e "${RED}WARNING: ${SERVICE_NAME} is still not active after finalize()${NC}" >&2
-      systemctl status "${SERVICE_NAME}" --no-pager -l 2>/dev/null | tail -n 50 >&2 || true
-      journalctl -u "${SERVICE_NAME}" -n 80 --no-pager 2>/dev/null >&2 || true
+      echo -e "${RED}WARNING: ${SERVICE_NAME} is still not active after finalize()${NC}"
+      echo "[DEBUG finalize] Showing status and logs..." >&2
+      systemctl status "${SERVICE_NAME}" --no-pager -l 2>&1 | tail -n 50 || true
+      journalctl -u "${SERVICE_NAME}" -n 80 --no-pager 2>&1 || true
     else
-      echo -e "${GREEN}[finalize] Service ${SERVICE_NAME} is active${NC}" >&2
+      echo -e "${GREEN}[finalize] Service ${SERVICE_NAME} is active${NC}"
     fi
   fi
+
+  echo "[DEBUG finalize] Finalize complete" >&2
 }
 
 trap finalize EXIT
