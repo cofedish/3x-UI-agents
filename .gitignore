@@ -46,6 +46,7 @@ docker/lab/agent-jwt-data/
 artifacts/
 test/e2e/node_modules/
 test/e2e/.playwright/
+test/e2e/package-lock.json
 
 # Ignore .env (Environment Variables) file
 .env
