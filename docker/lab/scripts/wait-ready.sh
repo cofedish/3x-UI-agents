@@ -8,6 +8,7 @@ log() {
 PANEL_URL="${PANEL_URL:-http://panel:2053/lab}"
 PANEL_USERNAME="${PANEL_USERNAME:-admin}"
 PANEL_PASSWORD="${PANEL_PASSWORD:-admin123}"
+PANEL_WAIT_SECS="${PANEL_WAIT_SECS:-600}"
 COOKIE_FILE=$(mktemp)
 trap 'rm -f "$COOKIE_FILE"' EXIT
 
@@ -20,6 +21,21 @@ login() {
 
 get_servers() {
   curl -fsS -b "$COOKIE_FILE" "$PANEL_URL/panel/api/servers"
+}
+
+wait_for_panel_login() {
+  local start
+  start=$(date +%s)
+  while true; do
+    if login; then
+      return 0
+    fi
+    if [ $(( $(date +%s) - start )) -ge "$PANEL_WAIT_SECS" ]; then
+      log "Panel login not ready after ${PANEL_WAIT_SECS}s"
+      return 1
+    fi
+    sleep 5
+  done
 }
 
 wait_for_online() {
@@ -45,12 +61,15 @@ wait_for_online() {
   done
 }
 
-login
-for _ in {1..30}; do
+if ! wait_for_panel_login; then
+  exit 1
+fi
+
+for _ in {1..60}; do
   if get_servers | jq -e '.success == true' >/dev/null 2>&1; then
     break
   fi
-  sleep 2
+  sleep 5
 done
 
 if ! get_servers | jq -e '.success == true' >/dev/null 2>&1; then
