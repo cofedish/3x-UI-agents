@@ -502,13 +502,12 @@ main() {
   systemctl stop $SERVICE_NAME 2>/dev/null || true
   sleep 1
 
-  if ! systemctl start $SERVICE_NAME 2>/dev/null; then
+  systemctl start $SERVICE_NAME 2>/dev/null || {
     echo -e "${RED}WARNING: Failed to auto-start $SERVICE_NAME service${NC}"
     echo -e "${YELLOW}This is a known issue with systemd in some environments${NC}"
     echo -e "${YELLOW}Please start manually: sudo systemctl start $SERVICE_NAME${NC}"
     echo ""
-    # Don't exit - installation succeeded, just service didn't auto-start
-  fi
+  }
 
   # Verify service is running
   sleep 2
@@ -517,8 +516,10 @@ main() {
   else
     echo -e "${RED}WARNING: Service may not have started properly${NC}"
     echo -e "${YELLOW}Check with: sudo systemctl status $SERVICE_NAME${NC}"
-    # Don't exit - let user check manually
   fi
+
+  # Ensure we return success even if service didn't start
+  true
 }
 
 # Run main function
