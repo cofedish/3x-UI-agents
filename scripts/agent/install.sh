@@ -29,6 +29,38 @@ AGENT_HOST_IP="${AGENT_HOST_IP:-}"
 XRAY_VERSION="${XRAY_VERSION:-}"
 DEFAULT_XRAY_VERSION="v25.12.8"
 
+# Fail-safe finalization: always attempt to start service on exit
+finalize() {
+  # Disable strict error handling for cleanup
+  set +e
+
+  # If systemd unit exists, attempt to start the service
+  if systemctl list-unit-files --no-pager 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
+    systemctl daemon-reload 2>/dev/null
+    systemctl reset-failed "${SERVICE_NAME}" 2>/dev/null
+
+    # If not active, try to start
+    if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
+      echo -e "${YELLOW}[finalize] Attempting to start ${SERVICE_NAME}...${NC}" >&2
+      systemctl start "${SERVICE_NAME}" 2>/dev/null || true
+      sleep 2
+    fi
+  fi
+
+  # Warn if service still not running
+  if systemctl list-unit-files --no-pager 2>/dev/null | grep -q "^${SERVICE_NAME}.service"; then
+    if ! systemctl is-active --quiet "${SERVICE_NAME}"; then
+      echo -e "${RED}WARNING: ${SERVICE_NAME} is still not active after finalize()${NC}" >&2
+      systemctl status "${SERVICE_NAME}" --no-pager -l 2>/dev/null | tail -n 50 >&2 || true
+      journalctl -u "${SERVICE_NAME}" -n 80 --no-pager 2>/dev/null >&2 || true
+    else
+      echo -e "${GREEN}[finalize] Service ${SERVICE_NAME} is active${NC}" >&2
+    fi
+  fi
+}
+
+trap finalize EXIT
+
 echo -e "${GREEN}=== 3x-ui Agent Installer ===${NC}"
 echo ""
 
@@ -482,11 +514,15 @@ main() {
   detect_system
   detect_ip
   install_dependencies
-  stop_existing_service
   download_agent
   create_directories
   ensure_xray_assets
   choose_auth_type
+
+  # Stop service as late as possible (just before creating new unit)
+  # This minimizes downtime if script fails during preparation
+  stop_existing_service
+
   create_service
   configure_firewall
   display_next_steps
