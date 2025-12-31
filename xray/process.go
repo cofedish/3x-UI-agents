@@ -132,7 +132,7 @@ func newProcess(config *Config) *process {
 		version:   "Unknown",
 		config:    config,
 		logWriter: NewLogWriter(),
-		startTime: time.Now(),
+		// startTime will be set when Start() is called
 	}
 }
 
@@ -258,6 +258,9 @@ func (p *process) Start() (err error) {
 
 	cmd.Stdout = p.logWriter
 	cmd.Stderr = p.logWriter
+
+	// Set start time when process actually starts
+	p.startTime = time.Now()
 
 	go func() {
 		err := cmd.Run()

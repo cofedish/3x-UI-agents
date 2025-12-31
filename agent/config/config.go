@@ -40,6 +40,28 @@ type AgentConfig struct {
 	RateLimit             int // requests per minute
 }
 
+// loadJWTSecret loads JWT secret from file or inline value.
+// Priority: AGENT_JWT_SECRET_FILE > AGENT_JWT_SECRET > AGENT_JWT_TOKEN (legacy)
+func loadJWTSecret() string {
+	// Try file-based secret first
+	if secretFile := os.Getenv("AGENT_JWT_SECRET_FILE"); secretFile != "" {
+		data, err := os.ReadFile(secretFile)
+		if err != nil {
+			// File specified but can't read - return empty, Validate() will catch it
+			return ""
+		}
+		return strings.TrimSpace(string(data))
+	}
+
+	// Try inline secret
+	if secret := os.Getenv("AGENT_JWT_SECRET"); secret != "" {
+		return secret
+	}
+
+	// Legacy fallback
+	return os.Getenv("AGENT_JWT_TOKEN")
+}
+
 // LoadConfig loads agent configuration from environment variables.
 func LoadConfig() (*AgentConfig, error) {
 	cfg := &AgentConfig{
@@ -53,7 +75,7 @@ func LoadConfig() (*AgentConfig, error) {
 		CertFile:              getEnv("AGENT_CERT_FILE", "/etc/x-ui-agent/certs/agent.crt"),
 		KeyFile:               getEnv("AGENT_KEY_FILE", "/etc/x-ui-agent/certs/agent.key"),
 		CAFile:                getEnv("AGENT_CA_FILE", "/etc/x-ui-agent/certs/ca.crt"),
-		JWTSecret:             getEnv("AGENT_JWT_SECRET", getEnv("AGENT_JWT_TOKEN", "")),
+		JWTSecret:             loadJWTSecret(),
 		XrayBinFolder:         getEnv("XRAY_BIN_FOLDER", "/usr/local/x-ui/bin"),
 		XrayConfigFolder:      getEnv("XRAY_CONFIG_FOLDER", "/etc/x-ui"),
 		LogLevel:              getEnv("AGENT_LOG_LEVEL", "info"),
@@ -85,7 +107,14 @@ func (c *AgentConfig) Validate() error {
 
 	if c.AuthType == "jwt" {
 		if c.JWTSecret == "" {
-			return fmt.Errorf("JWT auth requires jwt_secret")
+			return fmt.Errorf("JWT auth requires AGENT_JWT_SECRET or AGENT_JWT_SECRET_FILE")
+		}
+
+		// Validate mutual exclusivity (optional but recommended)
+		secretFile := os.Getenv("AGENT_JWT_SECRET_FILE")
+		secretInline := os.Getenv("AGENT_JWT_SECRET")
+		if secretFile != "" && secretInline != "" {
+			return fmt.Errorf("cannot set both AGENT_JWT_SECRET_FILE and AGENT_JWT_SECRET (use only one)")
 		}
 	}
 
