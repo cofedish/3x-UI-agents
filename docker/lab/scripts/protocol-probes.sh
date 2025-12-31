@@ -40,7 +40,16 @@ require_success() {
   local label="$2"
   if ! echo "$resp" | jq -e '.success == true' >/dev/null; then
     log "$label failed"
-    echo "$resp"
+    echo "$resp" >&2
+    return 1
+  fi
+}
+
+require_inbound_id() {
+  local inbound_id="$1"
+  local label="$2"
+  if [ -z "$inbound_id" ] || [ "$inbound_id" = "null" ] || ! [[ "$inbound_id" =~ ^[0-9]+$ ]]; then
+    log "$label missing inbound id ($inbound_id)"
     return 1
   fi
 }
@@ -96,7 +105,7 @@ create_inbound() {
   inbound_id=$(echo "$resp" | jq -r '.obj.id')
   if [ -z "$inbound_id" ] || [ "$inbound_id" = "null" ]; then
     log "create inbound $protocol missing id"
-    echo "$resp"
+    echo "$resp" >&2
     return 1
   fi
   echo "$inbound_id"
@@ -225,11 +234,11 @@ probe_wait() {
   local inbound_id="$2"
   local baseline="$3"
   local email="$4"
-  wait_for_traffic "$server_id" "$inbound_id"
+  wait_for_traffic "$server_id" "$inbound_id" || return 1
   if [ -n "$email" ]; then
-    wait_for_client_traffic "$server_id" "$email"
+    wait_for_client_traffic "$server_id" "$email" || return 1
   fi
-  wait_for_server_traffic "$server_id" "$baseline"
+  wait_for_server_traffic "$server_id" "$baseline" || return 1
 }
 
 ensure_xray() {
@@ -297,9 +306,12 @@ EOF
   "$XRAY_BIN" run -c "$config" >/dev/null 2>&1 &
   local pid=$!
   sleep 1
-  curl -fsS --max-time 15 --socks5-hostname 127.0.0.1:"$local_port" http://echo:8080/ >/dev/null
+  local curl_status=0
+  curl -fsS --max-time 15 --socks5-hostname 127.0.0.1:"$local_port" http://echo:8080/ >/dev/null \
+    || curl_status=$?
   kill "$pid" >/dev/null 2>&1 || true
   wait "$pid" >/dev/null 2>&1 || true
+  return "$curl_status"
 }
 
 probe_result() {
@@ -325,15 +337,16 @@ probe_vmess() {
   local remark="lab-probe-vmess-$server_id-$port"
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "vmess" "$port" "$remark" "$settings" "$stream" "$sniff")
-  apply_xray "$server_id"
+  require_inbound_id "$inbound_id" "vmess inbound" || return 1
+  apply_xray "$server_id" || return 1
   local baseline
   baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   local outbound
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg id "$client_id" '{protocol:"vmess", settings:{vnext:[{address:$host, port:$port, users:[{id:$id, alterId:0, security:"auto"}]}]}, streamSettings:{network:"tcp", security:"none"}}')
-  run_xray_proxy "$outbound" 1081
+  run_xray_proxy "$outbound" 1081 || return 1
 
-  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email" || return 1
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -353,24 +366,25 @@ probe_vmess_apply_reload() {
   local remark="lab-apply-vmess-$server_id-$port"
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "vmess" "$port" "$remark" "$settings" "$stream" "$sniff")
-  apply_xray "$server_id"
+  require_inbound_id "$inbound_id" "vmess apply inbound" || return 1
+  apply_xray "$server_id" || return 1
   local baseline
   baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   local outbound
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg id "$client_id" '{protocol:"vmess", settings:{vnext:[{address:$host, port:$port, users:[{id:$id, alterId:0, security:"auto"}]}]}, streamSettings:{network:"tcp", security:"none"}}')
-  run_xray_proxy "$outbound" 1091
-  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+  run_xray_proxy "$outbound" 1091 || return 1
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email" || return 1
 
   local updated_port=$((port + 50))
   local updated_remark="lab-apply-vmess-$server_id-$updated_port"
-  update_inbound_port "$server_id" "$inbound_id" "$updated_port" "$updated_remark"
-  apply_xray "$server_id"
+  update_inbound_port "$server_id" "$inbound_id" "$updated_port" "$updated_remark" || return 1
+  apply_xray "$server_id" || return 1
   baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   outbound=$(jq -c -n --arg host "$host" --argjson port "$updated_port" --arg id "$client_id" '{protocol:"vmess", settings:{vnext:[{address:$host, port:$port, users:[{id:$id, alterId:0, security:"auto"}]}]}, streamSettings:{network:"tcp", security:"none"}}')
-  run_xray_proxy "$outbound" 1092
-  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+  run_xray_proxy "$outbound" 1092 || return 1
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email" || return 1
 
   delete_inbound "$server_id" "$inbound_id"
 }
@@ -391,15 +405,16 @@ probe_vless() {
   local remark="lab-probe-vless-$server_id-$port"
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "vless" "$port" "$remark" "$settings" "$stream" "$sniff")
-  apply_xray "$server_id"
+  require_inbound_id "$inbound_id" "vless inbound" || return 1
+  apply_xray "$server_id" || return 1
   local baseline
   baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   local outbound
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg id "$client_id" '{protocol:"vless", settings:{vnext:[{address:$host, port:$port, users:[{id:$id, encryption:"none"}]}]}, streamSettings:{network:"tcp", security:"none"}}')
-  run_xray_proxy "$outbound" 1082
+  run_xray_proxy "$outbound" 1082 || return 1
 
-  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email" || return 1
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -419,15 +434,16 @@ probe_trojan() {
   local remark="lab-probe-trojan-$server_id-$port"
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "trojan" "$port" "$remark" "$settings" "$stream" "$sniff")
-  apply_xray "$server_id"
+  require_inbound_id "$inbound_id" "trojan inbound" || return 1
+  apply_xray "$server_id" || return 1
   local baseline
   baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   local outbound
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg password "$password" '{protocol:"trojan", settings:{servers:[{address:$host, port:$port, password:$password}]}, streamSettings:{network:"tcp", security:"none"}}')
-  run_xray_proxy "$outbound" 1083
+  run_xray_proxy "$outbound" 1083 || return 1
 
-  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email" || return 1
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -448,15 +464,16 @@ probe_shadowsocks() {
   local remark="lab-probe-ss-$server_id-$port"
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "shadowsocks" "$port" "$remark" "$settings" "$stream" "$sniff")
-  apply_xray "$server_id"
+  require_inbound_id "$inbound_id" "shadowsocks inbound" || return 1
+  apply_xray "$server_id" || return 1
   local baseline
   baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
   local outbound
   outbound=$(jq -c -n --arg host "$host" --argjson port "$port" --arg password "$password" --arg method "$method" '{protocol:"shadowsocks", settings:{servers:[{address:$host, port:$port, method:$method, password:$password}]}}')
-  run_xray_proxy "$outbound" 1084
+  run_xray_proxy "$outbound" 1084 || return 1
 
-  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email" || return 1
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -474,13 +491,15 @@ probe_mixed() {
   local remark="lab-probe-mixed-$server_id-$port"
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "mixed" "$port" "$remark" "$settings" "$stream" "$sniff")
-  apply_xray "$server_id"
+  require_inbound_id "$inbound_id" "mixed inbound" || return 1
+  apply_xray "$server_id" || return 1
   local baseline
   baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
-  curl -fsS --max-time 15 --socks5-hostname "$host:$port" http://echo:8080/ >/dev/null
+  curl -fsS --max-time 15 --socks5-hostname "$host:$port" http://echo:8080/ >/dev/null \
+    || return 1
 
-  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email" || return 1
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -502,13 +521,15 @@ probe_http() {
   local remark="lab-probe-http-$server_id-$port"
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "http" "$port" "$remark" "$settings" "$stream" "$sniff")
-  apply_xray "$server_id"
+  require_inbound_id "$inbound_id" "http inbound" || return 1
+  apply_xray "$server_id" || return 1
   local baseline
   baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
-  curl -fsS --max-time 15 -x "http://$user:$pass@$host:$port" http://echo:8080/ >/dev/null
+  curl -fsS --max-time 15 -x "http://$user:$pass@$host:$port" http://echo:8080/ >/dev/null \
+    || return 1
 
-  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email" || return 1
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -526,13 +547,14 @@ probe_tunnel() {
   local remark="lab-probe-tunnel-$server_id-$port"
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "tunnel" "$port" "$remark" "$settings" "$stream" "$sniff")
-  apply_xray "$server_id"
+  require_inbound_id "$inbound_id" "tunnel inbound" || return 1
+  apply_xray "$server_id" || return 1
   local baseline
   baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
-  curl -fsS --max-time 15 "http://$host:$port" >/dev/null
+  curl -fsS --max-time 15 "http://$host:$port" >/dev/null || return 1
 
-  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email" || return 1
   delete_inbound "$server_id" "$inbound_id"
 }
 
@@ -561,7 +583,8 @@ probe_wireguard() {
   local remark="lab-probe-wireguard-$server_id-$port"
   local inbound_id
   inbound_id=$(create_inbound "$server_id" "wireguard" "$port" "$remark" "$settings" "$stream" "$sniff")
-  apply_xray "$server_id"
+  require_inbound_id "$inbound_id" "wireguard inbound" || return 1
+  apply_xray "$server_id" || return 1
   local baseline
   baseline=$(normalize_traffic "$(get_server_traffic "$server_id")")
 
@@ -571,9 +594,9 @@ probe_wireguard() {
     --arg endpoint "$host:$port" \
     --arg serverPub "$server_pub" \
     '{protocol:"wireguard", settings:{secretKey:$secretKey, address:["10.0.0.2/32"], peers:[{publicKey:$serverPub, allowedIPs:["0.0.0.0/0","::/0"], endpoint:$endpoint, keepAlive:5}], noKernelTun:true}}')
-  run_xray_proxy "$outbound" 1085
+  run_xray_proxy "$outbound" 1085 || return 1
 
-  probe_wait "$server_id" "$inbound_id" "$baseline" "$email"
+  probe_wait "$server_id" "$inbound_id" "$baseline" "$email" || return 1
   delete_inbound "$server_id" "$inbound_id"
 }
 
