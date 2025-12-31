@@ -50,6 +50,9 @@ if [ "${LAB_BUILD_FROM_SOURCE:-1}" = "1" ]; then
   if command -v go >/dev/null 2>&1; then
     log "Rebuilding agent from source"
     mkdir -p /usr/local/x-ui-agent
+    export GOPATH="${GOPATH:-/root/go}"
+    export GOMODCACHE="${GOMODCACHE:-$GOPATH/pkg/mod}"
+    mkdir -p "$GOMODCACHE"
     (cd /opt/3x-ui && go build -o /usr/local/x-ui-agent/x-ui ./main.go)
     systemctl restart x-ui-agent || true
   else
