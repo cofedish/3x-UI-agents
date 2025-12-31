@@ -186,6 +186,7 @@ func startHTTPSServer(cfg *config.AgentConfig, router *gin.Engine) error {
 
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{certificate},
+		ClientAuth:   tls.NoClientCert, // JWT mode - client certificate NOT required
 		MinVersion:   tls.VersionTLS13,
 	}
 
