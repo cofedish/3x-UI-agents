@@ -63,6 +63,10 @@ finalize() {
       echo -e "${GREEN}✓ Service ${SERVICE_NAME} is active and running${NC}"
     fi
   fi
+
+  # Always return success - we've done our best to start the service
+  # The warnings above will inform the user if something went wrong
+  return 0
 }
 
 trap finalize EXIT
@@ -529,6 +533,9 @@ display_next_steps() {
   echo "Auth: $AUTH_TYPE"
   [ "$AUTH_TYPE" = "jwt" ] && echo "JWT token saved to $CONFIG_DIR/agent.jwt"
   [ "$AUTH_TYPE" = "mtls" ] && echo "mTLS certs in $CERT_DIR (agent.crt/key, ca.crt, SAN IP: $AGENT_HOST_IP)"
+
+  # Always return success
+  return 0
 }
 
 # Main installation flow
