@@ -49,6 +49,14 @@ jobs:
           export CGO_ENABLED=1
           export GOOS=linux
           export GOARCH=${{ matrix.platform }}
+
+          # Extract version from git tag or use default
+          VERSION="${GITHUB_REF#refs/tags/}"
+          if [ "$VERSION" = "$GITHUB_REF" ]; then
+            VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+          fi
+          echo "Building version: $VERSION"
+
           # Use Bootlin prebuilt cross-toolchains (musl 1.2.5 in stable series)
           case "${{ matrix.platform }}" in
             amd64) BOOTLIN_ARCH="x86-64" ;;
@@ -72,7 +80,7 @@ jobs:
           export CC=$(realpath "$(find "$TOOLCHAIN_DIR/bin" -name '*-gcc.br_real' -type f -executable | head -n1)")
           [ -z "$CC" ] && { echo "No gcc.br_real found in $TOOLCHAIN_DIR/bin" >&2; exit 1; }
           cd -
-          go build -ldflags "-w -s -linkmode external -extldflags '-static'" -o xui-release -v main.go
+          go build -ldflags "-w -s -linkmode external -extldflags '-static' -X 'github.com/cofedish/3x-UI-agents/config.version=$VERSION'" -o xui-release -v main.go
           file xui-release
           ldd xui-release || echo "Static binary confirmed"
           
@@ -178,6 +186,14 @@ jobs:
           Write-Host "Listing files before build:"
           Get-ChildItem | Format-Table Name
 
+          # Extract version from git tag
+          $VERSION = $env:GITHUB_REF -replace '^refs/tags/', ''
+          if ($VERSION -eq $env:GITHUB_REF) {
+            $VERSION = & git describe --tags --always --dirty 2>$null
+            if (-not $VERSION) { $VERSION = "dev" }
+          }
+          Write-Host "Building version: $VERSION"
+
           $env:CGO_ENABLED="1"
           $env:GOOS="windows"
           $env:GOARCH="amd64"
@@ -189,7 +205,8 @@ jobs:
           go env GOOS GOARCH CGO_ENABLED
 
           Write-Host "`nBuilding main.go..."
-          go build -ldflags "-w -s" -o xui-release.exe -v main.go 2>&1 | Tee-Object -Variable buildOutput
+          $LDFLAGS = "-w -s -X 'github.com/cofedish/3x-UI-agents/config.version=$VERSION'"
+          go build -ldflags $LDFLAGS -o xui-release.exe -v main.go 2>&1 | Tee-Object -Variable buildOutput
           $buildExitCode = $LASTEXITCODE
 
           Write-Host "`nBuild exit code: $buildExitCode"

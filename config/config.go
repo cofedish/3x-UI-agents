@@ -12,11 +12,15 @@ import (
 	"strings"
 )
 
-//go:embed version
+// version is set via ldflags during build: -X 'github.com/cofedish/3x-UI-agents/config.version=vX.Y.Z'
+// If not set via ldflags, it will use the embedded version from file
 var version string
 
 //go:embed name
 var name string
+
+//go:embed version
+var embeddedVersion string
 
 // LogLevel represents the logging level for the application.
 type LogLevel string
@@ -31,8 +35,12 @@ const (
 )
 
 // GetVersion returns the version string of the 3x-ui application.
+// Returns version set via ldflags, or falls back to embedded version file.
 func GetVersion() string {
-	return strings.TrimSpace(version)
+	if version != "" {
+		return strings.TrimSpace(version)
+	}
+	return strings.TrimSpace(embeddedVersion)
 }
 
 // GetName returns the name of the 3x-ui application.
