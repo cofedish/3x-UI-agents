@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/cofedish/3x-UI-agents/agent/cert"
 	"github.com/cofedish/3x-UI-agents/agent/config"
 	"github.com/cofedish/3x-UI-agents/agent/middleware"
 	"github.com/cofedish/3x-UI-agents/logger"
@@ -168,14 +169,23 @@ func startTLSServer(cfg *config.AgentConfig, router *gin.Engine) error {
 func startHTTPSServer(cfg *config.AgentConfig, router *gin.Engine) error {
 	logger.Info("Starting HTTPS server...")
 
+	// Auto-generate self-signed certificate if it doesn't exist
+	generated, err := cert.EnsureCertificates(cfg.CertFile, cfg.KeyFile)
+	if err != nil {
+		return fmt.Errorf("failed to ensure certificates: %w", err)
+	}
+	if generated {
+		logger.Info("Generated self-signed certificate for HTTPS server")
+	}
+
 	// For JWT, we still use TLS but without client cert verification
-	cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
+	certificate, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
 	if err != nil {
 		return fmt.Errorf("failed to load server certificate: %w", err)
 	}
 
 	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
+		Certificates: []tls.Certificate{certificate},
 		MinVersion:   tls.VersionTLS13,
 	}
 
