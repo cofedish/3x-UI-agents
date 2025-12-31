@@ -70,14 +70,97 @@ while [ $# -gt 0 ]; do
   esac
   done
 
+arch() {
+  case "$(uname -m)" in
+  x86_64 | x64 | amd64) echo 'amd64' ;;
+  i*86 | x86) echo '386' ;;
+  armv8* | armv8 | arm64 | aarch64) echo 'arm64' ;;
+  armv7* | armv7 | arm) echo 'armv7' ;;
+  armv6* | armv6) echo 'armv6' ;;
+  armv5* | armv5) echo 'armv5' ;;
+  s390x) echo 's390x' ;;
+  *) echo "Unsupported CPU architecture" >&2; exit 1 ;;
+  esac
+}
+
+install_base_deps() {
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update -qq
+    apt-get install -y -q wget curl tar tzdata
+  elif command -v yum >/dev/null 2>&1; then
+    yum -y update && yum install -y -q wget curl tar tzdata
+  elif command -v dnf >/dev/null 2>&1; then
+    dnf -y update && dnf install -y -q wget curl tar tzdata
+  elif command -v apk >/dev/null 2>&1; then
+    apk update && apk add wget curl tar tzdata
+  fi
+}
+
+resolve_panel_version() {
+  if [ -n "$PANEL_VERSION" ]; then
+    echo "$PANEL_VERSION"
+    return
+  fi
+  local tag_version=""
+  tag_version=$(curl -Ls "https://api.github.com/repos/cofedish/3x-UI-agents/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+  if [ -z "$tag_version" ]; then
+    tag_version=$(curl -4 -Ls "https://api.github.com/repos/cofedish/3x-UI-agents/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+  fi
+  if [ -z "$tag_version" ]; then
+    tag_version=$(curl -4 -Ls "https://api.github.com/repos/cofedish/3x-UI-agents/tags?per_page=1" | grep '"name":' | head -n1 | sed -E 's/.*"([^"]+)".*/\1/')
+  fi
+  if [ -z "$tag_version" ]; then
+    echo "Failed to resolve panel version" >&2
+    exit 1
+  fi
+  echo "$tag_version"
+}
+
+download_x_ui() {
+  local version="$1"
+  local arch_name
+  arch_name=$(arch)
+  local url="https://github.com/cofedish/3x-UI-agents/releases/download/${version}/x-ui-linux-${arch_name}.tar.gz"
+  local tmpdir
+  tmpdir=$(mktemp -d)
+  wget --inet4-only -O "$tmpdir/x-ui-linux-${arch_name}.tar.gz" "$url"
+  tar -xzf "$tmpdir/x-ui-linux-${arch_name}.tar.gz" -C "$tmpdir"
+  rm -rf /usr/local/x-ui
+  mkdir -p /usr/local
+  cp -a "$tmpdir/x-ui" /usr/local/x-ui
+  rm -rf "$tmpdir"
+}
+
 install_panel() {
   echo "[install-ci] Installing panel"
 
-  if [ -n "$PANEL_VERSION" ]; then
-    printf 'n\n' | bash ./install.sh "$PANEL_VERSION"
-  else
-    printf '1\nn\n' | bash ./install.sh
+  install_base_deps
+
+  local version
+  version=$(resolve_panel_version)
+  download_x_ui "$version"
+
+  local arch_name
+  arch_name=$(arch)
+
+  cd /usr/local/x-ui
+  chmod +x x-ui x-ui.sh
+  if [ -f "bin/xray-linux-${arch_name}" ]; then
+    chmod +x "bin/xray-linux-${arch_name}"
+    if [ "$arch_name" = "armv5" ] || [ "$arch_name" = "armv6" ] || [ "$arch_name" = "armv7" ]; then
+      mv "bin/xray-linux-${arch_name}" bin/xray-linux-arm
+      chmod +x bin/xray-linux-arm
+    fi
   fi
+
+  wget --inet4-only -O /usr/bin/x-ui-temp https://raw.githubusercontent.com/cofedish/3x-UI-agents/main/x-ui.sh
+  mv -f /usr/bin/x-ui-temp /usr/bin/x-ui
+  chmod +x /usr/bin/x-ui
+
+  cp -f x-ui.service /etc/systemd/system/
+  systemctl daemon-reload
+  systemctl enable x-ui
+  systemctl start x-ui
 
   /usr/local/x-ui/x-ui setting \
     -username "$PANEL_USER" \
@@ -89,6 +172,7 @@ install_panel() {
     /usr/local/x-ui/x-ui setting -listenIP "$PANEL_LISTEN_IP"
   fi
 
+  /usr/local/x-ui/x-ui migrate
   systemctl restart x-ui || true
 }
 
