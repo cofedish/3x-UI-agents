@@ -499,23 +499,39 @@ main() {
   }
 
   # Stop if running (from stop_existing_service), then start fresh
+  echo -e "${YELLOW}Stopping service if running...${NC}"
   systemctl stop $SERVICE_NAME 2>/dev/null || true
-  sleep 1
+  sleep 2
 
-  systemctl start $SERVICE_NAME 2>/dev/null || {
-    echo -e "${RED}WARNING: Failed to auto-start $SERVICE_NAME service${NC}"
-    echo -e "${YELLOW}This is a known issue with systemd in some environments${NC}"
-    echo -e "${YELLOW}Please start manually: sudo systemctl start $SERVICE_NAME${NC}"
+  echo -e "${YELLOW}Starting service...${NC}"
+  if systemctl start $SERVICE_NAME 2>&1 | tee /tmp/systemctl-start.log; then
+    echo -e "${GREEN}systemctl start command succeeded${NC}"
+  else
+    echo -e "${RED}systemctl start command FAILED${NC}"
+    echo -e "${YELLOW}Exit code: $?${NC}"
+    echo -e "${YELLOW}Output:${NC}"
+    cat /tmp/systemctl-start.log
     echo ""
-  }
+    echo -e "${YELLOW}Systemd status:${NC}"
+    systemctl status $SERVICE_NAME --no-pager || true
+    echo ""
+    echo -e "${YELLOW}Journal logs (last 50):${NC}"
+    journalctl -u $SERVICE_NAME -n 50 --no-pager || true
+  fi
 
   # Verify service is running
-  sleep 2
+  echo -e "${YELLOW}Waiting 3 seconds for service to start...${NC}"
+  sleep 3
+
   if systemctl is-active --quiet $SERVICE_NAME; then
-    echo -e "${GREEN}✓ Service started successfully${NC}"
+    echo -e "${GREEN}✓ Service started successfully and is running${NC}"
   else
-    echo -e "${RED}WARNING: Service may not have started properly${NC}"
-    echo -e "${YELLOW}Check with: sudo systemctl status $SERVICE_NAME${NC}"
+    echo -e "${RED}WARNING: Service is NOT running after start attempt${NC}"
+    echo -e "${YELLOW}Service status:${NC}"
+    systemctl status $SERVICE_NAME --no-pager || true
+    echo ""
+    echo -e "${YELLOW}Please start manually: sudo systemctl start $SERVICE_NAME${NC}"
+    echo -e "${YELLOW}Then check logs: sudo journalctl -u $SERVICE_NAME -n 50${NC}"
   fi
 
   # Ensure we return success even if service didn't start
