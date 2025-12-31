@@ -1,9 +1,9 @@
 const { defineConfig } = require('@playwright/test');
 
 const baseURL = process.env.PANEL_URL || 'http://panel:2053/lab';
-const outputDir = process.env.ARTIFACTS_DIR
-  ? `${process.env.ARTIFACTS_DIR}/playwright`
-  : 'playwright-output';
+const artifactsRoot = process.env.ARTIFACTS_DIR || 'playwright-artifacts';
+const reportDir = `${artifactsRoot}/playwright/report`;
+const outputDir = `${artifactsRoot}/playwright/output`;
 
 module.exports = defineConfig({
   testDir: './tests',
@@ -15,7 +15,7 @@ module.exports = defineConfig({
   },
   reporter: [
     ['list'],
-    ['html', { outputFolder: outputDir, open: 'never' }],
+    ['html', { outputFolder: reportDir, open: 'never' }],
   ],
   use: {
     baseURL,
@@ -25,5 +25,5 @@ module.exports = defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-  outputDir: `${outputDir}/output`,
+  outputDir,
 });
