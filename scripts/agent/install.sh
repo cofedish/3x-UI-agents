@@ -469,8 +469,27 @@ main() {
 main
 
 # Enable and restart service after installation (ensures new binary is picked up)
+echo -e "${YELLOW}Starting $SERVICE_NAME service...${NC}"
 systemctl daemon-reload
-systemctl enable $SERVICE_NAME || true
-systemctl restart $SERVICE_NAME || true
+systemctl enable $SERVICE_NAME || {
+  echo -e "${RED}Warning: Failed to enable service${NC}"
+}
+
+systemctl restart $SERVICE_NAME || {
+  echo -e "${RED}ERROR: Failed to start $SERVICE_NAME service!${NC}"
+  echo -e "${YELLOW}Check logs with: journalctl -u $SERVICE_NAME -n 50${NC}"
+  exit 1
+}
+
+# Verify service is running
+sleep 2
+if systemctl is-active --quiet $SERVICE_NAME; then
+  echo -e "${GREEN}✓ Service started successfully${NC}"
+else
+  echo -e "${RED}ERROR: Service failed to start!${NC}"
+  echo -e "${YELLOW}Logs:${NC}"
+  journalctl -u $SERVICE_NAME -n 20 --no-pager
+  exit 1
+fi
 
 exit 0
