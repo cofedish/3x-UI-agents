@@ -26,6 +26,10 @@
     }
   </style>
   <title>{{ .host }} – {{ i18n .title}}</title>
+  <link rel="icon" type="image/x-icon" href="{{ .base_path }}assets/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ .base_path }}assets/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ .base_path }}assets/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ .base_path }}assets/apple-touch-icon.png">
 {{ end }}
 
 {{ define "page/head_end" }}
