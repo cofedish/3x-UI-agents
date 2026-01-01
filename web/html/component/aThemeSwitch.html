@@ -52,8 +52,14 @@
       localStorage.setItem('theme', theme);
     }
 
-    const isUltra = localStorage.getItem('isUltraDarkThemeEnabled') === 'true';
-    if (isUltra && theme === 'dark') {
+    let isUltra = localStorage.getItem('isUltraDarkThemeEnabled') === 'true';
+
+    // Ultra-dark only applies to dark theme, clear it for other themes
+    if (theme !== 'dark') {
+      isUltra = false;
+      localStorage.setItem('isUltraDarkThemeEnabled', 'false');
+      document.documentElement.removeAttribute('data-theme');
+    } else if (isUltra) {
       document.documentElement.setAttribute('data-theme', 'ultra-dark');
     }
 
@@ -84,6 +90,8 @@
         return this.theme === 'lucifer';
       },
       get currentTheme() {
+        // Return actual theme for message container and menu
+        // Lucifer is dark variant, so return 'dark' for Ant Design menu theme
         return this.theme === 'light' ? 'light' : 'dark';
       },
       setTheme(newTheme) {
