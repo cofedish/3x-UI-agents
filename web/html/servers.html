@@ -36,7 +36,7 @@
             <a-col>
               <a-card size="small" :style="{ padding: '16px' }" hoverable>
                 <!-- Filters -->
-                <a-row :gutter="12" style="margin-bottom: 12px;">
+                <a-row :gutter="12" :style="{ marginBottom: '10px' }">
               <a-col :sm="24" :md="8">
                 <a-input-search
                   v-model="filters.search"
@@ -76,8 +76,8 @@
               </a-col>
             </a-row>
 
-            <!-- Stats -->
-            <a-row :gutter="12" style="margin-bottom: 12px;">
+                <!-- Stats -->
+                <a-row :gutter="12" :style="{ marginBottom: '10px' }">
               <a-col :span="6">
                 <a-statistic
                   :title="'{{ i18n "pages.servers.stats.total" }}'"
