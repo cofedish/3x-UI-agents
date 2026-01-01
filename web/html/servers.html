@@ -30,13 +30,13 @@
     </a-layout-header>
 
     <a-layout-content>
-        <a-spin :spinning="loading">
-                    <a-card
-            hoverable
-            
-          >
-            <!-- Filters -->
-            <a-row :gutter="12" style="margin-bottom: 12px;">
+      <a-spin :spinning="loading" :delay="500" tip='{{ i18n "loading"}}'>
+        <transition name="list" appear>
+          <a-row :gutter="[isMobile ? 8 : 16, isMobile ? 0 : 12]">
+            <a-col>
+              <a-card size="small" :style="{ padding: '16px' }" hoverable>
+                <!-- Filters -->
+                <a-row :gutter="12" style="margin-bottom: 12px;">
               <a-col :sm="24" :md="8">
                 <a-input-search
                   v-model="filters.search"
@@ -201,10 +201,13 @@
                   </a-space>
                 </template>
               </a-table>
-          </a-card>
+              </a-card>
+            </a-col>
+          </a-row>
+        </transition>
 
-          <!-- Add/Edit Modal -->
-          <a-modal
+        <!-- Add/Edit Modal -->
+        <a-modal
             :title="modalMode === 'add' ? '{{ i18n "pages.servers.addServer" }}' : '{{ i18n "pages.servers.editServer" }}'"
             :visible="modalVisible"
             @ok="handleModalOk"
@@ -288,8 +291,8 @@
                 <a-switch v-model="currentServer.enabled" data-testid="server-enabled" />
               </a-form-model-item>
             </a-form-model>
-          </a-modal>
-        </a-spin>
+        </a-modal>
+      </a-spin>
     </a-layout-content>
   </a-layout>
 </a-layout>
