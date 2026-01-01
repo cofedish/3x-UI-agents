@@ -120,10 +120,8 @@
               </a-col>
             </a-row>
 
-            <!-- Table wrapper for rounded corners -->
-            <div style="border-radius: 18px; overflow: hidden; border: 1px solid var(--color-border);">
               <a-table
-                style="margin-top: 6px;"
+                
                 :columns="columns"
                 :data-source="servers"
                 :pagination="pagination"
@@ -207,7 +205,6 @@
                   </a-space>
                 </template>
               </a-table>
-            </div>
           </a-card>
 
           <!-- Add/Edit Modal -->
