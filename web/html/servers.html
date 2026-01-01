@@ -298,6 +298,7 @@
 new Vue({
   el: '#app',
   delimiters: ['[[', ']]'],
+  mixins: [MediaQueryMixin],
   data() {
     return {
       loading: false,
