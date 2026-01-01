@@ -146,7 +146,3 @@ Topics:
 ## Support
 
 If this project is helpful, please ⭐ star the repository or support via [GitHub Sponsors](https://github.com/sponsors/cofedish).
-
-## Stargazers
-
-[![Stargazers over time](https://starchart.cc/cofedish/3x-UI-agents.svg?variant=adaptive)](https://starchart.cc/cofedish/3x-UI-agents)
