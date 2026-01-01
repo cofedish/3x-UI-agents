@@ -3,15 +3,19 @@
   <a-menu :theme="themeSwitcher.currentTheme" mode="inline" selected-keys="">
     <a-sub-menu>
       <span slot="title">
-        <a-icon type="bulb" :theme="themeSwitcher.isDarkTheme ? 'filled' : 'outlined'"></a-icon>
+        <a-icon type="bulb" :theme="themeSwitcher.isDarkTheme || themeSwitcher.isLucifer ? 'filled' : 'outlined'"></a-icon>
         <span>{{ i18n "menu.theme" }}</span>
       </span>
-      <a-menu-item id="change-theme" class="ant-menu-theme-switch" @mousedown="themeSwitcher.animationsOff()">
-        <span>{{ i18n "menu.dark" }}</span>
-        <a-switch :style="{ marginLeft: '2px' }" size="small" :default-checked="themeSwitcher.isDarkTheme"
-          @change="themeSwitcher.toggleTheme()"></a-switch>
+      <a-menu-item id="change-theme-light" class="ant-menu-theme-switch">
+        <a-radio :checked="themeSwitcher.theme === 'light'" @click="themeSwitcher.setTheme('light')">{{ i18n "menu.light" }}</a-radio>
       </a-menu-item>
-      <a-menu-item id="change-theme-ultra" v-if="themeSwitcher.isDarkTheme" class="ant-menu-theme-switch"
+      <a-menu-item id="change-theme-dark" class="ant-menu-theme-switch">
+        <a-radio :checked="themeSwitcher.theme === 'dark'" @click="themeSwitcher.setTheme('dark')">{{ i18n "menu.dark" }}</a-radio>
+      </a-menu-item>
+      <a-menu-item id="change-theme-lucifer" class="ant-menu-theme-switch">
+        <a-radio :checked="themeSwitcher.theme === 'lucifer'" @click="themeSwitcher.setTheme('lucifer')">Lucifer</a-radio>
+      </a-menu-item>
+      <a-menu-item id="change-theme-ultra" v-if="themeSwitcher.theme === 'dark'" class="ant-menu-theme-switch"
         @mousedown="themeSwitcher.animationsOffUltra()">
         <span>{{ i18n "menu.ultraDark" }}</span>
         <a-checkbox :style="{ marginLeft: '2px' }" :checked="themeSwitcher.isUltra"
@@ -40,44 +44,69 @@
 {{define "component/aThemeSwitch"}}
 <script>
   function createThemeSwitcher() {
-    const isDarkTheme = localStorage.getItem('dark-mode') === 'true';
+    // Migrate old dark-mode setting to new theme system
+    let theme = localStorage.getItem('theme');
+    if (!theme) {
+      const oldDarkMode = localStorage.getItem('dark-mode') === 'true';
+      theme = oldDarkMode ? 'dark' : 'light';
+      localStorage.setItem('theme', theme);
+    }
+
     const isUltra = localStorage.getItem('isUltraDarkThemeEnabled') === 'true';
-    if (isUltra) {
+    if (isUltra && theme === 'dark') {
       document.documentElement.setAttribute('data-theme', 'ultra-dark');
     }
-    const theme = isDarkTheme ? 'dark' : 'light';
+
     document.querySelector('body').setAttribute('class', theme);
+
     return {
+      theme,
+      isUltra,
       animationsOff() {
         document.documentElement.setAttribute('data-theme-animations', 'off');
-        const themeAnimations = document.querySelector('#change-theme');
-        themeAnimations.addEventListener('mouseleave', () => {
-          document.documentElement.removeAttribute('data-theme-animations');
-        });
-        themeAnimations.addEventListener('touchend', () => {
-          document.documentElement.removeAttribute('data-theme-animations');
-        });
       },
       animationsOffUltra() {
         document.documentElement.setAttribute('data-theme-animations', 'off');
         const themeAnimationsUltra = document.querySelector('#change-theme-ultra');
-        themeAnimationsUltra.addEventListener('mouseleave', () => {
-          document.documentElement.removeAttribute('data-theme-animations');
-        });
-        themeAnimationsUltra.addEventListener('touchend', () => {
-          document.documentElement.removeAttribute('data-theme-animations');
-        });
+        if (themeAnimationsUltra) {
+          themeAnimationsUltra.addEventListener('mouseleave', () => {
+            document.documentElement.removeAttribute('data-theme-animations');
+          });
+          themeAnimationsUltra.addEventListener('touchend', () => {
+            document.documentElement.removeAttribute('data-theme-animations');
+          });
+        }
       },
-      isDarkTheme,
-      isUltra,
+      get isDarkTheme() {
+        return this.theme === 'dark';
+      },
+      get isLucifer() {
+        return this.theme === 'lucifer';
+      },
       get currentTheme() {
-        return this.isDarkTheme ? 'dark' : 'light';
+        return this.theme === 'light' ? 'light' : 'dark';
+      },
+      setTheme(newTheme) {
+        this.theme = newTheme;
+        localStorage.setItem('theme', newTheme);
+        document.querySelector('body').setAttribute('class', newTheme);
+
+        // Clear ultra-dark when switching away from dark
+        if (newTheme !== 'dark') {
+          this.isUltra = false;
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('isUltraDarkThemeEnabled', 'false');
+        }
+
+        const messageEl = document.getElementById('message');
+        if (messageEl) {
+          messageEl.className = this.currentTheme;
+        }
       },
       toggleTheme() {
-        this.isDarkTheme = !this.isDarkTheme;
-        localStorage.setItem('dark-mode', this.isDarkTheme);
-        document.querySelector('body').setAttribute('class', this.isDarkTheme ? 'dark' : 'light');
-        document.getElementById('message').className = themeSwitcher.currentTheme;
+        // Legacy support for old toggle
+        const newTheme = this.theme === 'light' ? 'dark' : 'light';
+        this.setTheme(newTheme);
       },
       toggleUltra() {
         this.isUltra = !this.isUltra;
@@ -100,7 +129,10 @@
       this.$message.config({
         getContainer: () => document.getElementById('message')
       });
-      document.getElementById('message').className = themeSwitcher.currentTheme;
+      const messageEl = document.getElementById('message');
+      if (messageEl) {
+        messageEl.className = themeSwitcher.currentTheme;
+      }
     }
   });
   Vue.component('a-theme-switch-login', {
@@ -112,7 +144,10 @@
       this.$message.config({
         getContainer: () => document.getElementById('message')
       });
-      document.getElementById('message').className = themeSwitcher.currentTheme;
+      const messageEl = document.getElementById('message');
+      if (messageEl) {
+        messageEl.className = themeSwitcher.currentTheme;
+      }
     }
   });
 </script>
