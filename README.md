@@ -127,14 +127,14 @@ Default ports:
 
 ## Documentation
 
-For detailed guides, visit the [project Wiki](https://github.com/cofedish/3x-UI-agents/wiki).
+Comprehensive guides available in [docs/wiki](docs/wiki/):
 
-Topics:
-- Architecture overview
-- Security best practices
-- Advanced configuration
-- Backup and restore
-- Monitoring and logging
+- [Installation Guide](docs/wiki/Installation.md) - Setup panel and agents
+- [Agent Setup](docs/wiki/Agent-Setup.md) - Deploy and configure agents
+- [Authentication](docs/wiki/Authentication.md) - mTLS and JWT setup
+- [Troubleshooting](docs/wiki/Troubleshooting.md) - Common issues and fixes
+- [Security Best Practices](docs/wiki/Security.md) - Hardening your deployment
+- [Backup and Restore](docs/wiki/Backup-Restore.md) - Data protection
 
 ## Acknowledgments
 
