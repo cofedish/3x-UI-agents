@@ -7,13 +7,11 @@
 
   <a-layout id="content-layout">
     <a-layout-header
-      style="padding: 12px 16px; background: var(--color-bg); border-bottom: 1px solid var(--color-border);"
+      style="background: transparent; padding: 16px 24px 0; height: auto;"
     >
       <a-row type="flex" align="middle" justify="space-between">
         <a-col>
-          <h2 style="margin: 0; display: flex; align-items: center; gap: 8px;">
-            <a-icon type="server" />
-            {{ i18n "pages.servers.title" }}
+          <h2 style="margin: 0;">
           </h2>
         </a-col>
         <a-col>
@@ -27,7 +25,7 @@
             >
               {{ i18n "pages.servers.addServer" }}
             </a-button>
-            <a-button icon="reload" @click="loadServers" style="border-radius: 16px;">
+            <a-button icon="reload" @click="loadServers" >
               {{ i18n "refresh" }}
             </a-button>
           </a-space>
