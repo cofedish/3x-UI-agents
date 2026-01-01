@@ -2,17 +2,13 @@
 {{ template "page/head_end" .}}
 
 {{ template "page/body_start" .}}
-<a-layout id="app" v-cloak :class="themeSwitcher.currentTheme">
+<a-layout id="app" v-cloak :class="themeSwitcher.currentTheme + ' servers-page'">
   <a-sidebar></a-sidebar>
-
   <a-layout id="content-layout">
-    <a-layout-header
-      style="background: transparent; padding: 16px 24px 0; height: auto;"
-    >
-      <a-row type="flex" align="middle" justify="space-between">
+    <a-layout-header style="background: transparent; padding: 16px 24px 0; height: auto;">
+      <a-row type="flex" justify="space-between" align="middle">
         <a-col>
-          <h2 style="margin: 0;">
-          </h2>
+          <h2 style="margin: 0;">{{ i18n "pages.servers.title" }}</h2>
         </a-col>
         <a-col>
           <a-space>
