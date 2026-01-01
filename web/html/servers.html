@@ -21,7 +21,7 @@
               icon="plus"
               @click="showAddModal"
               data-testid="servers-add"
-              style="border-radius: 16px;"
+              
             >
               {{ i18n "pages.servers.addServer" }}
             </a-button>
@@ -47,7 +47,7 @@
                   :placeholder="'{{ i18n "pages.servers.searchPlaceholder" }}'"
                   @search="applyFilters"
                   allow-clear
-                  style="border-radius: 16px;"
+                  
                 >
                   <a-icon slot="prefix" type="search" />
                 </a-input-search>
@@ -56,7 +56,7 @@
                 <a-select
                   v-model="filters.status"
                   :placeholder="'{{ i18n "pages.servers.filterByStatus" }}'"
-                  style="width: 100%; border-radius: 16px;"
+                  style="width: 100%;"
                   @change="applyFilters"
                   allow-clear
                 >
@@ -73,7 +73,7 @@
                   :placeholder="'{{ i18n "pages.servers.filterByTags" }}'"
                   @pressEnter="applyFilters"
                   allow-clear
-                  style="border-radius: 16px;"
+                  
                 >
                   <a-icon slot="prefix" type="tags" />
                 </a-input>
@@ -146,7 +146,7 @@
                 </template>
 
                 <template #auth="text, record">
-                  <a-tag :color="getAuthColor(record.authType)" style="border-radius: 16px;">
+                  <a-tag :color="getAuthColor(record.authType)" >
                     [[ record.authType.toUpperCase() ]]
                   </a-tag>
                 </template>
@@ -161,7 +161,7 @@
 
                 <template #tags="text, record">
                   <span v-if="record.tags">
-                    <a-tag v-for="tag in parseTags(record.tags)" :key="tag" color="blue" style="border-radius: 16px;">
+                    <a-tag v-for="tag in parseTags(record.tags)" :key="tag" color="blue" >
                       [[ tag ]]
                     </a-tag>
                   </span>
@@ -176,7 +176,7 @@
                         icon="heart"
                         @click="testHealth(record)"
                         :loading="healthChecking[record.id]"
-                        style="border-radius: 16px;"
+                        
                       ></a-button>
                     </a-tooltip>
                     <a-tooltip title='{{ i18n "pages.servers.restartXray" }}' v-if="record.id !== 1">
@@ -184,7 +184,7 @@
                         size="small"
                         icon="reload"
                         @click="restartXray(record)"
-                        style="border-radius: 16px;"
+                        
                       ></a-button>
                     </a-tooltip>
                     <a-tooltip title='{{ i18n "edit" }}'>
@@ -192,7 +192,7 @@
                         size="small"
                         icon="edit"
                         @click="showEditModal(record)"
-                        style="border-radius: 16px;"
+                        
                       ></a-button>
                     </a-tooltip>
                     <a-tooltip title='{{ i18n "delete" }}' v-if="record.id !== 1">
@@ -201,7 +201,7 @@
                         type="danger"
                         icon="delete"
                         @click="showDeleteConfirm(record)"
-                        style="border-radius: 16px;"
+                        
                       ></a-button>
                     </a-tooltip>
                   </a-space>
@@ -231,7 +231,7 @@
                   v-model="currentServer.name"
                   data-testid="server-name"
                   :placeholder="'{{ i18n "pages.servers.form.namePlaceholder" }}'"
-                  style="border-radius: 16px;"
+                  
                 />
               </a-form-model-item>
 
@@ -240,13 +240,13 @@
                   v-model="currentServer.endpoint"
                   data-testid="server-endpoint"
                   :placeholder="'{{ i18n "pages.servers.form.endpointPlaceholder" }}'"
-                  style="border-radius: 16px;"
+                  
                 />
                 <small style="color: #999;">{{ i18n "pages.servers.form.endpointHint" }}</small>
               </a-form-model-item>
 
               <a-form-model-item label='{{ i18n "pages.servers.form.authType" }}' prop="authType">
-                <a-select v-model="currentServer.authType" data-testid="server-auth-type" style="width: 100%; border-radius: 16px;">
+                <a-select v-model="currentServer.authType" data-testid="server-auth-type" style="width: 100%;">
                   <a-select-option value="mtls">{{ i18n "pages.servers.form.authTypeMtls" }}</a-select-option>
                   <a-select-option value="jwt">{{ i18n "pages.servers.form.authTypeJwt" }}</a-select-option>
                 </a-select>
@@ -262,7 +262,7 @@
                   data-testid="server-auth-data"
                   :rows="6"
                   :placeholder="'{{ i18n "pages.servers.form.authDataPlaceholder" }}'"
-                  style="border-radius: 16px;"
+                  
                 />
                 <small style="color: #999;">{{ i18n "pages.servers.form.authDataHint" }}</small>
               </a-form-model-item>
@@ -277,7 +277,7 @@
                   data-testid="server-auth-data"
                   type="password"
                   :placeholder="'{{ i18n "pages.servers.form.jwtTokenPlaceholder" }}'"
-                  style="border-radius: 16px;"
+                  
                 />
               </a-form-model-item>
 
@@ -287,7 +287,7 @@
                   v-model="currentServer.tagsArray"
                   data-testid="server-tags"
                   :placeholder="'{{ i18n "pages.servers.form.tagsPlaceholder" }}'"
-                  style="width: 100%; border-radius: 16px;"
+                  style="width: 100%;"
                 ></a-select>
               </a-form-model-item>
 
