@@ -91,6 +91,7 @@
 [menu]
 "theme" = "Тема"
 "dark" = "Темная"
+"light" = "Светлая"
 "ultraDark" = "Очень темная"
 "dashboard" = "Дашборд"
 "inbounds" = "Подключения"
