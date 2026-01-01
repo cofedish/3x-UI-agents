@@ -36,8 +36,8 @@
             <a-col>
               <a-card size="small" :style="{ padding: '16px' }" hoverable>
                 <!-- Filters -->
-                <a-row :style="{ marginBottom: '10px' }">
-                  <a-col :sm="24" :md="8">
+                <a-row :gutter="[8, 8]" :style="{ marginBottom: '10px' }">
+                  <a-col :xs="24" :sm="24" :md="8">
                     <a-input-search
                       v-model="filters.search"
                       :placeholder="'{{ i18n "pages.servers.searchPlaceholder" }}'"
@@ -47,7 +47,7 @@
                       <a-icon slot="prefix" type="search" />
                     </a-input-search>
                   </a-col>
-                  <a-col :sm="24" :md="8">
+                  <a-col :xs="24" :sm="24" :md="8">
                     <a-select
                       v-model="filters.status"
                       :placeholder="'{{ i18n "pages.servers.filterByStatus" }}'"
@@ -62,7 +62,7 @@
                       <a-select-option value="error">{{ i18n "pages.servers.status.error" }}</a-select-option>
                     </a-select>
                   </a-col>
-                  <a-col :sm="24" :md="8">
+                  <a-col :xs="24" :sm="24" :md="8">
                     <a-input
                       v-model="filters.tags"
                       :placeholder="'{{ i18n "pages.servers.filterByTags" }}'"
@@ -75,39 +75,43 @@
                 </a-row>
 
                 <!-- Stats -->
-                <a-row :style="{ marginBottom: '10px' }">
-                  <a-col :span="6">
+                <a-row :gutter="[8, 8]" :style="{ marginBottom: '10px' }">
+                  <a-col :xs="12" :sm="12" :md="6">
                     <a-statistic
                       :title="'{{ i18n "pages.servers.stats.total" }}'"
                       :value="stats.total"
                       :value-style="{ color: '#1890ff' }"
+                      :style="{ marginTop: isMobile ? '10px' : 0 }"
                     >
                       <template #prefix><a-icon type="server" /></template>
                     </a-statistic>
                   </a-col>
-                  <a-col :span="6">
+                  <a-col :xs="12" :sm="12" :md="6">
                     <a-statistic
                       :title="'{{ i18n "pages.servers.stats.online" }}'"
                       :value="stats.online"
                       :value-style="{ color: '#52c41a' }"
+                      :style="{ marginTop: isMobile ? '10px' : 0 }"
                     >
                       <template #prefix><a-icon type="check-circle" /></template>
                     </a-statistic>
                   </a-col>
-                  <a-col :span="6">
+                  <a-col :xs="12" :sm="12" :md="6">
                     <a-statistic
                       :title="'{{ i18n "pages.servers.stats.offline" }}'"
                       :value="stats.offline"
                       :value-style="{ color: '#ff4d4f' }"
+                      :style="{ marginTop: isMobile ? '10px' : 0 }"
                     >
                       <template #prefix><a-icon type="close-circle" /></template>
                     </a-statistic>
                   </a-col>
-                  <a-col :span="6">
+                  <a-col :xs="12" :sm="12" :md="6">
                     <a-statistic
                       :title="'{{ i18n "pages.servers.stats.errors" }}'"
                       :value="stats.error"
                       :value-style="{ color: '#faad14' }"
+                      :style="{ marginTop: isMobile ? '10px' : 0 }"
                     >
                       <template #prefix><a-icon type="warning" /></template>
                     </a-statistic>
