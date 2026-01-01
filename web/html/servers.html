@@ -29,7 +29,7 @@
       </a-row>
     </a-layout-header>
 
-    <a-layout-content>
+    <a-layout-content :style="{ padding: '0 8px' }">
       <a-spin :spinning="loading" :delay="500" tip='{{ i18n "loading"}}'>
         <transition name="list" appear>
           <a-row :gutter="[isMobile ? 8 : 16, isMobile ? 0 : 12]">
