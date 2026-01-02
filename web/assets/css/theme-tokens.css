@@ -148,3 +148,18 @@ body.lucifer .ant-select-dropdown-menu-item:hover,
 body.lucifer .ant-select-dropdown-menu-item-active:not(.ant-select-dropdown-menu-item-disabled){
   background-color:var(--lucifer-color-surface-300);
 }
+
+.ant-table-fixed-left table,
+.ant-table-fixed-right table{
+  background-color:var(--color-surface);
+}
+.ant-table-fixed-left .ant-table-thead>tr>th,
+.ant-table-fixed-right .ant-table-thead>tr>th{
+  background-color:var(--color-surface-2);
+  border-color:var(--color-border);
+}
+.ant-table-fixed-left .ant-table-tbody>tr>td,
+.ant-table-fixed-right .ant-table-tbody>tr>td{
+  background-color:var(--color-surface);
+  border-color:var(--color-border);
+}
