@@ -1,0 +1,93 @@
+:root{
+  --color-bg:#fff;
+  --color-surface:#fff;
+  --color-surface-2:#fafafa;
+  --color-text:rgba(0,0,0,0.65);
+  --color-text-muted:rgba(0,0,0,0.45);
+  --color-border:#e8e8e8;
+  --color-primary:var(--color-primary-100);
+  --color-primary-hover:var(--color-primary-100);
+  --color-primary-active:var(--color-primary-100);
+  --color-danger:#ff4d4f;
+  --color-link:#1890ff;
+}
+body.dark{
+  --color-bg:var(--dark-color-background);
+  --color-surface:var(--dark-color-surface-100);
+  --color-surface-2:var(--dark-color-surface-200);
+  --color-text:var(--dark-color-text-primary);
+  --color-text-muted:rgba(255,255,255,0.45);
+  --color-border:var(--dark-color-surface-400);
+  --color-primary:var(--color-primary-100);
+  --color-primary-hover:var(--color-primary-100);
+  --color-primary-active:var(--color-primary-100);
+  --color-danger:var(--dark-color-btn-danger);
+  --color-link:var(--color-primary-100);
+}
+
+body,
+#app{background-color:var(--color-bg);color:var(--color-text);}
+
+.ant-layout,
+.ant-drawer-content{background-color:var(--color-bg);color:var(--color-text);}
+
+.ant-card,
+.ant-tabs,
+.ant-collapse-content,
+.ant-table,
+.ant-table-expanded-row,
+.ant-list{background-color:var(--color-surface);color:var(--color-text);}
+
+.ant-table-thead>tr>th,
+.ant-table-header>table>thead>tr>th{
+  background-color:var(--color-surface-2);
+  border-color:var(--color-border);
+  color:var(--color-text);
+}
+
+.ant-table-tbody>tr>td{
+  background-color:var(--color-surface);
+  border-color:var(--color-border);
+  color:var(--color-text);
+}
+
+.ant-table-bordered,
+.ant-table-bordered .ant-table-tbody>tr>td,
+.ant-table-bordered .ant-table-thead>tr>th,
+.ant-table-bordered .ant-table-header>table,
+.ant-table-bordered .ant-table-body>table{
+  border-color:var(--color-border);
+}
+
+.ant-input,
+.ant-input-group-addon,
+.ant-input-number,
+.ant-input-number-handler-wrap,
+.ant-select-selection,
+.ant-select-dropdown,
+.ant-dropdown-menu,
+.ant-modal-content,
+.ant-modal-header,
+.ant-modal-body,
+.ant-modal-footer,
+.ant-popover-inner,
+.ant-tooltip-inner,
+.ant-message-notice-content,
+.ant-empty-normal,
+.ant-table-placeholder{
+  background-color:var(--color-surface-2);
+  border-color:var(--color-border);
+  color:var(--color-text);
+}
+
+.ant-input::placeholder,
+.ant-select-selection__placeholder,
+.ant-select-search__field__placeholder{
+  color:var(--color-text-muted);
+}
+
+.ant-popover-title,
+.ant-modal-header,
+.ant-modal-footer{
+  border-color:var(--color-border);
+}
