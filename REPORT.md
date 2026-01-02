@@ -9,56 +9,85 @@
 
 ## Theme switch bug
 
-### Залипшие элементы
-- Modals/confirm/popover/dropdown, особенно на `/panel/servers`.
-- Табличные хедеры/инпуты в карточке фильтров после смены темы.
-- Tooltips в таблице серверов оставались в старых цветах.
+### Баг "двойного клика"
 
-### Причина
-1. **Отсутствие `overlay-class-name` на tooltips**: В `servers.html` tooltips не имели атрибута `:overlay-class-name="themeSwitcher.currentTheme"`, поэтому портал-элементы (рендерятся вне `#app`) не получали класс текущей темы.
-2. **Modal с `:class` вместо `:wrap-class-name`**: Модалка использовала `:class` который не применяется к wrapper-элементу портала.
-3. **Отсутствие CSS для overlay-порталов**: В `theme-tokens.css` не было стилей для селекторов `.dark` и `.lucifer` (без `body.`) - эти классы добавляются к порталам через `overlay-class-name`.
-4. **Lucifer тема не стилизована для overlays**: Хотя токены `--lucifer-color-*` были определены правильно в `custom.min.css`, в `theme-tokens.css` не было соответствующих overrides для overlay-компонентов.
+#### Симптомы
+- На ВСЕХ страницах (кроме `/panel/servers`) при первом переключении темы вид "ломался".
+- Требовался повторный клик на ту же тему, чтобы она применилась корректно.
+- `/panel/servers` - единственная страница где тема переключалась с первого раза.
 
-### Что сделано
+#### Корневая причина
+**Конфликт двойной реактивности Vue.observable + data**
 
-#### 1. `web/html/servers.html`
-- Добавлен `:overlay-class-name="themeSwitcher.currentTheme"` ко всем `<a-tooltip>` в таблице серверов (4 tooltip'а в actions column).
-- Заменён `:class` на `:wrap-class-name` в `<a-modal>` для правильного применения темы к wrapper-элементу.
+Объект `themeSwitcher` создаётся как `Vue.observable(createThemeSwitcher())` - это делает его реактивным глобально.
 
-#### 2. `web/assets/css/theme-tokens.css`
-Добавлен блок "OVERLAY PORTAL THEME STYLES" с полным набором стилей для overlay-компонентов:
+Но на страницах `index.html`, `inbounds.html`, `settings.html`, `xray.html`, `login.html` этот же объект добавлялся в `data` Vue instance:
 
-**Dark theme overlays** (селектор `.dark`):
-- `.ant-tooltip-inner`, `.ant-tooltip-arrow::before`
-- `.ant-popover-inner`, `.ant-popover-title`, `.ant-popover-arrow`
-- `.ant-select-dropdown`, `.ant-select-dropdown-menu-item`
-- `.ant-modal-content/header/body/footer/close-x`
-- `.ant-confirm-body .ant-confirm-title/content`
-- `.ant-form-item-label>label`
-- `.ant-input`, `.ant-input-number`, `.ant-select-selection`
-- `.ant-dropdown-menu`, `.ant-dropdown-menu-item`
+```javascript
+const app = new Vue({
+  data: {
+    themeSwitcher,  // <-- ПРОБЛЕМА: Vue пытается обернуть уже-реактивный объект
+    ...
+  }
+});
+```
 
-**Lucifer theme overlays** (селектор `.lucifer`):
-- Все те же компоненты с винно-красными цветами
-- Красный primary (#e63946) для hover/focus states
-- Правильные фоновые цвета из `--lucifer-color-surface-*`
-- Белый текст для высокой читаемости
+Когда Vue встречает объект в `data`, он пытается сделать его реактивным через свой Observer. Но `themeSwitcher` уже `Vue.observable`. Это создаёт конфликт, из-за которого getter-ы (`currentTheme`, `menuTheme`) теряют реактивную связь с базовым свойством `theme`.
+
+**Доказательство**: На `servers.html` где `themeSwitcher` НЕ БЫЛ добавлен в `data`, тема переключалась с первого раза.
+
+#### Что сделано
+
+**Удалён `themeSwitcher` из `data` на всех страницах:**
+- `web/html/index.html` - убрана строка `themeSwitcher,` из data
+- `web/html/inbounds.html` - убрана строка `themeSwitcher,` из data
+- `web/html/settings.html` - убрана строка `themeSwitcher,` из data
+- `web/html/xray.html` - убраны строки `themeSwitcher,` и `isDarkTheme: themeSwitcher.isDarkTheme,` из data
+- `web/html/login.html` - убрана строка `themeSwitcher,` из data
+
+Vue instance всё равно имеет доступ к глобальной переменной `themeSwitcher` в шаблоне. Реактивность обеспечивается через `Vue.observable`, а не через `data`.
+
+---
+
+### Залипшие overlays на /panel/servers
+
+#### Симптомы
+- Tooltips, modals, dropdowns на `/panel/servers` оставались в старых цветах после смены темы.
+- "Белые" области в таблице и модальных окнах.
+
+#### Причина
+1. **Отсутствие `overlay-class-name` на tooltips**: Ant Design рендерит tooltip/popover/modal в отдельный portal-контейнер вне `#app`. Без атрибута `:overlay-class-name="themeSwitcher.currentTheme"` эти порталы не получают класс темы.
+2. **Modal с `:class` вместо `:wrap-class-name`**: Для modal нужен `:wrap-class-name` чтобы класс применился к wrapper-элементу портала.
+3. **Отсутствие CSS для overlay-селекторов**: В `theme-tokens.css` не было стилей для `.dark` и `.lucifer` (без `body.`) - эти классы добавляются к порталам через `overlay-class-name`.
+
+#### Что сделано
+
+**1. `web/html/servers.html`**
+- Добавлен `:overlay-class-name="themeSwitcher.currentTheme"` ко всем `<a-tooltip>` (4 шт)
+- Заменён `:class` на `:wrap-class-name` в `<a-modal>`
+
+**2. `web/assets/css/theme-tokens.css`**
+Добавлен блок "OVERLAY PORTAL THEME STYLES" (~200 строк) с полным набором стилей для:
+- `.dark .ant-tooltip-*`, `.dark .ant-popover-*`, `.dark .ant-modal-*`, `.dark .ant-select-dropdown`, `.dark .ant-dropdown-menu`, `.dark .ant-input/*`
+- `.lucifer .ant-tooltip-*`, `.lucifer .ant-popover-*`, `.lucifer .ant-modal-*`, `.lucifer .ant-select-dropdown`, `.lucifer .ant-dropdown-menu`, `.lucifer .ant-input/*`
+
+---
 
 ### Проверка
-1. Открыть `/panel/servers`.
-2. Переключить темы: light -> dark -> lucifer -> dark -> light.
-3. Проверить:
-   - Tooltips на кнопках действий в таблице (heart, reload, edit, delete)
-   - Select dropdown для фильтра по статусу
-   - Modal добавления/редактирования сервера (inputs, selects, кнопки)
-   - Confirm dialog при удалении сервера
-4. Открыть `/panel/inbounds`, повторить переключения.
-5. В Lucifer теме убедиться:
-   - Фон тёмно-винный (#0d0208 -> #1a0f14 -> #2b1319)
-   - Primary кнопки красные (#e63946)
-   - Inputs при hover/focus получают красную границу
-   - Текст белый и читаемый
+
+1. Открыть любую страницу (`/panel/`, `/panel/inbounds`, `/panel/servers`, `/panel/settings`)
+2. Переключить тему: **light → dark** (ОДИН клик должен сразу применить тему)
+3. Переключить: **dark → lucifer** (ОДИН клик)
+4. Переключить: **lucifer → light** (ОДИН клик)
+5. На `/panel/servers` проверить:
+   - Tooltips на кнопках действий (hover на heart/edit/delete)
+   - Dropdown фильтра статуса
+   - Modal "Add Server" / "Edit Server"
+   - Confirm dialog удаления
+6. В Lucifer убедиться:
+   - Фон винно-тёмный
+   - Кнопки primary красные (#e63946)
+   - Белый текст
 
 ## Чеклист
 - /panel/inbounds: light/dark/lucifer
