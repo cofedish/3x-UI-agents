@@ -120,7 +120,7 @@
                       <a-button type="primary" icon="menu">
                         <template v-if="!isMobile">{{ i18n "pages.inbounds.generalActions" }}</template>
                       </a-button>
-                      <a-menu slot="overlay" @click="a => generalActions(a)" :theme="themeSwitcher.currentTheme">
+                      <a-menu slot="overlay" @click="a => generalActions(a)" :theme="themeSwitcher.menuTheme">
                         <a-menu-item key="import">
                           <a-icon type="import"></a-icon>
                           {{ i18n "pages.inbounds.importInbound" }}
@@ -203,7 +203,7 @@
                         <a-icon @click="e => e.preventDefault()" type="more"
                           :style="{ fontSize: '20px', textDecoration: 'solid' }"></a-icon>
                         <a-menu slot="overlay" @click="a => clickAction(a, dbInbound)"
-                          :theme="themeSwitcher.currentTheme">
+                          :theme="themeSwitcher.menuTheme">
                           <a-menu-item key="edit">
                             <a-icon type="edit"></a-icon>
                             {{ i18n "edit" }}

@@ -1,6 +1,6 @@
 {{define "component/themeSwitchTemplate"}}
 <template>
-  <a-menu :theme="themeSwitcher.currentTheme" mode="inline" selected-keys="">
+  <a-menu :theme="themeSwitcher.menuTheme" mode="inline" selected-keys="">
     <a-sub-menu>
       <span slot="title">
         <a-icon type="bulb" :theme="themeSwitcher.isDarkTheme || themeSwitcher.isLucifer ? 'filled' : 'outlined'"></a-icon>
@@ -90,8 +90,9 @@
         return this.theme === 'lucifer';
       },
       get currentTheme() {
-        // Return actual theme for message container and menu
-        // Lucifer is dark variant, so return 'dark' for Ant Design menu theme
+        return this.theme;
+      },
+      get menuTheme() {
         return this.theme === 'light' ? 'light' : 'dark';
       },
       setTheme(newTheme) {

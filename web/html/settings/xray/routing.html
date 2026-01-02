@@ -10,7 +10,7 @@
             <a-dropdown :trigger="['click']">
                 <a-icon @click="e => e.preventDefault()" type="more"
                     :style="{ fontSize: '16px', textDecoration: 'bold' }"></a-icon>
-                <a-menu slot="overlay" :theme="themeSwitcher.currentTheme">
+                <a-menu slot="overlay" :theme="themeSwitcher.menuTheme">
                     <a-menu-item v-if="index>0" @click="replaceRule(index,0)">
                         <a-icon type="vertical-align-top"></a-icon>
                         {{ i18n "pages.xray.rules.first"}}

@@ -1,10 +1,10 @@
 {{define "component/sidebar/content"}}
 <template>
     <div class="ant-sidebar">
-        <a-layout-sider :theme="themeSwitcher.currentTheme" collapsible :collapsed="collapsed"
+        <a-layout-sider :theme="themeSwitcher.menuTheme" collapsible :collapsed="collapsed"
             @collapse="(isCollapsed, type) => collapseHandle(isCollapsed, type)" breakpoint="md">
             <a-theme-switch></a-theme-switch>
-            <a-menu :theme="themeSwitcher.currentTheme" mode="inline" :selected-keys="activeTab"
+            <a-menu :theme="themeSwitcher.menuTheme" mode="inline" :selected-keys="activeTab"
                 @click="({key}) => openLink(key)">
                 <a-menu-item v-for="tab in tabs" :key="tab.key">
                     <a-icon :type="tab.icon"></a-icon>
@@ -18,7 +18,7 @@
                 <a-icon :type="visible ? 'close' : 'menu-fold'"></a-icon>
             </div>
             <a-theme-switch></a-theme-switch>
-            <a-menu :theme="themeSwitcher.currentTheme" mode="inline" :selected-keys="activeTab"
+            <a-menu :theme="themeSwitcher.menuTheme" mode="inline" :selected-keys="activeTab"
                 @click="({key}) => openLink(key)">
                 <a-menu-item v-for="tab in tabs" :key="tab.key">
                     <a-icon :type="tab.icon"></a-icon>

@@ -81,7 +81,7 @@
                             <a-dropdown :trigger="['click']">
                                 <a-icon @click="e => e.preventDefault()" type="more"
                                     :style="{ fontSize: '16px', textDecoration: 'bold' }"></a-icon>
-                                <a-menu slot="overlay" :theme="themeSwitcher.currentTheme">
+                                <a-menu slot="overlay" :theme="themeSwitcher.menuTheme">
                                     <a-menu-item @click="editDNSServer(index)">
                                         <a-icon type="edit"></a-icon>
                                         <span>{{ i18n "edit" }}</span>
@@ -132,7 +132,7 @@
                             <a-dropdown :trigger="['click']">
                                 <a-icon @click="e => e.preventDefault()" type="more"
                                     :style="{ fontSize: '16px', textDecoration: 'bold' }"></a-icon>
-                                <a-menu slot="overlay" :theme="themeSwitcher.currentTheme">
+                                <a-menu slot="overlay" :theme="themeSwitcher.menuTheme">
                                     <a-menu-item @click="editFakedns(index)">
                                         <a-icon type="edit"></a-icon>
                                         <span>{{ i18n "edit" }}</span>
