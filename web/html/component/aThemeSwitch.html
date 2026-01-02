@@ -43,6 +43,20 @@
 
 {{define "component/aThemeSwitch"}}
 <script>
+  const THEME_CLASSES = ['light', 'dark', 'lucifer'];
+
+  function applyThemeClass(el, theme) {
+    if (!el) return;
+    THEME_CLASSES.forEach((cls) => el.classList.remove(cls));
+    el.classList.add(theme);
+  }
+
+  function syncThemeClasses(theme) {
+    applyThemeClass(document.body, theme);
+    applyThemeClass(document.getElementById('app'), theme);
+    applyThemeClass(document.getElementById('message'), theme);
+  }
+
   function createThemeSwitcher() {
     // Migrate old dark-mode setting to new theme system
     let theme = localStorage.getItem('theme');
@@ -63,7 +77,7 @@
       document.documentElement.setAttribute('data-theme', 'ultra-dark');
     }
 
-    document.querySelector('body').setAttribute('class', theme);
+    syncThemeClasses(theme);
 
     return {
       theme,
@@ -98,7 +112,7 @@
       setTheme(newTheme) {
         this.theme = newTheme;
         localStorage.setItem('theme', newTheme);
-        document.querySelector('body').setAttribute('class', newTheme);
+        syncThemeClasses(newTheme);
 
         // Clear ultra-dark when switching away from dark
         if (newTheme !== 'dark') {
@@ -107,10 +121,6 @@
           localStorage.setItem('isUltraDarkThemeEnabled', 'false');
         }
 
-        const messageEl = document.getElementById('message');
-        if (messageEl) {
-          messageEl.className = this.currentTheme;
-        }
       },
       toggleTheme() {
         // Legacy support for old toggle
@@ -128,7 +138,7 @@
       }
     };
   }
-  const themeSwitcher = createThemeSwitcher();
+  const themeSwitcher = Vue.observable(createThemeSwitcher());
   Vue.component('a-theme-switch', {
     template: `{{template "component/themeSwitchTemplate"}}`,
     data: () => ({
