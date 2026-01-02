@@ -162,7 +162,7 @@
 
                   <template #actions="text, record">
                     <a-space>
-                      <a-tooltip title='{{ i18n "pages.servers.testHealth" }}'>
+                      <a-tooltip title='{{ i18n "pages.servers.testHealth" }}' :overlay-class-name="themeSwitcher.currentTheme">
                         <a-button
                           size="small"
                           icon="heart"
@@ -170,21 +170,21 @@
                           :loading="healthChecking[record.id]"
                         ></a-button>
                       </a-tooltip>
-                      <a-tooltip title='{{ i18n "pages.servers.restartXray" }}' v-if="record.id !== 1">
+                      <a-tooltip title='{{ i18n "pages.servers.restartXray" }}' v-if="record.id !== 1" :overlay-class-name="themeSwitcher.currentTheme">
                         <a-button
                           size="small"
                           icon="reload"
                           @click="restartXray(record)"
                         ></a-button>
                       </a-tooltip>
-                      <a-tooltip title='{{ i18n "edit" }}'>
+                      <a-tooltip title='{{ i18n "edit" }}' :overlay-class-name="themeSwitcher.currentTheme">
                         <a-button
                           size="small"
                           icon="edit"
                           @click="showEditModal(record)"
                         ></a-button>
                       </a-tooltip>
-                      <a-tooltip title='{{ i18n "delete" }}' v-if="record.id !== 1">
+                      <a-tooltip title='{{ i18n "delete" }}' v-if="record.id !== 1" :overlay-class-name="themeSwitcher.currentTheme">
                         <a-button
                           size="small"
                           type="danger"
@@ -204,7 +204,7 @@
         <a-modal
             :title="modalMode === 'add' ? '{{ i18n "pages.servers.addServer" }}' : '{{ i18n "pages.servers.editServer" }}'"
             :visible="modalVisible"
-            :class="themeSwitcher.currentTheme"
+            :wrap-class-name="themeSwitcher.currentTheme"
             @ok="handleModalOk"
             @cancel="handleModalCancel"
             :confirm-loading="modalLoading"
