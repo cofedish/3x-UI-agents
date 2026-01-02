@@ -5,10 +5,10 @@
 <a-layout id="app" v-cloak :class="themeSwitcher.currentTheme + ' servers-page'">
   <a-sidebar></a-sidebar>
   <a-layout id="content-layout">
-    <a-layout-header style="background: transparent; padding: 16px 24px 0; height: auto;">
+    <a-layout-header class="servers-page__header">
       <a-row type="flex" justify="space-between" align="middle">
         <a-col>
-          <h2 style="margin: 0;">{{ i18n "pages.servers.title" }}</h2>
+          <h2 class="servers-page__title">{{ i18n "pages.servers.title" }}</h2>
         </a-col>
         <a-col>
           <a-space>
@@ -29,14 +29,14 @@
       </a-row>
     </a-layout-header>
 
-    <a-layout-content :style="{ padding: '6px 8px' }">
+    <a-layout-content class="servers-page__content">
       <a-spin :spinning="loading" :delay="500" tip='{{ i18n "loading"}}'>
         <transition name="list" appear>
           <a-row>
             <a-col>
-              <a-card size="small" :style="{ padding: '16px' }" hoverable>
+              <a-card size="small" class="servers-page__card" hoverable :key="themeSwitcher.currentTheme">
                 <!-- Filters -->
-                <a-row :gutter="[8, 8]" :style="{ marginBottom: '10px' }">
+                <a-row :gutter="[8, 8]" class="mb-10">
                   <a-col :xs="24" :sm="24" :md="8">
                     <a-input-search
                       v-model="filters.search"
@@ -51,7 +51,8 @@
                     <a-select
                       v-model="filters.status"
                       :placeholder="'{{ i18n "pages.servers.filterByStatus" }}'"
-                      style="width: 100%;"
+                      class="w-100"
+                      :dropdown-class-name="themeSwitcher.currentTheme"
                       @change="applyFilters"
                       allow-clear
                     >
@@ -75,43 +76,39 @@
                 </a-row>
 
                 <!-- Stats -->
-                <a-row :gutter="[8, 8]" :style="{ marginBottom: '10px' }">
+                <a-row :gutter="[8, 8]" class="mb-10">
                   <a-col :xs="12" :sm="12" :md="6">
                     <a-statistic
+                      class="servers-stat servers-stat--total"
                       :title="'{{ i18n "pages.servers.stats.total" }}'"
                       :value="stats.total"
-                      :value-style="{ color: '#1890ff' }"
-                      :style="{ marginTop: isMobile ? '10px' : 0 }"
                     >
                       <template #prefix><a-icon type="server" /></template>
                     </a-statistic>
                   </a-col>
                   <a-col :xs="12" :sm="12" :md="6">
                     <a-statistic
+                      class="servers-stat servers-stat--online"
                       :title="'{{ i18n "pages.servers.stats.online" }}'"
                       :value="stats.online"
-                      :value-style="{ color: '#52c41a' }"
-                      :style="{ marginTop: isMobile ? '10px' : 0 }"
                     >
                       <template #prefix><a-icon type="check-circle" /></template>
                     </a-statistic>
                   </a-col>
                   <a-col :xs="12" :sm="12" :md="6">
                     <a-statistic
+                      class="servers-stat servers-stat--offline"
                       :title="'{{ i18n "pages.servers.stats.offline" }}'"
                       :value="stats.offline"
-                      :value-style="{ color: '#ff4d4f' }"
-                      :style="{ marginTop: isMobile ? '10px' : 0 }"
                     >
                       <template #prefix><a-icon type="close-circle" /></template>
                     </a-statistic>
                   </a-col>
                   <a-col :xs="12" :sm="12" :md="6">
                     <a-statistic
+                      class="servers-stat servers-stat--error"
                       :title="'{{ i18n "pages.servers.stats.errors" }}'"
                       :value="stats.error"
-                      :value-style="{ color: '#faad14' }"
-                      :style="{ marginTop: isMobile ? '10px' : 0 }"
                     >
                       <template #prefix><a-icon type="warning" /></template>
                     </a-statistic>
@@ -130,12 +127,12 @@
                   <template #name="text, record">
                     <strong>[[ record.name ]]</strong>
                     <br />
-                    <small style="color: #999;">[[ record.endpoint ]]</small>
+                    <small class="servers-muted">[[ record.endpoint ]]</small>
                   </template>
 
                   <template #status="text, record">
                     <a-badge :status="getStatusBadge(record.status)" :text="getStatusText(record.status)" />
-                    <div v-if="record.last_seen" style="font-size: 12px; color: #999; margin-top: 4px;">
+                    <div v-if="record.last_seen" class="servers-meta">
                       {{ i18n "lastSeenLabel" }}: [[ formatTimestamp(record.last_seen) ]]
                     </div>
                   </template>
@@ -151,7 +148,7 @@
                       <div>{{ i18n "panelVersionLabel" }}: v[[ record.version ]]</div>
                       <div v-if="record.xrayVersion">{{ i18n "xrayVersionLabel" }}: v[[ record.xrayVersion ]]</div>
                     </div>
-                    <span v-else style="color: #999;">—</span>
+                    <span v-else class="servers-muted">—</span>
                   </template>
 
                   <template #tags="text, record">
@@ -160,7 +157,7 @@
                         [[ tag ]]
                       </a-tag>
                     </span>
-                    <span v-else style="color: #999;">—</span>
+                    <span v-else class="servers-muted">—</span>
                   </template>
 
                   <template #actions="text, record">
@@ -207,6 +204,7 @@
         <a-modal
             :title="modalMode === 'add' ? '{{ i18n "pages.servers.addServer" }}' : '{{ i18n "pages.servers.editServer" }}'"
             :visible="modalVisible"
+            :class="themeSwitcher.currentTheme"
             @ok="handleModalOk"
             @cancel="handleModalCancel"
             :confirm-loading="modalLoading"
@@ -235,11 +233,11 @@
                   :placeholder="'{{ i18n "pages.servers.form.endpointPlaceholder" }}'"
                   
                 />
-                <small style="color: #999;">{{ i18n "pages.servers.form.endpointHint" }}</small>
+                <small class="servers-muted">{{ i18n "pages.servers.form.endpointHint" }}</small>
               </a-form-model-item>
 
               <a-form-model-item label='{{ i18n "pages.servers.form.authType" }}' prop="authType">
-                <a-select v-model="currentServer.authType" data-testid="server-auth-type" style="width: 100%;">
+                <a-select v-model="currentServer.authType" data-testid="server-auth-type" class="w-100" :dropdown-class-name="themeSwitcher.currentTheme">
                   <a-select-option value="mtls">{{ i18n "pages.servers.form.authTypeMtls" }}</a-select-option>
                   <a-select-option value="jwt">{{ i18n "pages.servers.form.authTypeJwt" }}</a-select-option>
                 </a-select>
@@ -257,7 +255,7 @@
                   :placeholder="'{{ i18n "pages.servers.form.authDataPlaceholder" }}'"
                   
                 />
-                <small style="color: #999;">{{ i18n "pages.servers.form.authDataHint" }}</small>
+                <small class="servers-muted">{{ i18n "pages.servers.form.authDataHint" }}</small>
               </a-form-model-item>
 
               <a-form-model-item
@@ -280,7 +278,8 @@
                   v-model="currentServer.tagsArray"
                   data-testid="server-tags"
                   :placeholder="'{{ i18n "pages.servers.form.tagsPlaceholder" }}'"
-                  style="width: 100%;"
+                  class="w-100"
+                  :dropdown-class-name="themeSwitcher.currentTheme"
                 ></a-select>
               </a-form-model-item>
 
@@ -455,6 +454,7 @@ new Vue({
         okText: '{{ i18n "delete" }}',
         okType: 'danger',
         cancelText: '{{ i18n "cancel" }}',
+        class: themeSwitcher.currentTheme,
         onOk: async () => {
           try {
             await axios.delete(`panel/api/servers/${server.id}`);

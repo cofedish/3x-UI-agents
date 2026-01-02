@@ -163,3 +163,23 @@ body.lucifer .ant-select-dropdown-menu-item-active:not(.ant-select-dropdown-menu
   background-color:var(--color-surface);
   border-color:var(--color-border);
 }
+
+.servers-page__header{background:transparent;padding:16px 24px 0;height:auto;}
+.servers-page__title{margin:0;}
+.servers-page__content{padding:6px 8px;}
+.servers-page__card{padding:16px;}
+.servers-muted{color:var(--color-text-muted);}
+.servers-meta{font-size:12px;margin-top:4px;color:var(--color-text-muted);}
+.servers-stat--total .ant-statistic-content-value{color:var(--color-link);}
+.servers-stat--online .ant-statistic-content-value{color:#52c41a;}
+.servers-stat--offline .ant-statistic-content-value{color:#ff4d4f;}
+.servers-stat--error .ant-statistic-content-value{color:#faad14;}
+@media (max-width:768px){.servers-stat{margin-top:10px;}}
+
+body.dark .servers-stat--online .ant-statistic-content-value{color:var(--dark-color-tag-green-color);}
+body.dark .servers-stat--offline .ant-statistic-content-value{color:var(--dark-color-tag-red-color);}
+body.dark .servers-stat--error .ant-statistic-content-value{color:var(--dark-color-tag-orange-color);}
+
+body.lucifer .servers-stat--online .ant-statistic-content-value{color:var(--lucifer-color-tag-green-color);}
+body.lucifer .servers-stat--offline .ant-statistic-content-value{color:var(--lucifer-color-tag-red-color);}
+body.lucifer .servers-stat--error .ant-statistic-content-value{color:var(--lucifer-color-tag-orange-color);}
