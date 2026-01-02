@@ -31,6 +31,7 @@ body.lucifer{
   --color-text:var(--lucifer-color-text-primary);
   --color-text-muted:rgba(255,255,255,0.6);
   --color-border:var(--lucifer-color-surface-400);
+  --color-primary-100:#e63946;
   --color-primary:var(--color-primary-100);
   --color-primary-hover:#f05a66;
   --color-primary-active:#c72532;
@@ -129,24 +130,49 @@ body.lucifer .ant-input:focus,
 body.lucifer .ant-input-number:hover,
 body.lucifer .ant-input-number:focus,
 body.lucifer .ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled){
-  background-color:var(--color-surface-2);
+  background-color:var(--lucifer-color-surface-300);
   border-color:var(--color-primary);
 }
 body.lucifer .ant-btn:not(.ant-btn-primary):not(.ant-btn-danger){
-  background-color:var(--color-surface-2);
+  background-color:var(--lucifer-color-surface-300);
   border-color:var(--color-primary);
   color:var(--color-text);
+}
+body.lucifer .ant-btn:focus:not(.ant-btn-primary):not(.ant-btn-danger),
+body.lucifer .ant-btn:hover:not(.ant-btn-primary):not(.ant-btn-danger){
+  background-color:var(--lucifer-color-surface-300);
+  border-color:var(--color-primary);
+  color:#fff;
 }
 body.lucifer .ant-radio-button-wrapper,
 body.lucifer .ant-radio-button-wrapper:before,
 body.lucifer .ant-checkbox-inner{
-  background-color:var(--color-surface-2);
+  background-color:var(--lucifer-color-surface-300);
   border-color:var(--color-border);
   color:var(--color-text);
 }
 body.lucifer .ant-select-dropdown-menu-item:hover,
 body.lucifer .ant-select-dropdown-menu-item-active:not(.ant-select-dropdown-menu-item-disabled){
   background-color:var(--lucifer-color-surface-300);
+}
+body.lucifer .ant-menu:not(.ant-menu-horizontal) .ant-menu-item-selected{
+  background-color:var(--color-primary) !important;
+  background-image:none;
+  animation:none;
+  color:#fff;
+}
+body.lucifer .ant-menu-item-active,
+body.lucifer .ant-menu-item:hover,
+body.lucifer .ant-menu-submenu-title:hover,
+body.lucifer .ant-menu-item:active,
+body.lucifer .ant-menu-submenu-title:active{
+  background-color:var(--lucifer-color-surface-300);
+  color:var(--color-primary);
+}
+body.lucifer ::selection,
+body.lucifer ::-moz-selection{
+  color:#fff;
+  background-color:var(--color-primary);
 }
 
 .ant-table-fixed-left table,
