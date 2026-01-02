@@ -24,6 +24,19 @@ body.dark{
   --color-danger:var(--dark-color-btn-danger);
   --color-link:var(--color-primary-100);
 }
+body.lucifer{
+  --color-bg:var(--lucifer-color-background);
+  --color-surface:var(--lucifer-color-surface-100);
+  --color-surface-2:var(--lucifer-color-surface-200);
+  --color-text:var(--lucifer-color-text-primary);
+  --color-text-muted:rgba(255,255,255,0.6);
+  --color-border:var(--lucifer-color-surface-400);
+  --color-primary:var(--color-primary-100);
+  --color-primary-hover:#f05a66;
+  --color-primary-active:#c72532;
+  --color-danger:var(--lucifer-color-btn-danger);
+  --color-link:var(--color-primary-100);
+}
 
 body,
 #app{background-color:var(--color-bg);color:var(--color-text);}
@@ -90,4 +103,48 @@ body,
 .ant-modal-header,
 .ant-modal-footer{
   border-color:var(--color-border);
+}
+
+.ant-btn-primary{
+  background-color:var(--color-primary);
+  border-color:var(--color-primary);
+}
+.ant-btn-primary:hover,
+.ant-btn-primary:focus{
+  background-color:var(--color-primary-hover);
+  border-color:var(--color-primary-hover);
+}
+.ant-btn-primary:active{
+  background-color:var(--color-primary-active);
+  border-color:var(--color-primary-active);
+}
+.ant-btn-danger{
+  background-color:var(--color-danger);
+  border-color:var(--color-danger);
+}
+
+body.lucifer .ant-select-selection:hover,
+body.lucifer .ant-input:hover,
+body.lucifer .ant-input:focus,
+body.lucifer .ant-input-number:hover,
+body.lucifer .ant-input-number:focus,
+body.lucifer .ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled){
+  background-color:var(--color-surface-2);
+  border-color:var(--color-primary);
+}
+body.lucifer .ant-btn:not(.ant-btn-primary):not(.ant-btn-danger){
+  background-color:var(--color-surface-2);
+  border-color:var(--color-primary);
+  color:var(--color-text);
+}
+body.lucifer .ant-radio-button-wrapper,
+body.lucifer .ant-radio-button-wrapper:before,
+body.lucifer .ant-checkbox-inner{
+  background-color:var(--color-surface-2);
+  border-color:var(--color-border);
+  color:var(--color-text);
+}
+body.lucifer .ant-select-dropdown-menu-item:hover,
+body.lucifer .ant-select-dropdown-menu-item-active:not(.ant-select-dropdown-menu-item-disabled){
+  background-color:var(--lucifer-color-surface-300);
 }
