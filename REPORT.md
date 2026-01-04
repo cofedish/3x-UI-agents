@@ -7,6 +7,26 @@
 - Подключение CSS: `web/html/common/page.html` (`antd.min.css` -> `custom.min.css` -> `theme-tokens.css`).
 - Ant меню: `themeSwitcher.menuTheme` (`light|dark`) для `a-menu`/`a-layout-sider`.
 
+### Lucifer цветовая палитра (wine-red)
+Определена в `custom.min.css`:
+```
+--lucifer-color-background: #0d0208      (очень тёмный винный)
+--lucifer-color-surface-100: #1a0f14     (тёмный винный)
+--lucifer-color-surface-200: #2b1319     (винный)
+--lucifer-color-surface-300: #3d1822     (винно-красный)
+--lucifer-color-surface-400: rgba(230..) (полупрозрачный)
+--lucifer-color-surface-500: #4a1e28     (светлый винный)
+--lucifer-color-btn-danger: #b91924      (красный)
+--lucifer-color-tag-red-color: #ff495c   (ярко-красный)
+```
+Primary accent: `#e63946` (определён в theme-tokens.css)
+
+### CSS переменные для порталов
+Overlay-компоненты (modal, tooltip, dropdown) рендерятся вне `#app` через Ant Design portals.
+Они получают класс темы через `overlay-class-name`/`wrap-class-name`, но НЕ наследуют CSS переменные от `body.dark`/`body.lucifer`.
+
+Решение: CSS переменные дублируются на `.dark` и `.lucifer` классах (без `body.`) в theme-tokens.css.
+
 ## Theme switch bug
 
 ### Баг "двойного клика"
@@ -73,6 +93,124 @@ Vue instance всё равно имеет доступ к глобальной �
 
 ---
 
+### Наследование CSS переменных в порталах
+
+#### Симптомы
+- Primary кнопки в модалках оставались зелёными (#008771) в Lucifer теме вместо красных (#e63946)
+- Некоторые компоненты в overlay-порталах не наследовали цвета темы
+
+#### Корневая причина
+**CSS переменные не наследуются от body в portal-контейнерах**
+
+CSS переменные определены на `body.dark` и `body.lucifer`:
+```css
+body.lucifer {
+  --color-primary-100: #e63946;  /* red */
+  --color-primary: var(--color-primary-100);
+}
+```
+
+Но portal-компоненты (modal, tooltip, dropdown) рендерятся напрямую в body, а не как дети элемента с классом темы. Они получают класс темы через `overlay-class-name`/`wrap-class-name`, но НЕ наследуют CSS переменные от `body.lucifer`.
+
+В результате:
+- Портал получает класс `.lucifer`
+- Но `--color-primary` берётся из `:root` (зелёный #008771), а не из `body.lucifer`
+
+#### Что сделано
+
+**В `web/assets/css/theme-tokens.css` добавлены CSS переменные для `.dark` и `.lucifer` классов:**
+
+```css
+/* Для overlay порталов */
+.dark {
+  --color-bg: var(--dark-color-background);
+  --color-surface: var(--dark-color-surface-100);
+  --color-primary: var(--color-primary-100);
+  /* ... */
+}
+
+.lucifer {
+  --color-bg: var(--lucifer-color-background);
+  --color-surface: var(--lucifer-color-surface-100);
+  --color-primary-100: #e63946;
+  --color-primary: var(--color-primary-100);
+  /* ... */
+}
+```
+
+**Добавлены стили для primary/danger кнопок в порталах:**
+```css
+.lucifer .ant-btn-primary {
+  background-color: #e63946;
+  border-color: #e63946;
+}
+.lucifer .ant-btn-danger {
+  background-color: var(--lucifer-color-btn-danger);
+}
+```
+
+---
+
+### Исправление модалов (Session 2)
+
+#### Проблема
+Все модалы в проекте использовали `:class="themeSwitcher.currentTheme"` вместо `:wrap-class-name`. Атрибут `:class` на `<a-modal>` не работает для portal-контейнеров - нужен `:wrap-class-name`.
+
+#### Что сделано
+
+**Исправлено 21 модал:**
+
+`web/html/modals/`:
+- client_modal.html
+- text_modal.html
+- client_bulk_modal.html
+- inbound_info_modal.html
+- qrcode_modal.html
+- prompt_modal.html
+- warp_modal.html
+- dns_presets_modal.html
+- xray_dns_modal.html
+- two_factor_modal.html
+- xray_balancer_modal.html
+- xray_rule_modal.html
+- inbound_modal.html
+- xray_fakedns_modal.html
+- xray_outbound_modal.html
+- xray_reverse_modal.html
+
+`web/html/index.html`:
+- version-modal
+- log-modal
+- xraylog-modal
+- backup-modal
+- cpu-history-modal
+
+**Изменение:**
+```html
+<!-- До -->
+<a-modal :class="themeSwitcher.currentTheme">
+
+<!-- После -->
+<a-modal :wrap-class-name="themeSwitcher.currentTheme">
+```
+
+---
+
+### Структурное сравнение servers.html vs inbounds.html
+
+| Аспект | servers.html | inbounds.html |
+|--------|--------------|---------------|
+| Layout header | CSS класс `.servers-page__header` | Inline style |
+| Card padding | CSS класс `.servers-page__card` | Inline `:style` |
+| Statistics | Нативный `a-statistic` | `a-custom-statistic` |
+| Select theming | `:dropdown-class-name` ✓ | Частично |
+| Tooltip theming | `:overlay-class-name` ✓ | `:overlay-class-name` ✓ |
+| Modal theming | `:wrap-class-name` ✓ | `:wrap-class-name` ✓ |
+
+**Вывод**: servers.html использует более правильный подход с CSS классами вместо inline styles. Стили определены в theme-tokens.css.
+
+---
+
 ### Проверка
 
 1. Открыть любую страницу (`/panel/`, `/panel/inbounds`, `/panel/servers`, `/panel/settings`)
@@ -89,10 +227,40 @@ Vue instance всё равно имеет доступ к глобальной �
    - Кнопки primary красные (#e63946)
    - Белый текст
 
-## Чеклист
-- /panel/inbounds: light/dark/lucifer
-- /panel/servers: light/dark/lucifer
-- dropdown/select/popover/confirm в lucifer не белые и не зелёные
-- table fixed column без белых пластин
-- primary button в lucifer красная
-- читаемость текста и placeholder
+## Чеклист верификации
+
+### Основные страницы
+- [ ] `/panel/` (index): light/dark/lucifer переключается с первого клика
+- [ ] `/panel/inbounds`: light/dark/lucifer переключается с первого клика
+- [ ] `/panel/servers`: light/dark/lucifer переключается с первого клика
+- [ ] `/panel/settings`: light/dark/lucifer переключается с первого клика
+- [ ] `/panel/xray`: light/dark/lucifer переключается с первого клика
+- [ ] `login`: light/dark переключается
+
+### Lucifer тема - визуал
+- [ ] Фон страницы винно-тёмный (#0d0208)
+- [ ] Primary кнопки красные (#e63946)
+- [ ] Danger кнопки тёмно-красные (#b91924)
+- [ ] Текст белый/светлый
+- [ ] Sidebar меню с красным accent при selected
+
+### Overlay компоненты в Lucifer
+- [ ] Tooltip на /panel/servers (hover на кнопки действий) - винный фон
+- [ ] Select dropdown (фильтр статуса) - винный фон
+- [ ] Modal "Add Server" - винный фон, красная primary кнопка
+- [ ] Confirm dialog - винный фон, красная/тёмно-красная кнопки
+
+### Таблицы
+- [ ] Fixed columns (actions) без белых пластин
+- [ ] Header таблицы в цвете темы
+- [ ] Hover строк в цвете темы
+
+### Inputs/Forms
+- [ ] Input border при hover/focus - красный в lucifer
+- [ ] Placeholder читаемый (серый текст)
+- [ ] Select dropdown items при hover - винный
+
+### Login страница
+- [ ] Popover настроек в правильной теме
+- [ ] Language select dropdown в правильной теме
+- [ ] Input fields в правильной теме

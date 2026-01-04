@@ -1,6 +1,6 @@
 {{define "modals/twoFactorModal"}}
 <a-modal id="two-factor-modal" v-model="twoFactorModal.visible" :title="twoFactorModal.title" :closable="true"
-    :class="themeSwitcher.currentTheme">
+    :wrap-class-name="themeSwitcher.currentTheme">
     <template v-if="twoFactorModal.type === 'set'">
         <p>{{ i18n "pages.settings.security.twoFactorModalSteps" }}</p>
         <a-divider></a-divider>

@@ -216,6 +216,39 @@ body.lucifer .servers-stat--error .ant-statistic-content-value{color:var(--lucif
    (outside #app) and receive theme class via overlay-class-name/wrap-class-name
    ========================================================================== */
 
+/* Dark theme CSS variables for overlays
+   Portals don't inherit from body.dark, so we need to define vars on .dark class */
+.dark{
+  --color-bg:var(--dark-color-background);
+  --color-surface:var(--dark-color-surface-100);
+  --color-surface-2:var(--dark-color-surface-200);
+  --color-text:var(--dark-color-text-primary);
+  --color-text-muted:rgba(255,255,255,0.45);
+  --color-border:var(--dark-color-surface-400);
+  --color-primary:var(--color-primary-100);
+  --color-primary-hover:var(--color-primary-100);
+  --color-primary-active:var(--color-primary-100);
+  --color-danger:var(--dark-color-btn-danger);
+  --color-link:var(--color-primary-100);
+}
+
+/* Lucifer theme CSS variables for overlays
+   Portals don't inherit from body.lucifer, so we need to define vars on .lucifer class */
+.lucifer{
+  --color-bg:var(--lucifer-color-background);
+  --color-surface:var(--lucifer-color-surface-100);
+  --color-surface-2:var(--lucifer-color-surface-200);
+  --color-text:var(--lucifer-color-text-primary);
+  --color-text-muted:rgba(255,255,255,0.6);
+  --color-border:var(--lucifer-color-surface-400);
+  --color-primary-100:#e63946;
+  --color-primary:var(--color-primary-100);
+  --color-primary-hover:#f05a66;
+  --color-primary-active:#c72532;
+  --color-danger:var(--lucifer-color-btn-danger);
+  --color-link:var(--color-primary-100);
+}
+
 /* Dark theme overlays */
 .dark .ant-tooltip-inner{
   background-color:var(--dark-color-tooltip);
@@ -410,4 +443,38 @@ body.lucifer .servers-stat--error .ant-statistic-content-value{color:var(--lucif
 }
 .lucifer .ant-switch-checked{
   background-color:#e63946;
+}
+
+/* Primary buttons in overlays need explicit styling */
+.dark .ant-btn-primary{
+  background-color:var(--color-primary-100);
+  border-color:var(--color-primary-100);
+}
+.dark .ant-btn-primary:hover,
+.dark .ant-btn-primary:focus{
+  background-color:var(--color-primary-100);
+  border-color:var(--color-primary-100);
+  opacity:0.85;
+}
+.lucifer .ant-btn-primary{
+  background-color:#e63946;
+  border-color:#e63946;
+}
+.lucifer .ant-btn-primary:hover,
+.lucifer .ant-btn-primary:focus{
+  background-color:#f05a66;
+  border-color:#f05a66;
+}
+.lucifer .ant-btn-primary:active{
+  background-color:#c72532;
+  border-color:#c72532;
+}
+.lucifer .ant-btn-danger{
+  background-color:var(--lucifer-color-btn-danger);
+  border-color:var(--lucifer-color-btn-danger);
+}
+.lucifer .ant-btn-danger:hover,
+.lucifer .ant-btn-danger:focus{
+  background-color:var(--lucifer-color-btn-danger-hover);
+  border-color:var(--lucifer-color-btn-danger-hover);
 }

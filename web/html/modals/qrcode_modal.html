@@ -1,5 +1,5 @@
 {{define "modals/qrcodeModal"}}
-<a-modal id="qrcode-modal" v-model="qrModal.visible" :closable="true" :class="themeSwitcher.currentTheme"
+<a-modal id="qrcode-modal" v-model="qrModal.visible" :closable="true" :wrap-class-name="themeSwitcher.currentTheme"
   width="fit-content" :dialog-style="isMobile ? { top: '18px' } : {}" :footer="null">
   <template #title>
     <a-space direction="horizontal">

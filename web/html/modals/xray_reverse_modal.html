@@ -1,7 +1,7 @@
 {{define "modals/reverseModal"}}
 <a-modal id="reverse-modal" v-model="reverseModal.visible" :title="reverseModal.title" @ok="reverseModal.ok"
          :confirm-loading="reverseModal.confirmLoading" :closable="true" :mask-closable="false"
-         :ok-text="reverseModal.okText" cancel-text='{{ i18n "close" }}' :class="themeSwitcher.currentTheme">
+         :ok-text="reverseModal.okText" cancel-text='{{ i18n "close" }}' :wrap-class-name="themeSwitcher.currentTheme">
     <a-form :colon="false" :label-col="{ md: {span:8} }" :wrapper-col="{ md: {span:14} }">
         <a-form-item label='{{ i18n "pages.xray.outbound.type" }}'>
             <a-select v-model="reverseModal.reverse.type" :dropdown-class-name="themeSwitcher.currentTheme">

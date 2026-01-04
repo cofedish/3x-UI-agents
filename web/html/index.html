@@ -320,7 +320,7 @@
     </a-layout-content>
   </a-layout>
   <a-modal id="version-modal" v-model="versionModal.visible" title='{{ i18n "pages.index.xraySwitch" }}'
-    :closable="true" @ok="() => versionModal.visible = false" :class="themeSwitcher.currentTheme" footer="">
+    :closable="true" @ok="() => versionModal.visible = false" :wrap-class-name="themeSwitcher.currentTheme" footer="">
     <a-collapse default-active-key="1">
       <a-collapse-panel key="1" header='Xray'>
         <a-alert type="warning" class="mb-12 w-100" message='{{ i18n "pages.index.xraySwitchClickDesk" }}'
@@ -347,7 +347,7 @@
     </a-collapse>
   </a-modal>
   <a-modal id="log-modal" v-model="logModal.visible" :closable="true" @cancel="() => logModal.visible = false"
-    :class="themeSwitcher.currentTheme" width="800px" footer="">
+    :wrap-class-name="themeSwitcher.currentTheme" width="800px" footer="">
     <template slot="title">
       {{ i18n "pages.index.logs" }}
       <a-icon :spin="logModal.loading" type="sync" class="va-middle ml-10" :disabled="logModal.loading"
@@ -385,7 +385,7 @@
     <div class="ant-input log-container" v-html="logModal.formattedLogs"></div>
   </a-modal>
   <a-modal id="xraylog-modal" v-model="xraylogModal.visible" :closable="true"
-    @cancel="() => xraylogModal.visible = false" :class="themeSwitcher.currentTheme" width="80vw" footer="">
+    @cancel="() => xraylogModal.visible = false" :wrap-class-name="themeSwitcher.currentTheme" width="80vw" footer="">
     <template slot="title">
       {{ i18n "pages.index.logs" }}
       <a-icon :spin="xraylogModal.loading" type="sync" class="va-middle ml-10" :disabled="xraylogModal.loading"
@@ -420,7 +420,7 @@
     <div class="ant-input log-container" v-html="xraylogModal.formattedLogs"></div>
   </a-modal>
   <a-modal id="backup-modal" v-model="backupModal.visible" title='{{ i18n "pages.index.backupTitle" }}' :closable="true"
-    footer="" :class="themeSwitcher.currentTheme">
+    footer="" :wrap-class-name="themeSwitcher.currentTheme">
     <a-list class="ant-backup-list w-100" bordered>
       <a-list-item class="ant-backup-list-item">
         <a-list-item-meta>
@@ -440,7 +440,7 @@
   </a-modal>
   <!-- CPU History Modal -->
   <a-modal id="cpu-history-modal" v-model="cpuHistoryModal.visible" :closable="true"
-    @cancel="() => cpuHistoryModal.visible = false" :class="themeSwitcher.currentTheme" width="900px" footer="">
+    @cancel="() => cpuHistoryModal.visible = false" :wrap-class-name="themeSwitcher.currentTheme" width="900px" footer="">
     <template slot="title">
       CPU History
       <a-select size="small" v-model="cpuHistoryModal.bucket" class="ml-10" style="width: 80px"

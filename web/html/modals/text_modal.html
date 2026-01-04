@@ -1,6 +1,6 @@
 {{define "modals/textModal"}}
 <a-modal id="text-modal" v-model="txtModal.visible" :title="txtModal.title" :closable="true"
-    :class="themeSwitcher.currentTheme">
+    :wrap-class-name="themeSwitcher.currentTheme">
     <a-input :style="{ overflowY: 'auto' }" type="textarea" v-model="txtModal.content"
         :autosize="{ minRows: 10, maxRows: 20}"></a-input>
     <template slot="footer">
