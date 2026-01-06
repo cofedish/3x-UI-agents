@@ -153,7 +153,7 @@
         try {
           // Get serverId from the inbound (multi-server support)
           const serverId = qrModal.dbInbound.serverId || 1;
-          const msg = await HttpUtil.get('/panel/api/server/status', { server_id: serverId });
+          const msg = await HttpUtil.get('/panel/api/server/status', { server_id: serverId }, { silent: true });
           if (msg.success) {
             this.serverStatus = msg.obj;
           }

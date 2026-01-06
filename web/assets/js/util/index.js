@@ -7,8 +7,8 @@ class Msg {
 }
 
 class HttpUtil {
-    static _handleMsg(msg) {
-        if (!(msg instanceof Msg) || msg.msg === "") {
+    static _handleMsg(msg, options = {}) {
+        if (options.silent || !(msg instanceof Msg) || msg.msg === "") {
             return;
         }
         const messageType = msg.success ? 'success' : 'error';
@@ -30,29 +30,31 @@ class HttpUtil {
     }
 
     static async get(url, params, options = {}) {
+        const { silent, ...axiosOptions } = options || {};
         try {
-            const resp = await axios.get(url, { params, ...options });
+            const resp = await axios.get(url, { params, ...axiosOptions });
             const msg = this._respToMsg(resp);
-            this._handleMsg(msg);
+            this._handleMsg(msg, { silent });
             return msg;
         } catch (error) {
             console.error('GET request failed:', error);
             const errorMsg = new Msg(false, error.response?.data?.message || error.message || 'Request failed');
-            this._handleMsg(errorMsg);
+            this._handleMsg(errorMsg, { silent });
             return errorMsg;
         }
     }
 
     static async post(url, data, options = {}) {
+        const { silent, ...axiosOptions } = options || {};
         try {
-            const resp = await axios.post(url, data, options);
+            const resp = await axios.post(url, data, axiosOptions);
             const msg = this._respToMsg(resp);
-            this._handleMsg(msg);
+            this._handleMsg(msg, { silent });
             return msg;
         } catch (error) {
             console.error('POST request failed:', error);
             const errorMsg = new Msg(false, error.response?.data?.message || error.message || 'Request failed');
-            this._handleMsg(errorMsg);
+            this._handleMsg(errorMsg, { silent });
             return errorMsg;
         }
     }

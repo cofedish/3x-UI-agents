@@ -943,7 +943,7 @@
             endpoint += this.getServerIdParam();
           }
 
-          const msg = await HttpUtil.get(endpoint);
+          const msg = await HttpUtil.get(endpoint, null, { silent: true });
           if (msg.success) {
             if (!this.loadingStates.fetched) {
               this.loadingStates.fetched = true;
