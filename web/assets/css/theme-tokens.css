@@ -360,6 +360,14 @@ body.lucifer .ant-menu-submenu-title:active{
   background-color:var(--lucifer-color-surface-300);
   color:var(--color-primary);
 }
+body.dark .ant-menu-dark .ant-menu-item,
+body.dark .ant-menu-dark .ant-menu-submenu-title,
+body.dark .ant-menu-dark .ant-menu-item>a,
+body.dark .ant-menu-dark .ant-menu-submenu-title>a,
+body.dark .ant-menu-dark .ant-radio-wrapper,
+body.dark .ant-menu-dark .ant-radio-wrapper span{
+  color:var(--color-text);
+}
 body.lucifer .ant-menu-dark .ant-menu-item,
 body.lucifer .ant-menu-dark .ant-menu-submenu-title,
 body.lucifer .ant-menu-dark .ant-menu-item>a,
