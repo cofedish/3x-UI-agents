@@ -45,6 +45,10 @@
 <script>
   const THEME_CLASSES = ['light', 'dark', 'lucifer'];
 
+  function normalizeTheme(theme) {
+    return THEME_CLASSES.includes(theme) ? theme : 'light';
+  }
+
   function applyThemeClass(el, theme) {
     if (!el) return;
     THEME_CLASSES.forEach((cls) => el.classList.remove(cls));
@@ -57,6 +61,13 @@
     applyThemeClass(document.getElementById('message'), theme);
   }
 
+  function scheduleThemeSync(theme) {
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => syncThemeClasses(theme));
+    }
+    setTimeout(() => syncThemeClasses(theme), 50);
+  }
+
   function createThemeSwitcher() {
     // Migrate old dark-mode setting to new theme system
     let theme = localStorage.getItem('theme');
@@ -65,6 +76,7 @@
       theme = oldDarkMode ? 'dark' : 'light';
       localStorage.setItem('theme', theme);
     }
+    theme = normalizeTheme(theme);
 
     let isUltra = localStorage.getItem('isUltraDarkThemeEnabled') === 'true';
 
@@ -78,8 +90,9 @@
     }
 
     syncThemeClasses(theme);
+    scheduleThemeSync(theme);
 
-    return {
+    const switcher = {
       theme,
       isUltra,
       animationsOff() {
@@ -109,13 +122,19 @@
       get menuTheme() {
         return this.theme === 'light' ? 'light' : 'dark';
       },
+      resyncTheme() {
+        syncThemeClasses(this.theme);
+        scheduleThemeSync(this.theme);
+      },
       setTheme(newTheme) {
-        this.theme = newTheme;
-        localStorage.setItem('theme', newTheme);
-        syncThemeClasses(newTheme);
+        const normalizedTheme = normalizeTheme(newTheme);
+        this.theme = normalizedTheme;
+        localStorage.setItem('theme', normalizedTheme);
+        syncThemeClasses(normalizedTheme);
+        scheduleThemeSync(normalizedTheme);
 
         // Clear ultra-dark when switching away from dark
-        if (newTheme !== 'dark') {
+        if (normalizedTheme !== 'dark') {
           this.isUltra = false;
           document.documentElement.removeAttribute('data-theme');
           localStorage.setItem('isUltraDarkThemeEnabled', 'false');
@@ -137,6 +156,21 @@
         localStorage.setItem('isUltraDarkThemeEnabled', this.isUltra.toString());
       }
     };
+    const resync = () => switcher.resyncTheme();
+    window.addEventListener('focus', resync);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        resync();
+      }
+    });
+    window.addEventListener('storage', (event) => {
+      if (event.key !== 'theme') return;
+      const nextTheme = normalizeTheme(event.newValue);
+      if (nextTheme !== switcher.theme) {
+        switcher.setTheme(nextTheme);
+      }
+    });
+    return switcher;
   }
   const themeSwitcher = Vue.observable(createThemeSwitcher());
   Vue.component('a-theme-switch', {
