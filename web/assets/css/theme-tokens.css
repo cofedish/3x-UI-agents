@@ -78,60 +78,60 @@ body.lucifer{
   --color-surface-2:var(--lucifer-color-surface-200, #2b1319);
   --color-text:var(--lucifer-color-text-primary, rgba(255,255,255,0.9));
   --color-text-muted:rgba(255,255,255,0.6);
-  --color-border:var(--lucifer-color-surface-400, rgba(230,57,70,0.15));
-  --color-primary-100:#e63946;
+  --color-border:var(--lucifer-color-surface-400, rgba(139,31,58,0.2));
+  --color-primary-100:#9a2346;
   --color-primary:var(--color-primary-100);
-  --color-primary-hover:#f05a66;
-  --color-primary-active:#c72532;
+  --color-primary-hover:#b32952;
+  --color-primary-active:#7b1938;
   --color-danger:var(--lucifer-color-btn-danger, #b91924);
   --color-link:var(--color-primary-100);
-  --color-table-hover:var(--lucifer-color-table-hover, rgba(230,57,70,0.1));
+  --color-table-hover:var(--lucifer-color-table-hover, rgba(139,31,58,0.18));
 
-  --lucifer-color-background:#0d0208;
-  --lucifer-color-surface-100:#1a0f14;
-  --lucifer-color-surface-200:#2b1319;
-  --lucifer-color-surface-300:#3d1822;
-  --lucifer-color-surface-400:rgba(230,57,70,0.15);
-  --lucifer-color-surface-500:#4a1e28;
-  --lucifer-color-surface-600:#5c2633;
-  --lucifer-color-surface-700:#1a0f14;
-  --lucifer-color-surface-700-rgb:26,15,20;
-  --lucifer-color-table-hover:rgba(230,57,70,0.1);
+  --lucifer-color-background:#0b0b0f;
+  --lucifer-color-surface-100:#15131a;
+  --lucifer-color-surface-200:#1d1822;
+  --lucifer-color-surface-300:#261c2b;
+  --lucifer-color-surface-400:rgba(139,31,58,0.2);
+  --lucifer-color-surface-500:#2f1e34;
+  --lucifer-color-surface-600:#3b223c;
+  --lucifer-color-surface-700:#15131a;
+  --lucifer-color-surface-700-rgb:21,19,26;
+  --lucifer-color-table-hover:rgba(139,31,58,0.18);
   --lucifer-color-text-primary:rgba(255,255,255,0.9);
-  --lucifer-color-stroke:#3d1822;
-  --lucifer-color-btn-danger:#b91924;
+  --lucifer-color-stroke:#2b1d2f;
+  --lucifer-color-btn-danger:#b0263a;
   --lucifer-color-btn-danger-border:transparent;
-  --lucifer-color-btn-danger-hover:#d12030;
-  --lucifer-color-tag-bg:rgba(230,57,70,0.1);
-  --lucifer-color-tag-border:rgba(230,57,70,0.3);
+  --lucifer-color-btn-danger-hover:#cc2d45;
+  --lucifer-color-tag-bg:rgba(139,31,58,0.16);
+  --lucifer-color-tag-border:rgba(139,31,58,0.35);
   --lucifer-color-tag-color:rgba(255,255,255,0.85);
-  --lucifer-color-tag-green-bg:17,36,33;
-  --lucifer-color-tag-green-border:29,95,77;
-  --lucifer-color-tag-green-color:#59cbac;
-  --lucifer-color-tag-purple-bg:#3d1033;
-  --lucifer-color-tag-purple-border:#7d2969;
-  --lucifer-color-tag-purple-color:#e699dc;
-  --lucifer-color-tag-red-bg:#3d0a0f;
-  --lucifer-color-tag-red-border:#8f1823;
-  --lucifer-color-tag-red-color:#ff495c;
-  --lucifer-color-tag-orange-bg:#3d2211;
-  --lucifer-color-tag-orange-border:#8f5715;
-  --lucifer-color-tag-orange-color:#ffad31;
-  --lucifer-color-tag-blue-bg:#111a3d;
-  --lucifer-color-tag-blue-border:#1f3f9f;
-  --lucifer-color-tag-blue-color:#5ca3ff;
-  --lucifer-color-codemirror-line-hover:rgba(230,57,70,0.15);
-  --lucifer-color-codemirror-line-selection:rgba(230,57,70,0.25);
-  --lucifer-color-login-background:#0d0208;
-  --lucifer-color-login-wave:#1a0f14;
-  --lucifer-color-tooltip:rgba(61,24,34,0.95);
-  --lucifer-color-back-top:rgba(61,24,34,0.9);
-  --lucifer-color-back-top-hover:rgba(61,24,34,1);
-  --lucifer-color-scrollbar:#5c2633;
-  --lucifer-color-scrollbar-webkit:#8f3d4d;
-  --lucifer-color-scrollbar-webkit-hover:#b94d61;
-  --lucifer-color-table-ring:rgb(61 24 34);
-  --lucifer-color-spin-container:#1a0f14;
+  --lucifer-color-tag-green-bg:20,33,31;
+  --lucifer-color-tag-green-border:32,86,74;
+  --lucifer-color-tag-green-color:#57c9ae;
+  --lucifer-color-tag-purple-bg:#2f1531;
+  --lucifer-color-tag-purple-border:#6b2a5f;
+  --lucifer-color-tag-purple-color:#d98ad0;
+  --lucifer-color-tag-red-bg:#3a0f16;
+  --lucifer-color-tag-red-border:#8f1f31;
+  --lucifer-color-tag-red-color:#ff4f6b;
+  --lucifer-color-tag-orange-bg:#3a2213;
+  --lucifer-color-tag-orange-border:#8c551c;
+  --lucifer-color-tag-orange-color:#ffb24a;
+  --lucifer-color-tag-blue-bg:#14192d;
+  --lucifer-color-tag-blue-border:#2841a3;
+  --lucifer-color-tag-blue-color:#6aa7ff;
+  --lucifer-color-codemirror-line-hover:rgba(139,31,58,0.18);
+  --lucifer-color-codemirror-line-selection:rgba(139,31,58,0.28);
+  --lucifer-color-login-background:#0b0b0f;
+  --lucifer-color-login-wave:#15131a;
+  --lucifer-color-tooltip:rgba(43,20,30,0.95);
+  --lucifer-color-back-top:rgba(43,20,30,0.9);
+  --lucifer-color-back-top-hover:rgba(43,20,30,1);
+  --lucifer-color-scrollbar:#3b223c;
+  --lucifer-color-scrollbar-webkit:#6a2b49;
+  --lucifer-color-scrollbar-webkit-hover:#8b3659;
+  --lucifer-color-table-ring:rgb(59 25 45);
+  --lucifer-color-spin-container:#15131a;
 }
 
 /* Alias dark variables inside lucifer to avoid blue-tinted fallbacks */
@@ -271,6 +271,9 @@ body,
 .ant-pagination-next:hover .ant-pagination-item-link{
   border-color:var(--color-primary);
   color:var(--color-primary);
+}
+.ant-pagination-total-text{
+  color:var(--color-text-muted);
 }
 
 .ant-table-tbody>tr:hover:not(.ant-table-expanded-row):not(.ant-table-row-selected)>td{
@@ -423,19 +426,19 @@ body.lucifer .servers-stat--error .ant-statistic-content-value{color:var(--lucif
 /* Lucifer theme CSS variables for overlays
    Portals don't inherit from body.lucifer, so we need to define vars on .lucifer class */
 .lucifer{
-  --color-bg:var(--lucifer-color-background, #0d0208);
-  --color-surface:var(--lucifer-color-surface-100, #1a0f14);
-  --color-surface-2:var(--lucifer-color-surface-200, #2b1319);
+  --color-bg:var(--lucifer-color-background, #0b0b0f);
+  --color-surface:var(--lucifer-color-surface-100, #15131a);
+  --color-surface-2:var(--lucifer-color-surface-200, #1d1822);
   --color-text:var(--lucifer-color-text-primary, rgba(255,255,255,0.9));
   --color-text-muted:rgba(255,255,255,0.6);
-  --color-border:var(--lucifer-color-surface-400, rgba(230,57,70,0.15));
-  --color-primary-100:#e63946;
+  --color-border:var(--lucifer-color-surface-400, rgba(139,31,58,0.2));
+  --color-primary-100:#9a2346;
   --color-primary:var(--color-primary-100);
-  --color-primary-hover:#f05a66;
-  --color-primary-active:#c72532;
+  --color-primary-hover:#b32952;
+  --color-primary-active:#7b1938;
   --color-danger:var(--lucifer-color-btn-danger, #b91924);
   --color-link:var(--color-primary-100);
-  --color-table-hover:var(--lucifer-color-table-hover, rgba(230,57,70,0.1));
+  --color-table-hover:var(--lucifer-color-table-hover, rgba(139,31,58,0.18));
 
   --dark-color-background:var(--lucifer-color-background);
   --dark-color-surface-100:var(--lucifer-color-surface-100);
@@ -647,7 +650,7 @@ body.lucifer .servers-stat--error .ant-statistic-content-value{color:var(--lucif
 .lucifer .ant-select-focused .ant-select-selection,
 .lucifer .ant-select-selection:hover{
   background-color:var(--lucifer-color-surface-300);
-  border-color:#e63946;
+  border-color:var(--color-primary);
 }
 .lucifer .ant-dropdown-menu{
   background-color:var(--lucifer-color-surface-200);
@@ -660,17 +663,17 @@ body.lucifer .servers-stat--error .ant-statistic-content-value{color:var(--lucif
 }
 .lucifer .ant-btn:not(.ant-btn-primary):not(.ant-btn-danger){
   background-color:var(--lucifer-color-surface-300);
-  border-color:#e63946;
+  border-color:var(--color-primary);
   color:var(--lucifer-color-text-primary);
 }
 .lucifer .ant-btn:not(.ant-btn-primary):not(.ant-btn-danger):hover,
 .lucifer .ant-btn:not(.ant-btn-primary):not(.ant-btn-danger):focus{
   background-color:var(--lucifer-color-surface-400);
-  border-color:#f05a66;
+  border-color:var(--color-primary-hover);
   color:#fff;
 }
 .lucifer .ant-switch-checked{
-  background-color:#e63946;
+  background-color:var(--color-primary);
 }
 
 /* Primary buttons in overlays need explicit styling */
@@ -685,17 +688,17 @@ body.lucifer .servers-stat--error .ant-statistic-content-value{color:var(--lucif
   opacity:0.85;
 }
 .lucifer .ant-btn-primary{
-  background-color:#e63946;
-  border-color:#e63946;
+  background-color:var(--color-primary);
+  border-color:var(--color-primary);
 }
 .lucifer .ant-btn-primary:hover,
 .lucifer .ant-btn-primary:focus{
-  background-color:#f05a66;
-  border-color:#f05a66;
+  background-color:var(--color-primary-hover);
+  border-color:var(--color-primary-hover);
 }
 .lucifer .ant-btn-primary:active{
-  background-color:#c72532;
-  border-color:#c72532;
+  background-color:var(--color-primary-active);
+  border-color:var(--color-primary-active);
 }
 .lucifer .ant-btn-danger{
   background-color:var(--lucifer-color-btn-danger);
