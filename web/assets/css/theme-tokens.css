@@ -360,6 +360,12 @@ body.lucifer .ant-menu-submenu-title:active{
   background-color:var(--lucifer-color-surface-300);
   color:var(--color-primary);
 }
+body.lucifer .ant-menu-dark .ant-menu-item,
+body.lucifer .ant-menu-dark .ant-menu-submenu-title,
+body.lucifer .ant-menu-dark .ant-menu-item>a,
+body.lucifer .ant-menu-dark .ant-menu-submenu-title>a{
+  color:var(--color-text);
+}
 body.lucifer ::selection,
 body.lucifer ::-moz-selection{
   color:#fff;
@@ -379,6 +385,68 @@ body.lucifer ::-moz-selection{
 .ant-table-fixed-right .ant-table-tbody>tr>td{
   background-color:var(--color-surface);
   border-color:var(--color-border);
+}
+
+body.lucifer .ant-radio-wrapper,
+body.lucifer .ant-radio-wrapper span{
+  color:var(--color-text);
+}
+.lucifer .ant-radio-wrapper,
+.lucifer .ant-radio-wrapper span{
+  color:var(--color-text);
+}
+body.lucifer .ant-radio-inner{
+  border-color:var(--color-primary);
+  background-color:transparent;
+}
+.lucifer .ant-radio-inner{
+  border-color:var(--color-primary);
+  background-color:transparent;
+}
+body.lucifer .ant-radio-checked .ant-radio-inner{
+  border-color:var(--color-primary);
+}
+.lucifer .ant-radio-checked .ant-radio-inner{
+  border-color:var(--color-primary);
+}
+body.lucifer .ant-radio-inner:after{
+  background-color:var(--color-primary);
+}
+.lucifer .ant-radio-inner:after{
+  background-color:var(--color-primary);
+}
+body.lucifer .ant-checkbox-inner{
+  background-color:var(--lucifer-color-surface-300);
+  border-color:var(--color-border);
+}
+.lucifer .ant-checkbox-inner{
+  background-color:var(--lucifer-color-surface-300);
+  border-color:var(--color-border);
+}
+body.lucifer .ant-checkbox-checked .ant-checkbox-inner{
+  background-color:var(--color-primary);
+  border-color:var(--color-primary);
+}
+.lucifer .ant-checkbox-checked .ant-checkbox-inner{
+  background-color:var(--color-primary);
+  border-color:var(--color-primary);
+}
+
+body.lucifer .ant-tabs-tab{
+  color:var(--color-text);
+}
+body.lucifer .ant-tabs-tab-active .ant-tabs-tab-btn,
+body.lucifer .ant-tabs-tab:hover .ant-tabs-tab-btn{
+  color:var(--color-primary);
+}
+body.lucifer .ant-tabs-ink-bar{
+  background-color:var(--color-primary);
+}
+
+body.lucifer .ant-dropdown-menu-submenu-title:hover,
+body.lucifer .ant-select-dropdown-menu-item-active:not(.ant-select-dropdown-menu-item-disabled),
+body.lucifer .ant-select-dropdown-menu-item:hover:not(.ant-select-dropdown-menu-item-disabled){
+  background-color:var(--lucifer-color-surface-300);
 }
 
 .servers-page__header{background:transparent;padding:16px 24px 0;height:auto;}
@@ -659,6 +727,9 @@ body.lucifer .servers-stat--error .ant-statistic-content-value{color:var(--lucif
   color:var(--lucifer-color-text-primary);
 }
 .lucifer .ant-dropdown-menu-item:hover{
+  background-color:var(--lucifer-color-surface-300);
+}
+.lucifer .ant-dropdown-menu-submenu-title:hover{
   background-color:var(--lucifer-color-surface-300);
 }
 .lucifer .ant-btn:not(.ant-btn-primary):not(.ant-btn-danger){
