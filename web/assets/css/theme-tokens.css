@@ -812,3 +812,66 @@ body.lucifer .servers-stat--error .ant-statistic-content-value{color:var(--lucif
   background-color:var(--lucifer-color-btn-danger-hover);
   border-color:var(--lucifer-color-btn-danger-hover);
 }
+
+/* Lucifer overlay styles for overlay-class-name usage (class on overlay wrapper) */
+.lucifer.ant-popover .ant-popover-inner,
+.ant-popover.lucifer .ant-popover-inner{
+  background-color:var(--lucifer-color-surface-200);
+  color:var(--lucifer-color-text-primary);
+}
+.lucifer.ant-popover .ant-popover-title,
+.ant-popover.lucifer .ant-popover-title{
+  border-color:var(--lucifer-color-surface-400);
+  color:var(--lucifer-color-text-primary);
+}
+.lucifer.ant-popover .ant-popover-inner-content,
+.ant-popover.lucifer .ant-popover-inner-content{
+  color:var(--lucifer-color-text-primary);
+}
+.lucifer.ant-popover .ant-popover-arrow,
+.ant-popover.lucifer .ant-popover-arrow{
+  border-color:var(--lucifer-color-surface-200);
+  background:var(--lucifer-color-surface-200);
+}
+.lucifer.ant-select-dropdown,
+.ant-select-dropdown.lucifer{
+  background-color:var(--lucifer-color-surface-200);
+  color:var(--lucifer-color-text-primary);
+}
+.lucifer.ant-select-dropdown .ant-select-dropdown-menu-item,
+.ant-select-dropdown.lucifer .ant-select-dropdown-menu-item{
+  color:var(--lucifer-color-text-primary);
+}
+.lucifer.ant-select-dropdown .ant-select-dropdown-menu-item:hover,
+.lucifer.ant-select-dropdown .ant-select-dropdown-menu-item-active,
+.ant-select-dropdown.lucifer .ant-select-dropdown-menu-item:hover,
+.ant-select-dropdown.lucifer .ant-select-dropdown-menu-item-active{
+  background-color:var(--lucifer-color-surface-300);
+}
+.lucifer.ant-select-dropdown .ant-select-dropdown-menu-item-selected,
+.ant-select-dropdown.lucifer .ant-select-dropdown-menu-item-selected{
+  background-color:var(--lucifer-color-surface-400);
+}
+/* Lucifer radio buttons for theme selector */
+.lucifer .ant-radio-button-wrapper,
+.lucifer.ant-radio-button-wrapper{
+  background-color:var(--lucifer-color-surface-200);
+  border-color:var(--lucifer-color-surface-400);
+  color:var(--lucifer-color-text-primary);
+}
+.lucifer .ant-radio-button-wrapper:hover,
+.lucifer.ant-radio-button-wrapper:hover{
+  color:var(--color-primary-100);
+}
+.lucifer .ant-radio-button-wrapper-checked,
+.lucifer.ant-radio-button-wrapper-checked{
+  background-color:var(--color-primary-100);
+  border-color:var(--color-primary-100);
+  color:#fff;
+}
+.lucifer .ant-radio-button-wrapper-checked:hover,
+.lucifer.ant-radio-button-wrapper-checked:hover{
+  background-color:var(--color-primary-hover);
+  border-color:var(--color-primary-hover);
+  color:#fff;
+}

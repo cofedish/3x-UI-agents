@@ -29,10 +29,11 @@
 {{define "component/themeSwitchTemplateLogin"}}
 <template>
   <a-space @mousedown="themeSwitcher.animationsOff()" id="change-theme" direction="vertical" :size="10" :style="{ width: '100%' }">
-    <a-space direction="horizontal" size="small">
-      <a-switch size="small" :default-checked="themeSwitcher.isDarkTheme" @change="themeSwitcher.toggleTheme()"></a-switch>
-      <span>{{ i18n "menu.dark" }}</span>
-    </a-space>
+    <a-radio-group :value="themeSwitcher.theme" @change="e => themeSwitcher.setTheme(e.target.value)" size="small">
+      <a-radio-button value="light">{{ i18n "menu.light" }}</a-radio-button>
+      <a-radio-button value="dark">{{ i18n "menu.dark" }}</a-radio-button>
+      <a-radio-button value="lucifer">Lucifer</a-radio-button>
+    </a-radio-group>
     <a-space v-if="themeSwitcher.isDarkTheme" direction="horizontal" size="small">
       <a-checkbox :checked="themeSwitcher.isUltra" @click="themeSwitcher.toggleUltra()"></a-checkbox>
       <span>{{ i18n "menu.ultraDark" }}</span>
