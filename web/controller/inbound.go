@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/cofedish/3x-UI-agents/database/model"
 	"github.com/cofedish/3x-UI-agents/logger"
@@ -417,10 +418,13 @@ func (a *InboundController) addInbound(c *gin.Context) {
 		return
 	}
 
-	// Automatically reload Xray on remote server after adding inbound
-	if err := connector.ReloadXray(c.Request.Context()); err != nil {
-		logger.Warning("Failed to reload Xray on remote server after adding inbound:", err)
+	// Automatically restart Xray on remote server after adding inbound
+	logger.Debug("[AddInbound] apply path invoked: server_id=", serverId, " reason=addInbound")
+	if restartErr := connector.RestartXray(c.Request.Context()); restartErr != nil {
+		logger.Warning("[AddInbound] apply failed: server_id=", serverId, " error=", restartErr, " - inbound saved but may not be applied")
 		// Don't fail the request - inbound was created successfully
+	} else {
+		logger.Debug("[AddInbound] apply ok: server_id=", serverId)
 	}
 
 	// Ensure remote host is attached for response so generated links use agent host
@@ -475,10 +479,13 @@ func (a *InboundController) delInbound(c *gin.Context) {
 		return
 	}
 
-	// Automatically reload Xray on remote server after deleting inbound
-	if err := connector.ReloadXray(c.Request.Context()); err != nil {
-		logger.Warning("Failed to reload Xray on remote server after deleting inbound:", err)
+	// Automatically restart Xray on remote server after deleting inbound
+	logger.Debug("[DeleteInbound] apply path invoked: server_id=", serverId, " reason=deleteInbound")
+	if restartErr := connector.RestartXray(c.Request.Context()); restartErr != nil {
+		logger.Warning("[DeleteInbound] apply failed: server_id=", serverId, " error=", restartErr, " - inbound deleted but may not be applied")
 		// Don't fail the request - inbound was deleted successfully
+	} else {
+		logger.Debug("[DeleteInbound] apply ok: server_id=", serverId)
 	}
 
 	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundDeleteSuccess"), id, nil)
@@ -531,10 +538,13 @@ func (a *InboundController) updateInbound(c *gin.Context) {
 		return
 	}
 
-	// Automatically reload Xray on remote server after updating inbound
-	if err := connector.ReloadXray(c.Request.Context()); err != nil {
-		logger.Warning("Failed to reload Xray on remote server after updating inbound:", err)
+	// Automatically restart Xray on remote server after updating inbound
+	logger.Debug("[UpdateInbound] apply path invoked: server_id=", serverId, " reason=updateInbound")
+	if restartErr := connector.RestartXray(c.Request.Context()); restartErr != nil {
+		logger.Warning("[UpdateInbound] apply failed: server_id=", serverId, " error=", restartErr, " - inbound updated but may not be applied")
 		// Don't fail the request - inbound was updated successfully
+	} else {
+		logger.Debug("[UpdateInbound] apply ok: server_id=", serverId)
 	}
 
 	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundUpdateSuccess"), inbound, nil)
@@ -599,11 +609,24 @@ func (a *InboundController) addInboundClient(c *gin.Context) {
 	}
 
 	// AddClient expects the inbound object with client data
+	start := time.Now()
 	err = connector.AddClient(c.Request.Context(), data)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
+
+	// Explicitly restart Xray on remote server after adding client
+	// This ensures the new client is applied even if agent's internal restart didn't trigger
+	logger.Debug("[AddInboundClient] apply path invoked: server_id=", serverId, " reason=addClient duration=", time.Since(start))
+	if restartErr := connector.RestartXray(c.Request.Context()); restartErr != nil {
+		logger.Warning("[AddInboundClient] apply failed: server_id=", serverId, " error=", restartErr, " - client saved but may not be applied")
+		// Return success with warning - client was saved but restart failed
+		jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientAddSuccess")+" (warning: Xray restart failed)", nil, nil)
+		return
+	}
+	logger.Debug("[AddInboundClient] apply ok: server_id=", serverId, " duration=", time.Since(start))
+
 	jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientAddSuccess"), nil)
 }
 
@@ -640,11 +663,22 @@ func (a *InboundController) delInboundClient(c *gin.Context) {
 		return
 	}
 
+	start := time.Now()
 	err = connector.DeleteClient(c.Request.Context(), id, clientId)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
+
+	// Explicitly restart Xray on remote server after deleting client
+	logger.Debug("[DelInboundClient] apply path invoked: server_id=", serverId, " reason=deleteClient duration=", time.Since(start))
+	if restartErr := connector.RestartXray(c.Request.Context()); restartErr != nil {
+		logger.Warning("[DelInboundClient] apply failed: server_id=", serverId, " error=", restartErr, " - client deleted but may not be applied")
+		jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientDeleteSuccess")+" (warning: Xray restart failed)", nil, nil)
+		return
+	}
+	logger.Debug("[DelInboundClient] apply ok: server_id=", serverId, " duration=", time.Since(start))
+
 	jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientDeleteSuccess"), nil)
 }
 
@@ -692,11 +726,22 @@ func (a *InboundController) updateInboundClient(c *gin.Context) {
 	// UpdateClient expects inbound with the updated client data and client index
 	// For now, we assume the client to update is at index 0 of ClientStats
 	// TODO: Find actual index based on clientId
+	start := time.Now()
 	err = connector.UpdateClient(c.Request.Context(), inbound, 0)
 	if err != nil {
 		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
 		return
 	}
+
+	// Explicitly restart Xray on remote server after updating client
+	logger.Debug("[UpdateInboundClient] apply path invoked: server_id=", serverId, " reason=updateClient duration=", time.Since(start))
+	if restartErr := connector.RestartXray(c.Request.Context()); restartErr != nil {
+		logger.Warning("[UpdateInboundClient] apply failed: server_id=", serverId, " error=", restartErr, " - client updated but may not be applied")
+		jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientUpdateSuccess")+" (warning: Xray restart failed)", nil, nil)
+		return
+	}
+	logger.Debug("[UpdateInboundClient] apply ok: server_id=", serverId, " duration=", time.Since(start))
+
 	jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientUpdateSuccess"), nil)
 }
 
