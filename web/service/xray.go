@@ -17,9 +17,9 @@ import (
 
 var (
 	p                 *xray.Process
-	lock              sync.Mutex
-	isNeedXrayRestart atomic.Bool // Indicates that restart was requested for Xray
-	isManuallyStopped atomic.Bool // Indicates that Xray was stopped manually from the panel
+	lock              sync.RWMutex // Changed from Mutex to RWMutex for safe concurrent reads
+	isNeedXrayRestart atomic.Bool  // Indicates that restart was requested for Xray
+	isManuallyStopped atomic.Bool  // Indicates that Xray was stopped manually from the panel
 	result            string
 )
 

@@ -37,15 +37,24 @@ type XrayAPI struct {
 }
 
 // Init connects to the Xray API server and initializes handler and stats service clients.
+// Uses a connection timeout to prevent blocking if xray is not responding.
 func (x *XrayAPI) Init(apiPort int) error {
 	if apiPort <= 0 || apiPort > math.MaxUint16 {
 		return fmt.Errorf("invalid Xray API port: %d", apiPort)
 	}
 
 	addr := fmt.Sprintf("127.0.0.1:%d", apiPort)
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	// Use context with timeout to prevent blocking on connection
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	conn, err := grpc.DialContext(ctx, addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(), // Block until connected or timeout
+	)
 	if err != nil {
-		return fmt.Errorf("failed to connect to Xray API: %w", err)
+		return fmt.Errorf("failed to connect to Xray API (timeout 3s): %w", err)
 	}
 
 	x.grpcClient = conn
@@ -182,6 +191,7 @@ func (x *XrayAPI) RemoveUser(inboundTag, email string) error {
 }
 
 // GetTraffic queries traffic statistics from the Xray core, optionally resetting counters.
+// Uses a 3 second timeout to prevent blocking if xray is slow to respond.
 func (x *XrayAPI) GetTraffic(reset bool) ([]*Traffic, []*ClientTraffic, error) {
 	if x.grpcClient == nil {
 		return nil, nil, common.NewError("xray api is not initialized")
@@ -190,7 +200,8 @@ func (x *XrayAPI) GetTraffic(reset bool) ([]*Traffic, []*ClientTraffic, error) {
 	trafficRegex := regexp.MustCompile(`(inbound|outbound)>>>([^>]+)>>>traffic>>>(downlink|uplink)`)
 	clientTrafficRegex := regexp.MustCompile(`user>>>([^>]+)>>>traffic>>>(downlink|uplink)`)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	// Reduced from 10s to 3s to prevent panel from hanging on slow xray responses
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
 	if x.StatsServiceClient == nil {
