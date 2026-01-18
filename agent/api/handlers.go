@@ -159,17 +159,21 @@ func (h *AgentHandlers) Info(c *gin.Context) {
 // ListInbounds returns all inbounds.
 // GET /api/v1/inbounds
 func (h *AgentHandlers) ListInbounds(c *gin.Context) {
+	start := time.Now()
+	logger.Debug("[ListInbounds] START")
+
 	db := database.GetDB()
 	var inbounds []*model.Inbound
 
 	// Get all inbounds (agent manages local server only)
 	err := db.Preload("ClientStats").Find(&inbounds).Error
 	if err != nil {
-		logger.Error("Failed to list inbounds:", err)
+		logger.Error("[ListInbounds] DB query failed after", time.Since(start), "error:", err)
 		respondError(c, "DB_ERROR", "Failed to list inbounds", http.StatusInternalServerError)
 		return
 	}
 
+	logger.Debug("[ListInbounds] DONE in", time.Since(start), "found", len(inbounds), "inbounds")
 	respondSuccess(c, inbounds)
 }
 
@@ -202,6 +206,9 @@ func (h *AgentHandlers) GetInbound(c *gin.Context) {
 // AddInbound creates a new inbound.
 // POST /api/v1/inbounds
 func (h *AgentHandlers) AddInbound(c *gin.Context) {
+	start := time.Now()
+	logger.Debug("[AddInbound] START")
+
 	var inbound model.Inbound
 
 	if err := c.ShouldBindJSON(&inbound); err != nil {
@@ -213,19 +220,37 @@ func (h *AgentHandlers) AddInbound(c *gin.Context) {
 		return
 	}
 
-	_, _, err := h.inboundService.AddInbound(&inbound)
+	_, needRestart, err := h.inboundService.AddInbound(&inbound)
 	if err != nil {
-		logger.Error("Failed to add inbound:", err)
+		logger.Error("[AddInbound] FAILED after", time.Since(start), "error:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to add inbound: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// CRITICAL FIX: If xray API add failed, we must restart xray to apply the new inbound
+	if needRestart {
+		logger.Debug("[AddInbound] needRestart=true, restarting Xray to apply new inbound")
+		if err := h.openFirewallPorts(); err != nil {
+			logger.Warning("[AddInbound] Failed to open firewall ports:", err)
+		}
+		if err := h.xrayService.RestartXray(true); err != nil {
+			logger.Error("[AddInbound] Failed to restart Xray:", err)
+			respondError(c, "XRAY_RESTART_FAILED", "Inbound created but Xray restart failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		logger.Debug("[AddInbound] Xray restarted successfully")
+	}
+
+	logger.Debug("[AddInbound] DONE in", time.Since(start), "inbound.Id=", inbound.Id, "needRestart=", needRestart)
 	respondSuccess(c, gin.H{"id": inbound.Id})
 }
 
 // UpdateInbound updates an existing inbound.
 // PUT /api/v1/inbounds/:id
 func (h *AgentHandlers) UpdateInbound(c *gin.Context) {
+	start := time.Now()
+	logger.Debug("[UpdateInbound] START")
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		respondError(c, "INVALID_ID", "Invalid inbound ID", http.StatusBadRequest)
@@ -244,19 +269,37 @@ func (h *AgentHandlers) UpdateInbound(c *gin.Context) {
 		return
 	}
 
-	_, _, err = h.inboundService.UpdateInbound(&inbound)
+	_, needRestart, err := h.inboundService.UpdateInbound(&inbound)
 	if err != nil {
-		logger.Error("Failed to update inbound:", err)
+		logger.Error("[UpdateInbound] FAILED after", time.Since(start), "error:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to update inbound: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// CRITICAL FIX: If xray API update failed, we must restart xray to apply changes
+	if needRestart {
+		logger.Debug("[UpdateInbound] needRestart=true, restarting Xray to apply changes")
+		if err := h.openFirewallPorts(); err != nil {
+			logger.Warning("[UpdateInbound] Failed to open firewall ports:", err)
+		}
+		if err := h.xrayService.RestartXray(true); err != nil {
+			logger.Error("[UpdateInbound] Failed to restart Xray:", err)
+			respondError(c, "XRAY_RESTART_FAILED", "Inbound updated but Xray restart failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		logger.Debug("[UpdateInbound] Xray restarted successfully")
+	}
+
+	logger.Debug("[UpdateInbound] DONE in", time.Since(start), "id=", id, "needRestart=", needRestart)
 	respondSuccess(c, gin.H{"success": true})
 }
 
 // DeleteInbound deletes an inbound.
 // DELETE /api/v1/inbounds/:id
 func (h *AgentHandlers) DeleteInbound(c *gin.Context) {
+	start := time.Now()
+	logger.Debug("[DeleteInbound] START")
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		respondError(c, "INVALID_ID", "Invalid inbound ID", http.StatusBadRequest)
@@ -267,19 +310,34 @@ func (h *AgentHandlers) DeleteInbound(c *gin.Context) {
 		return
 	}
 
-	_, err = h.inboundService.DelInbound(id)
+	needRestart, err := h.inboundService.DelInbound(id)
 	if err != nil {
-		logger.Error("Failed to delete inbound:", err)
+		logger.Error("[DeleteInbound] FAILED after", time.Since(start), "error:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to delete inbound: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// CRITICAL FIX: If xray API delete failed, we must restart xray to apply changes
+	if needRestart {
+		logger.Debug("[DeleteInbound] needRestart=true, restarting Xray to apply changes")
+		if err := h.xrayService.RestartXray(true); err != nil {
+			logger.Error("[DeleteInbound] Failed to restart Xray:", err)
+			respondError(c, "XRAY_RESTART_FAILED", "Inbound deleted but Xray restart failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		logger.Debug("[DeleteInbound] Xray restarted successfully")
+	}
+
+	logger.Debug("[DeleteInbound] DONE in", time.Since(start), "id=", id, "needRestart=", needRestart)
 	respondSuccess(c, gin.H{"success": true})
 }
 
 // AddClient adds a client to an inbound.
 // POST /api/v1/inbounds/:id/clients
 func (h *AgentHandlers) AddClient(c *gin.Context) {
+	start := time.Now()
+	logger.Debug("[AddClient] START")
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		respondError(c, "INVALID_ID", "Invalid inbound ID", http.StatusBadRequest)
@@ -298,19 +356,34 @@ func (h *AgentHandlers) AddClient(c *gin.Context) {
 
 	inbound.Id = id
 
-	_, err = h.inboundService.AddInboundClient(&inbound)
+	needRestart, err := h.inboundService.AddInboundClient(&inbound)
 	if err != nil {
-		logger.Error("Failed to add client:", err)
+		logger.Error("[AddClient] FAILED after", time.Since(start), "error:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to add client: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// CRITICAL FIX: If xray API add user failed, we must restart xray to apply the new client
+	if needRestart {
+		logger.Debug("[AddClient] needRestart=true, restarting Xray to apply new client")
+		if err := h.xrayService.RestartXray(true); err != nil {
+			logger.Error("[AddClient] Failed to restart Xray:", err)
+			respondError(c, "XRAY_RESTART_FAILED", "Client added but Xray restart failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		logger.Debug("[AddClient] Xray restarted successfully")
+	}
+
+	logger.Debug("[AddClient] DONE in", time.Since(start), "inboundId=", id, "needRestart=", needRestart)
 	respondSuccess(c, gin.H{"success": true})
 }
 
 // DeleteClient deletes a client from an inbound.
 // DELETE /api/v1/inbounds/:id/clients/:email
 func (h *AgentHandlers) DeleteClient(c *gin.Context) {
+	start := time.Now()
+	logger.Debug("[DeleteClient] START")
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		respondError(c, "INVALID_ID", "Invalid inbound ID", http.StatusBadRequest)
@@ -327,27 +400,43 @@ func (h *AgentHandlers) DeleteClient(c *gin.Context) {
 		return
 	}
 
-	_, err = h.inboundService.DelInboundClient(id, email)
+	needRestart, err := h.inboundService.DelInboundClient(id, email)
 	if err != nil {
-		logger.Error("Failed to delete client:", err)
+		logger.Error("[DeleteClient] FAILED after", time.Since(start), "error:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to delete client: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// CRITICAL FIX: If xray API remove user failed, we must restart xray to apply changes
+	if needRestart {
+		logger.Debug("[DeleteClient] needRestart=true, restarting Xray to apply changes")
+		if err := h.xrayService.RestartXray(true); err != nil {
+			logger.Error("[DeleteClient] Failed to restart Xray:", err)
+			respondError(c, "XRAY_RESTART_FAILED", "Client deleted but Xray restart failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		logger.Debug("[DeleteClient] Xray restarted successfully")
+	}
+
+	logger.Debug("[DeleteClient] DONE in", time.Since(start), "inboundId=", id, "email=", email, "needRestart=", needRestart)
 	respondSuccess(c, gin.H{"success": true})
 }
 
 // GetTraffic returns traffic statistics.
 // GET /api/v1/traffic
 func (h *AgentHandlers) GetTraffic(c *gin.Context) {
+	start := time.Now()
+	logger.Debug("[GetTraffic] START")
+
 	// Use XrayService to get traffic
 	traffics, clientTraffics, err := h.xrayService.GetXrayTraffic()
 	if err != nil {
-		logger.Error("Failed to get traffic:", err)
+		logger.Error("[GetTraffic] FAILED after", time.Since(start), "error:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to get traffic: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	logger.Debug("[GetTraffic] DONE in", time.Since(start))
 	respondSuccess(c, gin.H{
 		"traffics":       traffics,
 		"clientTraffics": clientTraffics,
@@ -357,16 +446,20 @@ func (h *AgentHandlers) GetTraffic(c *gin.Context) {
 // GetClientTraffics returns client traffic statistics.
 // GET /api/v1/traffic/clients
 func (h *AgentHandlers) GetClientTraffics(c *gin.Context) {
+	start := time.Now()
+	logger.Debug("[GetClientTraffics] START")
+
 	db := database.GetDB()
 	var traffics []*xray.ClientTraffic
 
 	err := db.Find(&traffics).Error
 	if err != nil {
-		logger.Error("Failed to get client traffics:", err)
+		logger.Error("[GetClientTraffics] DB query failed after", time.Since(start), "error:", err)
 		respondError(c, "DB_ERROR", "Failed to get client traffics", http.StatusInternalServerError)
 		return
 	}
 
+	logger.Debug("[GetClientTraffics] DONE in", time.Since(start), "found", len(traffics), "traffics")
 	respondSuccess(c, traffics)
 }
 
