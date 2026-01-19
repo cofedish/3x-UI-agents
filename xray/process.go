@@ -28,9 +28,10 @@ func GetBinaryPath() string {
 	return config.GetBinFolderPath() + "/" + GetBinaryName()
 }
 
-// GetConfigPath returns the path to the Xray configuration file in the binary folder.
+// GetConfigPath returns the path to the Xray configuration file.
+// Config is stored in the config folder (not bin) to allow bin to be read-only.
 func GetConfigPath() string {
-	return config.GetBinFolderPath() + "/config.json"
+	return config.GetConfigFolderPath() + "/config.json"
 }
 
 // GetGeositePath returns the path to the geosite data file used by Xray.
@@ -247,6 +248,12 @@ func (p *process) Start() (err error) {
 		logger.Warningf("Failed to create log folder: %s", err)
 	}
 
+	// Create config folder if it doesn't exist (separate from bin for read-only bin support)
+	err = os.MkdirAll(config.GetConfigFolderPath(), 0o770)
+	if err != nil {
+		logger.Warningf("Failed to create config folder: %s", err)
+	}
+
 	configPath := GetConfigPath()
 	err = os.WriteFile(configPath, data, fs.ModePerm)
 	if err != nil {
@@ -298,8 +305,8 @@ func (p *process) Stop() error {
 	}
 }
 
-// writeCrashReport writes a crash report to the binary folder with a timestamped filename.
+// writeCrashReport writes a crash report to the log folder with a timestamped filename.
 func writeCrashReport(m []byte) error {
-	crashReportPath := config.GetBinFolderPath() + "/core_crash_" + time.Now().Format("20060102_150405") + ".log"
+	crashReportPath := config.GetLogFolder() + "/xray_crash_" + time.Now().Format("20060102_150405") + ".log"
 	return os.WriteFile(crashReportPath, m, os.ModePerm)
 }

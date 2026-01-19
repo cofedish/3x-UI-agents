@@ -120,6 +120,27 @@ func GetLogFolder() string {
 	return "/var/log"
 }
 
+// GetConfigFolderPath returns the path to the config folder for runtime-generated configs.
+// This is separate from BIN folder to allow BIN to be read-only (e.g., under systemd ProtectSystem).
+// Defaults to /etc/x-ui-agent on Linux, or current directory on Windows.
+// Can be overridden via XUI_CONFIG_FOLDER environment variable.
+func GetConfigFolderPath() string {
+	configFolderPath := os.Getenv("XUI_CONFIG_FOLDER")
+	if configFolderPath != "" {
+		return configFolderPath
+	}
+	if runtime.GOOS == "windows" {
+		return getBaseDir()
+	}
+	// Use /etc/x-ui-agent for agent, fall back to /etc/x-ui for panel
+	// Check if running as agent by looking at executable name
+	exePath, _ := os.Executable()
+	if strings.Contains(strings.ToLower(exePath), "agent") {
+		return "/etc/x-ui-agent"
+	}
+	return "/etc/x-ui"
+}
+
 func copyFile(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
