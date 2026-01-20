@@ -49,6 +49,7 @@ func (a *InboundController) initRouter(g *gin.RouterGroup) {
 	g.POST("/addClient", a.addInboundClient)
 	g.POST("/:id/delClient/:clientId", a.delInboundClient)
 	g.POST("/updateClient/:clientId", a.updateInboundClient)
+	g.POST("/toggleClientEnable/:email", a.toggleClientEnable)
 	g.POST("/:id/resetClientTraffic/:email", a.resetClientTraffic)
 	g.POST("/resetAllTraffics", a.resetAllTraffics)
 	g.POST("/resetAllClientTraffics/:id", a.resetAllClientTraffics)
@@ -749,6 +750,49 @@ func (a *InboundController) updateInboundClient(c *gin.Context) {
 	logger.Debug("[UpdateInboundClient] apply ok: server_id=", serverId, " duration=", time.Since(start))
 
 	jsonMsg(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientUpdateSuccess"), nil)
+}
+
+// toggleClientEnable toggles a client's enable state by email.
+// POST /panel/api/inbounds/toggleClientEnable/:email
+func (a *InboundController) toggleClientEnable(c *gin.Context) {
+	email := c.Param("email")
+	if email == "" {
+		jsonMsg(c, "Email is required", nil)
+		return
+	}
+
+	serverId := a.getServerIdFromRequest(c)
+
+	// For local server (server_id=1), use local service directly
+	if serverId == 1 {
+		newEnabled, needRestart, err := a.inboundService.ToggleClientEnableByEmail(email)
+		if err != nil {
+			jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+			return
+		}
+		jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientUpdateSuccess"), gin.H{"enabled": newEnabled}, nil)
+		if needRestart {
+			a.xrayService.SetToNeedRestart()
+		}
+		return
+	}
+
+	// Multi-server mode: use connector
+	connector, err := a.serverMgmt.GetConnector(serverId)
+	if err != nil {
+		jsonMsg(c, "Failed to connect to server", err)
+		return
+	}
+
+	newEnabled, err := connector.ToggleClientEnable(c.Request.Context(), email)
+	if err != nil {
+		jsonMsg(c, I18nWeb(c, "somethingWentWrong"), err)
+		return
+	}
+
+	// RestartXray is handled inside the agent's ToggleClientEnable
+	logger.Debug("[ToggleClientEnable] success: server_id=", serverId, " email=", email, " newEnabled=", newEnabled)
+	jsonMsgObj(c, I18nWeb(c, "pages.inbounds.toasts.inboundClientUpdateSuccess"), gin.H{"enabled": newEnabled}, nil)
 }
 
 // resetClientTraffic resets the traffic counter for a specific client in an inbound.

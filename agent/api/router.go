@@ -73,6 +73,9 @@ func SetupRouter(cfg *config.AgentConfig) *gin.Engine {
 				inbounds.DELETE("/:id/clients/:email", handlers.DeleteClient)
 			}
 
+			// Client operations by email
+			protected.POST("/clients/:email/toggle", handlers.ToggleClientEnable)
+
 			// Traffic and stats
 			protected.GET("/traffic", handlers.GetTraffic)
 			protected.GET("/traffic/clients", handlers.GetClientTraffics)

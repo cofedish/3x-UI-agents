@@ -1336,14 +1336,18 @@
         this.submit(`/panel/api/inbounds/update/${dbInboundId}`, dbInbound);
       },
       async switchEnableClient(dbInboundId, client) {
-        this.loading()
-        dbInbound = this.dbInbounds.find(row => row.id === dbInboundId);
-        inbound = dbInbound.toInbound();
-        clients = inbound.clients;
-        index = this.findIndexOfClient(dbInbound.protocol, clients, client);
-        clients[index].enable = !clients[index].enable;
-        clientId = this.getClientId(dbInbound.protocol, clients[index]);
-        await this.updateClient(clients[index], dbInboundId, clientId);
+        this.loading();
+        const serverIdParam = this.getServerIdParam();
+        const msg = await HttpUtil.post(`/panel/api/inbounds/toggleClientEnable/${client.email}` + serverIdParam);
+        if (msg.success) {
+          // Update local state with new enabled value from server
+          if (msg.obj && msg.obj.enabled !== undefined) {
+            client.enable = msg.obj.enabled;
+          } else {
+            client.enable = !client.enable;
+          }
+          await this.getDBInbounds();
+        }
         this.loading(false);
       },
       async submit(url, data, modal) {

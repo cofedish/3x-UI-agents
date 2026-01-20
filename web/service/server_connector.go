@@ -27,6 +27,7 @@ type ServerConnector interface {
 	AddClient(ctx context.Context, inbound *model.Inbound) error
 	UpdateClient(ctx context.Context, inbound *model.Inbound, clientIndex int) error
 	DeleteClient(ctx context.Context, inboundId int, clientEmail string) error
+	ToggleClientEnable(ctx context.Context, email string) (bool, error)
 	ResetClientTraffic(ctx context.Context, inboundId int, email string) error
 	GetOnlineClients(ctx context.Context) ([]string, error)
 

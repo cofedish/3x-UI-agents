@@ -416,6 +416,22 @@ func (c *RemoteConnector) DeleteClient(ctx context.Context, inboundId int, clien
 	return err
 }
 
+// ToggleClientEnable toggles a client's enable state via the agent.
+func (c *RemoteConnector) ToggleClientEnable(ctx context.Context, email string) (bool, error) {
+	resp, err := c.doRequest(ctx, "POST", fmt.Sprintf("/api/v1/clients/%s/toggle", email), nil)
+	if err != nil {
+		return false, err
+	}
+	// Parse response to get new enabled state
+	var data struct {
+		Enabled bool `json:"enabled"`
+	}
+	if err := json.Unmarshal(resp.Data, &data); err != nil {
+		return false, nil // ignore parse error, just return false
+	}
+	return data.Enabled, nil
+}
+
 // ResetClientTraffic resets client traffic via the agent.
 func (c *RemoteConnector) ResetClientTraffic(ctx context.Context, inboundId int, email string) error {
 	_, err := c.doRequest(ctx, "POST", fmt.Sprintf("/api/v1/inbounds/%d/clients/%s/reset-traffic", inboundId, email), nil)

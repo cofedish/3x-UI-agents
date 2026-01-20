@@ -211,6 +211,13 @@ func (c *LocalConnector) DeleteClient(ctx context.Context, inboundId int, client
 	return err
 }
 
+// ToggleClientEnable toggles a client's enable state by email.
+func (c *LocalConnector) ToggleClientEnable(ctx context.Context, email string) (bool, error) {
+	// Delegate to inbound service
+	newEnabled, _, err := c.inboundService.ToggleClientEnableByEmail(email)
+	return newEnabled, err
+}
+
 // ResetClientTraffic resets traffic for a specific client.
 func (c *LocalConnector) ResetClientTraffic(ctx context.Context, inboundId int, email string) error {
 	// Verify ownership
