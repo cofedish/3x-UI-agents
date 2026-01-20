@@ -69,6 +69,7 @@ func SetupRouter(cfg *config.AgentConfig) *gin.Engine {
 
 				// Client management
 				inbounds.POST("/:id/clients", handlers.AddClient)
+				inbounds.PUT("/:id/clients/:index", handlers.UpdateClient)
 				inbounds.DELETE("/:id/clients/:email", handlers.DeleteClient)
 			}
 

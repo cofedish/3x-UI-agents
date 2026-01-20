@@ -378,6 +378,77 @@ func (h *AgentHandlers) AddClient(c *gin.Context) {
 	respondSuccess(c, gin.H{"success": true})
 }
 
+// UpdateClient updates a client in an inbound.
+// PUT /api/v1/inbounds/:id/clients/:index
+func (h *AgentHandlers) UpdateClient(c *gin.Context) {
+	start := time.Now()
+	logger.Debug("[UpdateClient] START")
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		respondError(c, "INVALID_ID", "Invalid inbound ID", http.StatusBadRequest)
+		return
+	}
+
+	// Index param is ignored - we identify the client by its ID/password/email from settings
+	var inbound model.Inbound
+	if err := c.ShouldBindJSON(&inbound); err != nil {
+		respondError(c, "INVALID_INPUT", "Invalid inbound data: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if !ensureXrayRunning(c, h.xrayService) {
+		return
+	}
+
+	inbound.Id = id
+
+	// Get client from settings to determine clientId
+	clients, err := h.inboundService.GetClients(&inbound)
+	if err != nil || len(clients) == 0 {
+		respondError(c, "INVALID_INPUT", "No client data in settings", http.StatusBadRequest)
+		return
+	}
+
+	// Get the existing inbound to determine protocol
+	oldInbound, err := h.inboundService.GetInbound(id)
+	if err != nil {
+		respondError(c, "NOT_FOUND", "Inbound not found: "+err.Error(), http.StatusNotFound)
+		return
+	}
+
+	// Determine clientId based on protocol (matches UpdateInboundClient logic)
+	var clientId string
+	switch oldInbound.Protocol {
+	case "trojan":
+		clientId = clients[0].Password
+	case "shadowsocks":
+		clientId = clients[0].Email
+	default:
+		clientId = clients[0].ID
+	}
+
+	needRestart, err := h.inboundService.UpdateInboundClient(&inbound, clientId)
+	if err != nil {
+		logger.Error("[UpdateClient] FAILED after", time.Since(start), "error:", err)
+		respondError(c, "OPERATION_FAILED", "Failed to update client: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if needRestart {
+		logger.Debug("[UpdateClient] needRestart=true, restarting Xray to apply changes")
+		if err := h.xrayService.RestartXray(true); err != nil {
+			logger.Error("[UpdateClient] Failed to restart Xray:", err)
+			respondError(c, "XRAY_RESTART_FAILED", "Client updated but Xray restart failed: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		logger.Debug("[UpdateClient] Xray restarted successfully")
+	}
+
+	logger.Debug("[UpdateClient] DONE in", time.Since(start), "inboundId=", id, "clientId=", clientId, "needRestart=", needRestart)
+	respondSuccess(c, gin.H{"success": true})
+}
+
 // DeleteClient deletes a client from an inbound.
 // DELETE /api/v1/inbounds/:id/clients/:email
 func (h *AgentHandlers) DeleteClient(c *gin.Context) {
