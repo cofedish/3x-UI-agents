@@ -717,8 +717,14 @@ func (a *InboundController) updateInboundClient(c *gin.Context) {
 		return
 	}
 
-	// Extract client from inbound settings
-	if len(inbound.ClientStats) == 0 {
+	// Extract client from inbound settings - clients are in Settings JSON, not ClientStats
+	var settings map[string]any
+	if err := json.Unmarshal([]byte(inbound.Settings), &settings); err != nil {
+		jsonMsg(c, "Invalid settings JSON", err)
+		return
+	}
+	clients, ok := settings["clients"].([]any)
+	if !ok || len(clients) == 0 {
 		jsonMsg(c, "No client data provided", nil)
 		return
 	}
