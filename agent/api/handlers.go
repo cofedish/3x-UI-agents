@@ -465,22 +465,22 @@ func (h *AgentHandlers) ToggleClientEnable(c *gin.Context) {
 		return
 	}
 
-	newEnabled, needRestart, err := h.inboundService.ToggleClientEnableByEmail(email)
+	newEnabled, _, err := h.inboundService.ToggleClientEnableByEmail(email)
 	if err != nil {
 		logger.Error("[ToggleClientEnable] FAILED after", time.Since(start), "error:", err)
 		respondError(c, "OPERATION_FAILED", "Failed to toggle client: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if needRestart {
-		logger.Debug("[ToggleClientEnable] needRestart=true, restarting Xray")
-		if err := h.xrayService.RestartXray(true); err != nil {
-			logger.Error("[ToggleClientEnable] Failed to restart Xray:", err)
-			respondError(c, "XRAY_RESTART_FAILED", "Client toggled but Xray restart failed: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-		logger.Debug("[ToggleClientEnable] Xray restarted successfully")
+	// ALWAYS restart Xray to ensure the change is applied
+	// The gRPC API for add/remove user is unreliable, so force restart is safer
+	logger.Debug("[ToggleClientEnable] forcing Xray restart to apply change")
+	if err := h.xrayService.RestartXray(true); err != nil {
+		logger.Error("[ToggleClientEnable] Failed to restart Xray:", err)
+		respondError(c, "XRAY_RESTART_FAILED", "Client toggled but Xray restart failed: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
+	logger.Debug("[ToggleClientEnable] Xray restarted successfully")
 
 	logger.Debug("[ToggleClientEnable] DONE in", time.Since(start), "email=", email, "newEnabled=", newEnabled)
 	respondSuccess(c, gin.H{"success": true, "enabled": newEnabled})
